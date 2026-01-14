@@ -6,7 +6,6 @@ import { trpc, trpcClient } from "@/lib/trpc";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import SnippetScreen from "./pages/snippet";
-import SnippetForm from "@/pages/forms/snippet-form";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -22,7 +21,6 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/snippet" component={SnippetScreen}/>
-      <Route path="/snippet/new" component={SnippetForm}/>
       <Route component={NotFound} />
     </Switch>
   );
