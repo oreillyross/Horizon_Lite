@@ -1,7 +1,7 @@
 export default function SnippetForm() {
   return (
-    <div>
-      Snippet form route
-    </div>
+    <form>
+      Snippet form placeholder
+    </form>
   )
 } 
