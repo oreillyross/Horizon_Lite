@@ -67,10 +67,10 @@ export default function SnippetForm() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Code2 className="h-5 w-5" />
-              Create Snippet
+              Create Information Snippet
             </CardTitle>
             <CardDescription>
-              Add a code snippet with tags for organization
+              Add an information receipt along with associated tags
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -81,7 +81,7 @@ export default function SnippetForm() {
                   name="content"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Snippet Content</FormLabel>
+                      <FormLabel>Snippet</FormLabel>
                       <FormControl>
                         <Textarea
                           data-testid="textarea-snippet-content"

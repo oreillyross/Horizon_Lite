@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
+import {Link} from "wouter"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,8 +53,8 @@ export default function Home() {
     }
   };
 
-  const techStack = [
-    { name: "React", icon: Code2, color: "text-blue-500" },
+  const navigationLinks = [
+    { name: "Snippets", icon: Code2, color: "text-blue-500", link: "/snippet" },
     { name: "TypeScript", icon: Code2, color: "text-blue-600" },
     { name: "tRPC", icon: Zap, color: "text-purple-500" },
     { name: "React Query", icon: Database, color: "text-red-500" },
@@ -72,14 +73,26 @@ export default function Home() {
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {techStack.map((tech) => (
-            <Card key={tech.name} className="hover-elevate">
+          {navigationLinks.map((navlinks) => (
+            <Card key={navlinks.name} className="hover-elevate">
               <CardContent className="flex items-center gap-4 p-4">
-                <tech.icon className={`h-8 w-8 ${tech.color}`} />
-                <div>
-                  <p className="font-medium">{tech.name}</p>
-                  <p className="text-sm text-muted-foreground">Integrated</p>
-                </div>
+                {navlinks.link ? (
+                  <Link href={navlinks.link} className="flex items-center gap-4">
+                    <navlinks.icon className={`h-8 w-8 ${navlinks.color}`} />
+                    <div>
+                      <p className="font-medium">{navlinks.name}</p>
+                      <p className="text-sm text-muted-foreground">Integrated</p>
+                    </div>
+                  </Link>
+                ) : (
+                  <>
+                    <navlinks.icon className={`h-8 w-8 ${navlinks.color}`} />
+                    <div>
+                      <p className="font-medium">{navlinks.name}</p>
+                      <p className="text-sm text-muted-foreground">Integrated</p>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
           ))}
