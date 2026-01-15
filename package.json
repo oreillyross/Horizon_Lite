@@ -8,7 +8,16 @@
     "build": "tsx script/build.ts",
     "start": "NODE_ENV=production node dist/index.cjs",
     "check": "tsc",
+<<<<<<< Updated upstream
     "db:push": "drizzle-kit push"
+=======
+    "db:push": "drizzle-kit push",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage",
+    "test:api": "cd server && vitest",
+    "test:web": "cd client && vitest"
+>>>>>>> Stashed changes
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

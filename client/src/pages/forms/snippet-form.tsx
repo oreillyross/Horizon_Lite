@@ -18,14 +18,18 @@ import {
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { Code2, Plus, X, Hash, Send } from "lucide-react";
+
 const snippetFormSchema = z.object({
   content: z.string().min(1, "Snippet content is required"),
   tags: z.array(z.string()).default([]),
 });
 type SnippetFormValues = z.infer<typeof snippetFormSchema>;
+
 export default function SnippetForm() {
+  
   const { toast } = useToast();
   const [tagInput, setTagInput] = useState("");
+  
   const form = useForm<SnippetFormValues>({
     resolver: zodResolver(snippetFormSchema),
     defaultValues: {
@@ -33,7 +37,9 @@ export default function SnippetForm() {
       tags: [],
     },
   });
+  
   const tags = form.watch("tags");
+  
   const handleAddTag = useCallback(() => {
     const trimmedTag = tagInput.trim().replace(/^#/, "");
     if (trimmedTag && !tags.includes(trimmedTag)) {
@@ -41,6 +47,7 @@ export default function SnippetForm() {
       setTagInput("");
     }
   }, [tagInput, tags, form]);
+  
   const handleTagInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();

@@ -1,9 +1,20 @@
 import { router, publicProcedure } from "../trpc";
 import { z } from "zod";
 import { storage } from "../storage";
-import { insertUserSchema } from "@shared/schema";
+import { snippetStorage } from "../storage";
+import { insertUserSchema, insertSnippetSchema } from "@shared/schema";
 
 export const appRouter = router({
+  createSnippet: publicProcedure
+    .input(insertSnippetSchema)
+    .mutation(async ({ input }) => {
+      return await snippetStorage.createSnippet(input);
+    }),
+
+  getSnippets: publicProcedure.query(async () => {
+    return await snippetStorage.getSnippets();
+  }),
+
   health: publicProcedure.query(() => {
     return { status: "ok", timestamp: new Date().toISOString() };
   }),

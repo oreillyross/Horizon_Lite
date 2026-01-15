@@ -1,4 +1,5 @@
 import { users, type User, type InsertUser } from "@shared/schema";
+import { snippets, type Snippet, type InsertSnippet } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcrypt";
@@ -24,7 +25,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.username, username));
     return user || undefined;
   }
 
@@ -42,5 +46,25 @@ export class DatabaseStorage implements IStorage {
     return result.length > 0;
   }
 }
+
+export interface ISnippetStorage {
+  getSnippets(): Promise<Snippet[]>;
+  createSnippet(snippet: Snippet): Promise<Snippet>;
+}
+
+export class SnippetStorage implements ISnippetStorage {
+  async createSnippet(insertSnippet: InsertSnippet): Promise<Snippet> {
+    const [snippet] = await db
+      .insert(snippets)
+      .values(insertSnippet)
+      .returning();
+    return snippet;
+  }
+  async getSnippets(): Promise<Snippet[]> {
+    return await db.select().from(snippets);
+  }
+}
+
+export const snippetStorage = new SnippetStorage()
 
 export const storage = new DatabaseStorage();
