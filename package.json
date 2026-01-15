@@ -12,8 +12,8 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
-    "test:api": "cd apps/api && vitest",
-    "test:web": "cd apps/web && vitest"
+    "test:api": "cd server && vitest",
+    "test:web": "cd client && vitest"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
