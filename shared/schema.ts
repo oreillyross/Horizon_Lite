@@ -27,6 +27,7 @@ export const snippets = pgTable("snippets", {
 export const insertSnippetSchema = createInsertSchema(snippets).pick({
   content: true,
   tags: true,
+  createdAt: true,
 });
 
 export type InsertSnippet = z.infer<typeof insertSnippetSchema>;
