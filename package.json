@@ -8,7 +8,12 @@
     "build": "tsx script/build.ts",
     "start": "NODE_ENV=production node dist/index.cjs",
     "check": "tsc",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage",
+    "test:api": "cd apps/api && vitest",
+    "test:web": "cd apps/web && vitest"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
