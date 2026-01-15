@@ -85,7 +85,7 @@ export default function SnippetForm() {
                       <FormControl>
                         <Textarea
                           data-testid="textarea-snippet-content"
-                          placeholder="Paste your code snippet here..."
+                          placeholder="Paste your information snippet here..."
                           className="min-h-[300px] font-mono text-sm resize-y"
                           style={{
                             whiteSpace: "pre",
