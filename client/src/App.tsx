@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { trpc, trpcClient } from "@/lib/trpc";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
+import SnippetScreen from "./pages/snippet";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,6 +20,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/snippet" component={SnippetScreen}/>
       <Route component={NotFound} />
     </Switch>
   );
