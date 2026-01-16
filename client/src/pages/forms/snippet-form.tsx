@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import {trpc} from "@/lib/trpc"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,14 +19,18 @@ import {
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { Code2, Plus, X, Hash, Send } from "lucide-react";
+
 const snippetFormSchema = z.object({
   content: z.string().min(1, "Snippet content is required"),
   tags: z.array(z.string()).default([]),
 });
 type SnippetFormValues = z.infer<typeof snippetFormSchema>;
+
 export default function SnippetForm() {
+  
   const { toast } = useToast();
   const [tagInput, setTagInput] = useState("");
+  
   const form = useForm<SnippetFormValues>({
     resolver: zodResolver(snippetFormSchema),
     defaultValues: {
@@ -33,7 +38,9 @@ export default function SnippetForm() {
       tags: [],
     },
   });
+  
   const tags = form.watch("tags");
+  
   const handleAddTag = useCallback(() => {
     const trimmedTag = tagInput.trim().replace(/^#/, "");
     if (trimmedTag && !tags.includes(trimmedTag)) {
@@ -41,6 +48,7 @@ export default function SnippetForm() {
       setTagInput("");
     }
   }, [tagInput, tags, form]);
+  
   const handleTagInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -53,12 +61,23 @@ export default function SnippetForm() {
       tags.filter((tag) => tag !== tagToRemove)
     );
   };
+
+  const createSnippetMutation = trpc.createSnippet.useMutation({
+    onSuccess: () => {
+      form.reset()
+      console.log("Snippet created")
+    }
+  })
+  
   const onSubmit = async (data: SnippetFormValues) => {
     console.log("Snippet data ready for API:", data);
     toast({
       title: "Snippet Ready",
       description: `Content: ${data.content.substring(0, 50)}... with ${data.tags.length} tags`,
     });
+    createSnippetMutation.mutate(data)
+    
+    
   };
   return (
     <div className="min-h-screen bg-background p-6">
@@ -109,7 +128,7 @@ export default function SnippetForm() {
                       <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         data-testid="input-tag"
-                        placeholder="Type a tag name (e.g., #javascript)"
+                        placeholder="Type a tag name (e.g., #Alliance)"
                         value={tagInput}
                         onChange={(e) => setTagInput(e.target.value)}
                         onKeyDown={handleTagInputKeyDown}
