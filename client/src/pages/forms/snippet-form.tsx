@@ -116,7 +116,7 @@ export default function SnippetForm() {
                       <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         data-testid="input-tag"
-                        placeholder="Type a tag name (e.g., #javascript)"
+                        placeholder="Type a tag name (e.g., #Alliance)"
                         value={tagInput}
                         onChange={(e) => setTagInput(e.target.value)}
                         onKeyDown={handleTagInputKeyDown}
