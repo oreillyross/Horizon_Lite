@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import {trpc} from "@/lib/trpc"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,12 +61,21 @@ export default function SnippetForm() {
       tags.filter((tag) => tag !== tagToRemove)
     );
   };
+
+  const createSnippetMutation = trpc.createSnippet.useMutation({
+    onSuccess: () => {
+      console.log("Snippet created")
+    }
+  })
+  
   const onSubmit = async (data: SnippetFormValues) => {
     console.log("Snippet data ready for API:", data);
     toast({
       title: "Snippet Ready",
       description: `Content: ${data.content.substring(0, 50)}... with ${data.tags.length} tags`,
     });
+    createSnippetMutation.mutate(data)
+     
   };
   return (
     <div className="min-h-screen bg-background p-6">
