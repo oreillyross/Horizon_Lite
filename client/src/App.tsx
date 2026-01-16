@@ -6,6 +6,7 @@ import { trpc, trpcClient } from "@/lib/trpc";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import SnippetScreen from "./pages/snippet";
+import NavigationBar from "@/components/NavigationBar";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -20,7 +21,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
-      <Route path="/snippet" component={SnippetScreen}/>
+      <Route path="/snippet" component={SnippetScreen} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -32,6 +33,15 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <Toaster />
+          <NavigationBar 
+            items={[
+              { linkName: "Home", href: "/" },
+              { linkName: "Snippets", href: "/snippets" },
+              { linkName: "Tags", href: "/tags" },
+              { linkName: "Profile", href: "/profile" }
+            ]} 
+            activeItem="Snippets" 
+          />
           <Router />
         </TooltipProvider>
       </QueryClientProvider>
