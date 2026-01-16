@@ -7,6 +7,7 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import SnippetScreen from "./pages/snippet";
 import NavigationBar from "@/components/NavigationBar";
+import SnippetShow from "./pages/snippet-show";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -21,7 +22,8 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
-      <Route path="/snippet" component={SnippetScreen} />
+      <Route path="/snippet/create" component={SnippetScreen} />
+      <Route path="/snippet/show" component={SnippetShow} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -36,8 +38,8 @@ function App() {
           <NavigationBar 
             items={[
               { linkName: "Home", href: "/" },
-              { linkName: "Snippets", href: "/snippets" },
-              { linkName: "Tags", href: "/tags" },
+              { linkName: "Snippets", href: "/snippet/show" },
+              { linkName: "Create", href: "/snippet/create" },
               { linkName: "Profile", href: "/profile" }
             ]} 
             activeItem="Snippets" 
