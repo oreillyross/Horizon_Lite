@@ -1,11 +1,14 @@
-import { trpc } from "@/lib/trpc";
+import {trpc} from "@/lib/trpc"
 import { Loader2, Database, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { CardContent } from "@/components/ui/card";
+import { CardContent } from "@/components/ui/card"; // if separate
+
 
 export default function SnippetShow() {
-  const snippetQuery = trpc.getSnippets.useQuery();
 
+  const snippetQuery = trpc.getSnippets.useQuery() 
+  // const deleteSnippetMutation = trpc.deleteSnippet.useMutation();
+  
   return (
     <div>
       <CardContent>
@@ -29,7 +32,7 @@ export default function SnippetShow() {
                     <div className="min-w-0 flex-1">
                       <p className="font-medium truncate">{snippet.content.slice(0, 100)}...</p>
                       <p className="text-xs text-muted-foreground font-mono">
-                        {snippet.tags?.join(", ") || "no tags"}
+                        {snippet.tags?.join(', ') || 'no tags'}
                       </p>
                     </div>
                   </div>
@@ -37,13 +40,15 @@ export default function SnippetShow() {
                     ID: {snippet.id}
                   </p>
                 </div>
-                <Button
+                {/* <Button
                   variant="ghost"
                   size="icon"
                   data-testid={`button-delete-${snippet.id}`}
+                  onClick={() => deleteSnippetMutation.mutate({ id: snippet.id })}
+                  disabled={deleteSnippetMutation.isPending}
                 >
                   <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
+                </Button> */}
               </div>
             ))}
           </div>
@@ -55,6 +60,7 @@ export default function SnippetShow() {
           </div>
         )}
       </CardContent>
+
     </div>
-  );
+  )
 }
