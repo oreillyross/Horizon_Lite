@@ -31,6 +31,7 @@ export default function SnippetForm() {
   const { toast } = useToast();
   const [tagInput, setTagInput] = useState("");
   
+  
   const form = useForm<SnippetFormValues>({
     resolver: zodResolver(snippetFormSchema),
     defaultValues: {
@@ -64,6 +65,7 @@ export default function SnippetForm() {
 
   const createSnippetMutation = trpc.createSnippet.useMutation({
     onSuccess: () => {
+      form.reset()
       console.log("Snippet created")
     }
   })
@@ -75,7 +77,8 @@ export default function SnippetForm() {
       description: `Content: ${data.content.substring(0, 50)}... with ${data.tags.length} tags`,
     });
     createSnippetMutation.mutate(data)
-     
+    
+    
   };
   return (
     <div className="min-h-screen bg-background p-6">
