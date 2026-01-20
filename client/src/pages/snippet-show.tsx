@@ -15,6 +15,7 @@ type Snippet = {
   tags: string[];
 };
 
+
 export default function SnippetTable() {
   const snippetsQuery = trpc.getSnippets.useQuery();
   const data = snippetsQuery.data ?? [];
