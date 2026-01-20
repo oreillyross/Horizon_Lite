@@ -12,6 +12,13 @@ interface NavigationBarProps {
   items: NavItem[];
 }
 
+function isActiveRoute(pathname: string, href: string): boolean {
+  if (href === '/') {
+    return pathname === '/';
+  }
+  return pathname === href || pathname.startsWith(href + '/');
+}
+
 export default function NavigationBar({ items }: NavigationBarProps) {
   const [pathname] = useLocation();
 
@@ -20,14 +27,14 @@ export default function NavigationBar({ items }: NavigationBarProps) {
       <div className="text-xl font-bold">Horizon Lite</div>
       <div className="flex items-center space-x-2">
         {items.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive = isActiveRoute(pathname, item.href);
           return (
             <Button
               key={item.href}
               asChild
               variant="ghost"
               className={cn(
-                "font-medium transition-colors",
+                "font-medium transition-colors duration-200",
                 isActive ? "bg-blue-500 text-white hover:bg-blue-600" : "hover:bg-blue-200"
               )}
               size="sm"

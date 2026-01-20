@@ -76,4 +76,35 @@ describe('NavigationBar', () => {
     expect(screen.getByText('Create')).toBeInTheDocument();
     expect(screen.getByText('Profile')).toBeInTheDocument();
   });
+
+  it('highlights Snippets link for nested routes under /snippet/show', () => {
+    renderWithRouter('/snippet/show/123');
+    
+    const snippetsLink = screen.getByTestId('nav-link-snippet-show');
+    expect(snippetsLink.className).toContain('bg-blue-500');
+    expect(snippetsLink.className).toContain('text-white');
+  });
+
+  it('highlights Create link for nested routes under /snippet/create', () => {
+    renderWithRouter('/snippet/create/new');
+    
+    const createLink = screen.getByTestId('nav-link-snippet-create');
+    expect(createLink.className).toContain('bg-blue-500');
+    expect(createLink.className).toContain('text-white');
+  });
+
+  it('does not highlight Home for other root-level paths', () => {
+    renderWithRouter('/other');
+    
+    const homeLink = screen.getByTestId('nav-link-');
+    expect(homeLink.className).not.toContain('bg-blue-500');
+  });
+
+  it('has CSS transition classes for smooth highlighting', () => {
+    renderWithRouter('/');
+    
+    const homeLink = screen.getByTestId('nav-link-');
+    expect(homeLink.className).toContain('transition-colors');
+    expect(homeLink.className).toContain('duration-200');
+  });
 });
