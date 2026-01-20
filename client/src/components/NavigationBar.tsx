@@ -1,5 +1,5 @@
 "use client";
-import {Link} from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -10,25 +10,33 @@ interface NavItem {
 
 interface NavigationBarProps {
   items: NavItem[];
-  activeItem?: string;
 }
 
-export default function NavigationBar({ items, activeItem }: NavigationBarProps) {
+export default function NavigationBar({ items }: NavigationBarProps) {
+  const [pathname] = useLocation();
+
   return (
     <nav className="flex items-center justify-between p-4 border-b">
       <div className="text-xl font-bold">Horizon Lite</div>
       <div className="flex items-center space-x-2">
-        {items.map((item) => (
-          <Button
-            key={item.href}
-            asChild
-            variant={activeItem === item.linkName ? "default" : "ghost"}
-            className="font-medium"
-            size="sm"
-          >
-            <Link href={item.href}>{item.linkName}</Link>
-          </Button>
-        ))}
+        {items.map((item) => {
+          const isActive = pathname === item.href;
+          return (
+            <Button
+              key={item.href}
+              asChild
+              variant="ghost"
+              className={cn(
+                "font-medium transition-colors",
+                isActive ? "bg-blue-500 text-white hover:bg-blue-600" : "hover:bg-blue-200"
+              )}
+              size="sm"
+              data-testid={`nav-link-${item.href.replace(/\//g, '-').replace(/^-/, '')}`}
+            >
+              <Link href={item.href}>{item.linkName}</Link>
+            </Button>
+          );
+        })}
       </div>
     </nav>
   );
