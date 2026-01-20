@@ -42,7 +42,6 @@ function App() {
               { linkName: "Create", href: "/snippet/create" },
               { linkName: "Profile", href: "/profile" },
             ]}
-            activeItem="Snippets"
           />
           <Router />
         </TooltipProvider>
