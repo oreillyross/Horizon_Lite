@@ -5,19 +5,19 @@ import {
   flexRender,
   ColumnDef,
 } from "@tanstack/react-table";
+import { trpc } from "@/lib/trpc";
+import { Loader2 } from "lucide-react";
 
 type Snippet = {
   id: string;
-  createdAt: string;
+  createdAt: Date;
   content: string;
   tags: string[];
 };
 
-interface Props {
-  data: Snippet[];
-}
-
-export function SnippetTable({ data }: Props) {
+export default function SnippetTable() {
+  const snippetsQuery = trpc.getSnippets.useQuery();
+  const data = snippetsQuery.data ?? [];
   
   
   
@@ -26,7 +26,7 @@ export function SnippetTable({ data }: Props) {
       {
         header: "Created At",
         accessorKey: "createdAt",
-        cell: info => new Date(info.getValue() as string).toLocaleString(),
+        cell: info => (info.getValue() as Date).toLocaleString(),
       },
       {
         header: "Content",
@@ -47,9 +47,17 @@ export function SnippetTable({ data }: Props) {
     getCoreRowModel: getCoreRowModel(),
   });
 
+  if (snippetsQuery.isLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   return (
     <div className="p-4">
-      <table className="min-w-full border border-gray-300">
+      <table className="min-w-full border border-gray-300 dark:border-gray-700">
         <thead className="bg-gray-100">
           {table.getHeaderGroups().map(headerGroup => (
             <tr key={headerGroup.id}>
