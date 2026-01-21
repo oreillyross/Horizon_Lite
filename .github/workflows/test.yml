@@ -1,0 +1,24 @@
+name: Vitest Tests
+on:
+  pull_request:
+    branches: [develop]
+  push:
+    branches: [develop]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'  # Match your local Node version
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci  # Faster, cleaner than npm install in CI
+
+      - name: Run Vitest
+        run: npm test  # Matches your exact local command

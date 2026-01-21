@@ -1,0 +1,53 @@
+navigation-links-spec.yml
+=========================
+
+user_story: |
+  As a user navigating the application, I want the NavigationBar to visually highlight the 
+  current active route with a blue background so I can easily see my current location.
+
+acceptance_criteria:
+  - Home link shows bg-blue-500 when pathname === '/home'
+  - Snippets/Show link shows bg-blue-500 when pathname === '/snippets/show'
+  - Snippets/Create link shows bg-blue-500 when pathname === '/snippets/create'
+  - No highlight (default styling) on other routes
+  - Smooth transitions between highlight states
+  - Tests pass for all three routes + negative case
+
+implementation_tasks:
+  - task: Update NavigationBar with useLocation
+    description: |
+      Import useLocation from "wouter" and add conditional className to each nav link:
+      className={pathname === '/home' ? 'bg-blue-500 text-white' : 'hover:bg-blue-200'}
+    files: [NavigationBar.jsx]
+    verification: Manual navigation test in Replit preview
+    commit_message: "feat(navigation): task 1 - add useLocation hook"
+
+  - task: Add Jest snapshot tests
+    description: |
+      Create NavigationBar.test.jsx using wouter's memoryLocation:
+      test('highlights /home route') - expect Home link to have bg-blue-500 class
+    files: [NavigationBar.test.jsx]
+    verification: npm test -- --coverage
+    commit_message: "test(navigation): task 2 - add route highlight tests"
+
+  - task: Edge cases and polish
+    description: |
+      Test partial matches if needed (pathname.startsWith('/snippets/show'))
+      Add CSS transitions for smooth highlight changes
+      Verify no highlight on root path '/'
+    files: [NavigationBar.jsx, NavigationBar.test.jsx]
+    verification: Full test suite + manual testing all routes
+    commit_message: "feat(navigation): task 3 - edge cases and polish"
+
+test_scenarios:
+  - route: "/home"
+    expected: "Home link has bg-blue-500 class"
+  - route: "/snippets/show"
+    expected: "Snippets/Show link has bg-blue-500 class" 
+  - route: "/snippets/create"
+    expected: "Snippets/Create link has bg-blue-500 class"
+  - route: "/"
+    expected: "No links have bg-blue-500 class"
+
+wouter_hooks:
+  useLocation: "Destructure [pathname] = useLocation()"
