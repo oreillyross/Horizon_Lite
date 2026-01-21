@@ -11,6 +11,8 @@ export default defineConfig({
     exclude: [
       "**/node_modules/**",
       "**/dist/**",
+      "**/.cache/**",
+      "**/.bun/**",
       ".next/**",
       "packages/db/migrations/**",
     ],
