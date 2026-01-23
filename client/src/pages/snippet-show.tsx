@@ -19,7 +19,12 @@ type Snippet = {
 export default function SnippetTable() {
   const snippetsQuery = trpc.getSnippets.useQuery();
   const data = snippetsQuery.data ?? [];
-  
+
+  const deleteSnippetMutation = trpc.deleteSnippet.useMutation({
+    onSuccess: () => {
+      snippetsQuery.refetch()
+    }
+  })
   
   
   const columns = React.useMemo<ColumnDef<Snippet>[]>(
@@ -38,8 +43,27 @@ export default function SnippetTable() {
         accessorKey: "tags",
         cell: info => (info.getValue() as string[]).join(", "),
       },
+      {
+        header: "Actions",
+        id: "actions",
+        cell: ({ row }) => {
+          const snippet = row.original;
+          return (
+            <button
+              className="text-red-500 hover:text-red-700 disabled:opacity-50"
+              onClick={() =>
+                deleteSnippetMutation.mutate({ id: snippet.id })
+              }
+              disabled={deleteSnippetMutation.isPending}
+              aria-label="Delete snippet"
+            >
+              🗑️
+            </button>
+          );
+        },
+      },
     ],
-    []
+    [deleteSnippetMutation]
   );
 
   const table = useReactTable({
