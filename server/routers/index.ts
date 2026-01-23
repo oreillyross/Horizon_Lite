@@ -15,6 +15,12 @@ export const appRouter = router({
     return await snippetStorage.getSnippets();
   }),
 
+  deleteSnippet: publicProcedure
+    .input(z.object({id: z.string()}))
+    .mutation(async ({input}) => {
+      return await snippetStorage.deleteSnippet(input.id)
+    }),
+
   health: publicProcedure.query(() => {
     return { status: "ok", timestamp: new Date().toISOString() };
   }),
