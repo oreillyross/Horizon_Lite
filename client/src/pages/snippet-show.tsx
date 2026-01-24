@@ -8,7 +8,7 @@ import {
 import { trpc } from "@/lib/trpc";
 import { Loader2 } from "lucide-react";
 
-type Snippet = {
+export type Snippet = {
   id: string;
   createdAt: Date;
   content: string;
@@ -19,7 +19,14 @@ type Snippet = {
 export default function SnippetTable() {
   const snippetsQuery = trpc.getSnippets.useQuery();
   const data = snippetsQuery.data ?? [];
+
+  const utils = trpc.useUtils()
   
+  const deleteSnippetMutation = trpc.deleteSnippet.useMutation({
+    onSuccess: (_,{id}) => {
+      utils.getSnippets.setData(undefined, old => old?.filter(s => s.id !== id))
+    }
+  })
   
   
   const columns = React.useMemo<ColumnDef<Snippet>[]>(
@@ -38,8 +45,29 @@ export default function SnippetTable() {
         accessorKey: "tags",
         cell: info => (info.getValue() as string[]).join(", "),
       },
+      {
+        header: "Actions",
+        id: "actions",
+        cell: ({ row }) => {
+          const snippet = row.original;
+          return (
+            <button
+              className="text-red-500 hover:text-red-700 disabled:opacity-50"
+              onClick={() => {
+                if (confirm(`Delete "${snippet.content.substring(0, 30)}..."?`)) {
+                  deleteSnippetMutation.mutate({ id: snippet.id });
+                }
+              }}
+              disabled={deleteSnippetMutation.isPending}
+              aria-label="Delete snippet"
+            >
+              🗑️
+            </button>
+          );
+        },
+      },
     ],
-    []
+    [deleteSnippetMutation]
   );
 
   const table = useReactTable({
@@ -51,7 +79,7 @@ export default function SnippetTable() {
   if (snippetsQuery.isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <Loader2 role="status" aria-label="Loading Snippets" className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
   }

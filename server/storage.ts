@@ -53,6 +53,7 @@ export interface ISnippetStorage {
 }
 
 export class SnippetStorage implements ISnippetStorage {
+  
   async createSnippet(insertSnippet: InsertSnippet): Promise<Snippet> {
     const [snippet] = await db
       .insert(snippets)
@@ -62,6 +63,11 @@ export class SnippetStorage implements ISnippetStorage {
   }
   async getSnippets(): Promise<Snippet[]> {
     return await db.select().from(snippets);
+  }
+
+  async deleteSnippet(id: string) {
+    const result = await db.delete(snippets).where(eq(snippets.id, id)).returning()
+    return result[0]
   }
 }
 
