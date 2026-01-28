@@ -62,8 +62,9 @@ export default function EditSnippetScreen() {
       <h1 className="text-xl font-semibold">Edit Snippet</h1>
 
       <div>
-        <label className="block text-sm font-medium mb-1">Content</label>
+        <label htmlFor="snippet-content" className="block text-sm font-medium mb-1">Content</label>
         <textarea
+          id="snippet-content"
           className="w-full min-h-[160px] border rounded p-2"
           value={content}
           onChange={e => setContent(e.target.value)}
@@ -71,8 +72,9 @@ export default function EditSnippetScreen() {
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">Tags</label>
+        <label htmlFor="snippet-tags" className="block text-sm font-medium mb-1">Tags</label>
         <input
+          id="snippet-tags"
           className="w-full border rounded p-2"
           value={tags}
           onChange={e => setTags(e.target.value)}
