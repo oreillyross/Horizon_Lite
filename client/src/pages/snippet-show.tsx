@@ -64,6 +64,7 @@ export default function SnippetTable() {
           const snippet = row.original;
           return (
             <button
+              
               className="text-red-500 hover:text-red-700 disabled:opacity-50"
               onClick={() => {
                 if (
