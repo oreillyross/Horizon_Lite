@@ -10,6 +10,7 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUsers(): Promise<User[]>;
   getUserByUsername(username: string): Promise<User | undefined>;
+
   createUser(user: InsertUser): Promise<User>;
   deleteUser(id: string): Promise<boolean>;
 }
@@ -50,10 +51,13 @@ export class DatabaseStorage implements IStorage {
 export interface ISnippetStorage {
   getSnippets(): Promise<Snippet[]>;
   createSnippet(snippet: Snippet): Promise<Snippet>;
+  updateSnippet(
+    id: string,
+    data: Pick<InsertSnippet, "content" | "tags">,
+  ): Promise<Snippet>;
 }
 
 export class SnippetStorage implements ISnippetStorage {
-  
   async createSnippet(insertSnippet: InsertSnippet): Promise<Snippet> {
     const [snippet] = await db
       .insert(snippets)
@@ -65,12 +69,35 @@ export class SnippetStorage implements ISnippetStorage {
     return await db.select().from(snippets);
   }
 
+  async updateSnippet(
+    id: string,
+    data: Pick<Snippet, "content" | "tags">,
+  ): Promise<Snippet> {
+    const [updated] = await db
+      .update(snippets)
+      .set({
+        content: data.content,
+        tags: data.tags,
+      })
+      .where(eq(snippets.id, id))
+      .returning();
+
+    if (!updated) {
+      throw new Error("Snippet not found");
+    }
+
+    return updated;
+  }
+
   async deleteSnippet(id: string) {
-    const result = await db.delete(snippets).where(eq(snippets.id, id)).returning()
-    return result[0]
+    const result = await db
+      .delete(snippets)
+      .where(eq(snippets.id, id))
+      .returning();
+    return result[0];
   }
 }
 
-export const snippetStorage = new SnippetStorage()
+export const snippetStorage = new SnippetStorage();
 
 export const storage = new DatabaseStorage();

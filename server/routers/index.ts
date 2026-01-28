@@ -15,10 +15,26 @@ export const appRouter = router({
     return await snippetStorage.getSnippets();
   }),
 
+  updateSnippet: publicProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        content: z.string(),
+        tags: z.array(z.string()),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      console.log(input.tags)
+      return await snippetStorage.updateSnippet(input.id, {
+        content: input.content,
+        tags: input.tags,
+      });
+    }),
+
   deleteSnippet: publicProcedure
-    .input(z.object({id: z.string()}))
-    .mutation(async ({input}) => {
-      return await snippetStorage.deleteSnippet(input.id)
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ input }) => {
+      return await snippetStorage.deleteSnippet(input.id);
     }),
 
   health: publicProcedure.query(() => {
