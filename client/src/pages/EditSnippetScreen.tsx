@@ -4,6 +4,18 @@ import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 
 export default function EditSnippetScreen() {
+  
+  const utils = trpc.useUtils();
+
+  const updateSnippetMutation = trpc.updateSnippet.useMutation({
+    onSuccess: updated => {
+      utils.getSnippets.setData(undefined, old =>
+        old?.map(s => (s.id === updated.id ? updated : s))
+      );
+      setLocation("/snippet/show");
+    },
+  });
+
   const { id } = useParams<{ id: string }>();
   const [, setLocation] = useLocation();
 
@@ -70,11 +82,22 @@ export default function EditSnippetScreen() {
 
       <div className="flex gap-3">
         <button
-          className="px-4 py-2 bg-black text-white rounded"
-          type="submit"
+          className="px-4 py-2 bg-black text-white rounded disabled:opacity-50"
+          onClick={() =>
+            updateSnippetMutation.mutate({
+              id: snippet.id,
+              content,
+              tags: tags
+                .split(",")
+                .map(t => t.trim())
+                .filter(Boolean),
+            })
+          }
+          disabled={updateSnippetMutation.isPending}
         >
           Save
         </button>
+
         <button
           className="px-4 py-2 border rounded"
           type="button"
