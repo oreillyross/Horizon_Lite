@@ -111,7 +111,7 @@ describe("SnippetTable", () => {
 
     renderWithQueryClient(<SnippetTable />);
 
-    const trashIcons = screen.getAllByLabelText("Delete snippet");
+    const trashIcons = screen.getAllByLabelText(/delete snippet/i);
     expect(trashIcons).toHaveLength(2);
 
     fireEvent.click(trashIcons[0]);

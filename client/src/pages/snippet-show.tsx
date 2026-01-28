@@ -64,32 +64,12 @@ export default function SnippetTable() {
           const snippet = row.original;
           return (
             <button
+              
               className="text-red-500 hover:text-red-700 disabled:opacity-50"
               onClick={() => {
                 if (
                   confirm(`Delete "${snippet.content.substring(0, 30)}..."?`)
                 ) {
-                  deleteSnippetMutation.mutate({ id: snippet.id });
-                }
-              }}
-              disabled={deleteSnippetMutation.isPending}
-              aria-label="Delete snippet"
-            >
-              🗑️
-            </button>
-          );
-        },
-      },
-      {
-        header: "Actions",
-        id: "actions",
-        cell: ({ row }) => {
-          const snippet = row.original;
-          return (
-            <button
-              className="text-red-500 hover:text-red-700 disabled:opacity-50"
-              onClick={() => {
-                if (confirm(`Delete "${snippet.content.substring(0, 30)}..."?`)) {
                   deleteSnippetMutation.mutate({ id: snippet.id });
                 }
               }}

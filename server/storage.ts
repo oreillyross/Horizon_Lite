@@ -58,7 +58,6 @@ export interface ISnippetStorage {
 }
 
 export class SnippetStorage implements ISnippetStorage {
-  
   async createSnippet(insertSnippet: InsertSnippet): Promise<Snippet> {
     const [snippet] = await db
       .insert(snippets)
