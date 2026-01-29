@@ -106,16 +106,12 @@ export default function SnippetForm() {
                         <Textarea
                           data-testid="textarea-snippet-content"
                           placeholder="Paste your information snippet here..."
-                          className="min-h-[300px] font-mono text-sm resize-y"
-                          style={{
-                            whiteSpace: "pre",
-                            overflowX: "auto",
-                          }}
+                          className="min-h-[300px] font-mono text-sm resize-y whitespace-pre-wrap break-words"
                           {...field}
                         />
                       </FormControl>
                       <FormDescription>
-                        Multi-column code area - supports horizontal scrolling for long lines
+                       Capture the substance of the information snippet here, including a title
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
