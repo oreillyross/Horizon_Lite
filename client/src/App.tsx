@@ -43,6 +43,7 @@ function App() {
             items={[
               { linkName: "Home", href: "/" },
               { linkName: "Snippets", href: "/snippet/show" },
+              { linkName: "Tags", href: "/tags/show" },
               { linkName: "Create", href: "/snippet/create" },
               { linkName: "Profile", href: "/profile" },
             ]}
