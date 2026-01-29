@@ -127,8 +127,7 @@ export default function EditSnippetScreen() {
           </label>
           <Textarea
             id="snippet-content"
-            className="min-h-[160px] font-mono text-sm resize-y"
-            style={{ whiteSpace: "pre", overflowX: "auto" }}
+            className="min-h-[300px] font-mono text-sm resize-y whitespace-pre-wrap break-words"
             value={form.watch("content")}
             {...form.register("content")}
             onChange={(e) =>
