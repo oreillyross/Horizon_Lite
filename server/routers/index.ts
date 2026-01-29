@@ -37,6 +37,10 @@ export const appRouter = router({
       return await snippetStorage.deleteSnippet(input.id);
     }),
 
+  getTags: publicProcedure.query(async () => {
+    return await snippetStorage.getTags()
+  }),
+
   health: publicProcedure.query(() => {
     return { status: "ok", timestamp: new Date().toISOString() };
   }),

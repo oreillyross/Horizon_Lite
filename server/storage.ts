@@ -1,5 +1,6 @@
 import { users, type User, type InsertUser } from "@shared/schema";
 import { snippets, type Snippet, type InsertSnippet } from "@shared/schema";
+import {normalizeTag } from "./utils/tags"
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcrypt";
@@ -55,6 +56,7 @@ export interface ISnippetStorage {
     id: string,
     data: Pick<InsertSnippet, "content" | "tags">,
   ): Promise<Snippet>;
+  getTags(): Promise<Array<{tag: string, count: number}>>;
 }
 
 export class SnippetStorage implements ISnippetStorage {
@@ -68,6 +70,25 @@ export class SnippetStorage implements ISnippetStorage {
   async getSnippets(): Promise<Snippet[]> {
     return await db.select().from(snippets);
   }
+
+  async getTags(): Promise<Array<{ tag: string; count: number }>> {
+    const all = await this.getSnippets();
+
+    const counts = new Map<string, number>();
+
+    for (const s of all) {
+      for (const raw of s.tags ?? []) {
+        const tag = normalizeTag(raw);
+        if (!tag) continue;
+        counts.set(tag, (counts.get(tag) ?? 0) + 1);
+      }
+    }
+
+    return [...counts.entries()]
+      .map(([tag, count]) => ({ tag, count }))
+      .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
+  }
+  
 
   async updateSnippet(
     id: string,
