@@ -26,3 +26,8 @@ This is the real “scan history” trick: **conventional commits + good PR titl
 feat(home): add home screen scaffold  
 fix(snippets): ensure tags parse correctly  
 test(edit): wait for RHF submit before asserting mutate
+
+Then use it like so 
+
+``bash
+git log --oneline --grep "feat(home)"
