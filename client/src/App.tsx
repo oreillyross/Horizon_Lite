@@ -9,6 +9,7 @@ import SnippetScreen from "./pages/snippet";
 import NavigationBar from "@/components/NavigationBar";
 import SnippetTable from "./pages/snippet-show";
 import EditSnippetScreen from "./pages/EditSnippetScreen"
+import TagsScreen from "./pages/TagsScreen";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -26,6 +27,7 @@ function Router() {
       <Route path="/snippet/create" component={SnippetScreen} />
       <Route path="/snippet/show" component={SnippetTable} />
       <Route path="snippet/:id/edit" component={EditSnippetScreen}/>
+      <Route path="/tags/show" component={TagsScreen} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -29,6 +29,9 @@ export default function Home() {
   const usersQuery = trpc.getUsers.useQuery();
   const snippetsQuery = trpc.getSnippets.useQuery();
 
+  const {data} = trpc.getTags.useQuery()
+  console.log("TAGS", data)
+
   const snippets = snippetsQuery.data ?? [];
   const users = usersQuery.data ?? [];
 
