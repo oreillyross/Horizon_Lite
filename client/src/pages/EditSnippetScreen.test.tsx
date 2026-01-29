@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
 
 import EditSnippetScreen from "./EditSnippetScreen";
@@ -113,13 +113,13 @@ describe("EditSnippetScreen", () => {
     render(<EditSnippetScreen />);
 
     const textarea = screen.getByLabelText(/content/i);
-    const tagsInput = screen.getByLabelText(/tags/i);
-
+   
     expect(textarea).toHaveValue("Hello world");
-    expect(tagsInput).toHaveValue("js, react");
+    expect(screen.getByText("js")).toBeInTheDocument()
+    expect(screen.getByText("react")).toBeInTheDocument()
   });
 
-  it("edits content/tags and calls mutate with parsed tags", () => {
+  it("edits content/tags and calls mutate with parsed tags", async () => {
     arrangeQuery({
       data: [{ id: "1", content: "Old", tags: ["a"] }],
     });
@@ -127,23 +127,29 @@ describe("EditSnippetScreen", () => {
 
     render(<EditSnippetScreen />);
 
-    fireEvent.change(screen.getByLabelText(/content/i), {
-      target: { value: "New content" },
-    });
+    const textarea = screen.getByLabelText(/content/i);
+    fireEvent.change(textarea, { target: { value: "New content" } });
+    expect(textarea).toHaveValue("New content");
 
-    fireEvent.change(screen.getByLabelText(/tags/i), {
-      target: { value: "  ts, react , ,  " },
-    });
+    const tagInput = screen.getByLabelText(/tags/i);
+    fireEvent.change(tagInput, { target: { value: "#ts" } });
 
-    fireEvent.click(screen.getByRole("button", { name: /save/i }));
+    fireEvent.click(screen.getByRole("button", { name: /add tag/i }));
+    expect(screen.getByText("ts")).toBeInTheDocument();
 
-    expect(mockMutate).toHaveBeenCalledTimes(1);
+    const saveBtn = screen.getByRole("button", { name: /^save$/i });
+    await waitFor(() => expect(saveBtn).not.toBeDisabled())
+
+    fireEvent.click(saveBtn);
+
+    await waitFor(() => expect(mockMutate).toHaveBeenCalledTimes(1));
     expect(mockMutate).toHaveBeenCalledWith({
       id: "1",
       content: "New content",
-      tags: ["ts", "react"],
+      tags: ["a", "ts"],
     });
   });
+
 
   it("disables Save while mutation is pending", () => {
     arrangeQuery({
