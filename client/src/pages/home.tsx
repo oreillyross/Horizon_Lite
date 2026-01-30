@@ -131,7 +131,7 @@ export default function Home() {
       {/* Top bar */}
       <div className="flex items-center justify-between gap-4">
         <div>
-        
+
           <p className="mt-1 text-sm text-muted-foreground">
             Quick overview and recent activity.
           </p>
@@ -160,37 +160,6 @@ export default function Home() {
       />
 
 
-      {/* Quick actions */}
-      <section className="rounded-lg border bg-background p-6 shadow-sm">
-        <div className="flex items-center justify-between gap-4">
-          <h2 className="text-xl font-medium">Quick actions</h2>
-          {(snippetsQuery.isFetching || tagsQuery.isFetching) && !isLoading ? (
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-          ) : null}
-        </div>
-
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Link href="/snippet/create">
-            <a className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">
-              Create snippet
-            </a>
-          </Link>
-          <Link href="/snippet/show">
-            <a className="rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted">
-              View all snippets
-            </a>
-          </Link>
-          <Link href="/tags">
-            <a className="rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted">
-              Manage tags
-            </a>
-          </Link>
-        </div>
-
-        <p className="mt-3 text-sm text-muted-foreground">
-          Tip: keep this screen lean. It’s your “jump pad” into flow.
-        </p>
-      </section>
 
       {/* Recent snippets */}
       <section className="rounded-lg border bg-background p-6 shadow-sm">
