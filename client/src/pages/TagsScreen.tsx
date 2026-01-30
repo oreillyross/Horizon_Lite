@@ -72,7 +72,7 @@ export default function TagsScreen() {
             {rows.map((t) => (
               <li key={t.tag} className="flex items-center justify-between p-4">
                 <Link
-                  to={`/snippet/show?tag=${encodeURIComponent(t.tag)}`}
+                  to={`/snippet/show?tag=${encodeURIComponent(t.slug)}`}
                   className="font-mono text-sm text-primary hover:underline"
                 >
                   #{t.tag}

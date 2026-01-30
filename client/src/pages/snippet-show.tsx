@@ -26,8 +26,6 @@ export default function SnippetTable() {
     return params.get("tag");
   }, [search]);
 
-  console.log(activeTag)
-
   const rawData = snippetsQuery.data ?? [];
   
   const data = useMemo(() => {
