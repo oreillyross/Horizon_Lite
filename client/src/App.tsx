@@ -26,7 +26,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/snippet/create" component={SnippetScreen} />
       <Route path="/snippet/show" component={SnippetTable} />
-      <Route path="snippet/:id/edit" component={EditSnippetScreen}/>
+      <Route path="/snippet/:id/edit" component={EditSnippetScreen}/>
       <Route path="/tags/show" component={TagsScreen} />
       <Route component={NotFound} />
     </Switch>

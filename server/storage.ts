@@ -71,21 +71,21 @@ export class SnippetStorage implements ISnippetStorage {
     return await db.select().from(snippets);
   }
 
-  async getTags(): Promise<Array<{ tag: string; count: number }>> {
+  async getTags(): Promise<Array<{ tag: string; slug: string, count: number }>> {
     const all = await this.getSnippets();
 
     const counts = new Map<string, number>();
 
     for (const s of all) {
       for (const raw of s.tags ?? []) {
-        const tag = normalizeTag(raw);
+        const tag = raw;
         if (!tag) continue;
         counts.set(tag, (counts.get(tag) ?? 0) + 1);
       }
     }
 
     return [...counts.entries()]
-      .map(([tag, count]) => ({ tag, count }))
+      .map(([tag, count]) => ({ tag, slug: normalizeTag(tag), count }))
       .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
   }
   

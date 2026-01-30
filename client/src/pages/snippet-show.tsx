@@ -1,11 +1,11 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   useReactTable,
   getCoreRowModel,
   flexRender,
   ColumnDef,
 } from "@tanstack/react-table";
-import { Link } from "wouter";
+import { Link, useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Loader2 } from "lucide-react";
 
@@ -18,7 +18,24 @@ export type Snippet = {
 
 export default function SnippetTable() {
   const snippetsQuery = trpc.getSnippets.useQuery();
-  const data = snippetsQuery.data ?? [];
+
+  const search = useSearch();
+
+  const activeTag = useMemo(() => {
+    const params = new URLSearchParams(search);
+    return params.get("tag");
+  }, [search]);
+
+  const rawData = snippetsQuery.data ?? [];
+  
+  const data = useMemo(() => {
+    if (!activeTag) return rawData;
+    return rawData.filter((s) =>
+      (s.tags ?? []).some(
+        (tag) => (tag ?? "").trim().toLowerCase().replace(/\s+/g, "-") === activeTag.toLowerCase(),
+      ),
+    );
+  }, [activeTag, rawData]);
 
   const utils = trpc.useUtils();
 
@@ -64,7 +81,6 @@ export default function SnippetTable() {
           const snippet = row.original;
           return (
             <button
-              
               className="text-red-500 hover:text-red-700 disabled:opacity-50"
               onClick={() => {
                 if (
@@ -105,6 +121,15 @@ export default function SnippetTable() {
 
   return (
     <div className="p-4">
+      {activeTag && (
+        <div className="mb-3 flex items-center gap-2 text-sm">
+          <span className="rounded border px-2 py-1 font-mono">#{activeTag}</span>
+          <Link href="/snippet/show" className="text-muted-foreground hover:underline">
+            clear
+          </Link>
+        </div>
+      )}
+
       <table className="min-w-full border border-gray-300 dark:border-gray-700">
         <thead className="bg-gray-100">
           {table.getHeaderGroups().map((headerGroup) => (

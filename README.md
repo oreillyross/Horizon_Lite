@@ -1,6 +1,10 @@
 # Horizon Lite
 
-> **Spec-driven code snippets app** built with React Hook Form + Zod + tRPC + Wouter + shadcn/ui + Drizzle ORM. Clean, type-safe, performant.
+**Spec-driven information snippets app** built with React Hook Form + Zod + tRPC + Wouter + shadcn/ui + Drizzle ORM. Clean, type-safe, performant.
+
+### Motivation for this project
+
+This project demonstrates my ability to rapidly build fully performant SAAS applications using a combination of best practices, such as gitflow lite, spec driven development using LLMs and AI agents as pair programmers. Allowing me as a strategic high-level tech lead to guide the project using as many AI agents as necessary. Making the high level decisions allowing the AI agents to quickly code up approved implementations.
 
 ## ✨ Features
 

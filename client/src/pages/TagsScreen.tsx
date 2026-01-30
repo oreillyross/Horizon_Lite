@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { trpc } from "@/lib/trpc"; // adjust if your path differs
+import { Link } from "wouter";
 
 type SortKey = "count" | "alpha";
 
@@ -70,7 +71,12 @@ export default function TagsScreen() {
           <ul className="divide-y">
             {rows.map((t) => (
               <li key={t.tag} className="flex items-center justify-between p-4">
-                <div className="font-mono text-sm">#{t.tag}</div>
+                <Link
+                  to={`/snippet/show?tag=${encodeURIComponent(t.slug)}`}
+                  className="font-mono text-sm text-primary hover:underline"
+                >
+                  #{t.tag}
+                </Link>
                 <div className="rounded-full border px-3 py-1 text-xs text-muted-foreground">
                   {t.count} snippet{t.count === 1 ? "" : "s"}
                 </div>
