@@ -29,11 +29,12 @@ export default function SnippetTable() {
   console.log(activeTag)
 
   const rawData = snippetsQuery.data ?? [];
+  
   const data = useMemo(() => {
     if (!activeTag) return rawData;
     return rawData.filter((s) =>
       (s.tags ?? []).some(
-        (tag) => (tag ?? "").toLowerCase() === activeTag.toLowerCase(),
+        (tag) => (tag ?? "").trim().toLowerCase().replace(/\s+/g, "-") === activeTag.toLowerCase(),
       ),
     );
   }, [activeTag, rawData]);
