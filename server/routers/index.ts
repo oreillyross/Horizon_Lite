@@ -41,6 +41,11 @@ export const appRouter = router({
     return await snippetStorage.getTags()
   }),
 
+  globalSearch: publicProcedure
+  .input(z.object({ q: z.string().min(1), limit: z.number().int().min(1).max(50).optional() }))
+  .query(({  input }) => snippetStorage.globalSearch(input.q, input.limit ?? 20)),
+
+
   health: publicProcedure.query(() => {
     return { status: "ok", timestamp: new Date().toISOString() };
   }),

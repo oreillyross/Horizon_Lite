@@ -49,6 +49,7 @@ function App() {
             ]}
           />
           <Router />
+          
         </TooltipProvider>
       </QueryClientProvider>
     </trpc.Provider>
