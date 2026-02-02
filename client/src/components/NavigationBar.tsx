@@ -2,6 +2,7 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import {GlobalSearch} from "@/components/GlobalSearch"
 
 interface NavItem {
   linkName: string;
@@ -25,6 +26,7 @@ export default function NavigationBar({ items }: NavigationBarProps) {
   return (
     <nav className="flex items-center justify-between p-4 border-b">
       <div className="text-3xl font-bold">Horizon Lite</div>
+      <GlobalSearch/>
       <div className="flex items-center space-x-2">
         {items.map((item) => {
           const isActive = isActiveRoute(pathname, item.href);

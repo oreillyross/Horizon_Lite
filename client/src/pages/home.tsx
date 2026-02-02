@@ -100,6 +100,8 @@ function SkeletonCard() {
 export default function Home() {
   const snippetsQuery = trpc.getSnippets.useQuery();
   const tagsQuery = trpc.getTags.useQuery();
+  
+  
 
   const snippets = (snippetsQuery.data ?? []) as RecentRow[];
 
