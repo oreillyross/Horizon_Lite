@@ -46,6 +46,7 @@ function App() {
           <NavigationBar
             items={[
               { linkName: "Home", href: "/" },
+              { linkName: "Sources", href: "/sources/recent" },
               { linkName: "Snippets", href: "/snippet/show" },
               { linkName: "Tags", href: "/tags/show" },
               { linkName: "Create", href: "/snippet/create" },

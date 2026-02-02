@@ -70,6 +70,9 @@ export class DatabaseStorage implements IStorage {
 }
 
 export interface ISnippetStorage {
+  getRecentSourceItems(limit: number): Promise<any[]>;
+  refreshSources(): Promise<{ ok: true; inserted?: number }>;
+  captureSourceItem(id: string): Promise<Snippet>;
   getSnippets(): Promise<Snippet[]>;
   getSnippetById(id: string): Promise<Snippet>
   createSnippet(snippet: Snippet): Promise<Snippet>;
@@ -82,6 +85,27 @@ export interface ISnippetStorage {
 }
 
 export class SnippetStorage implements ISnippetStorage {
+  
+  async getRecentSourceItems(limit: number) {
+    // TODO: replace with drizzle query once table exists
+    return [];
+  }
+
+  async refreshSources() {
+    // TODO: crawl configured sources, insert new rows
+    return { ok: true as const, inserted: 0 };
+  }
+
+  async captureSourceItem(id: string) {
+    // TODO: load item from recent_source_items, create snippet
+    // placeholder:
+    const created = await this.createSnippet({
+      content: `Captured item ${id}`,
+      tags: [],
+    } as any);
+    return created;
+  }
+
   async globalSearch(q: string, limit = 20): Promise<GlobalSearchResult[]> {
     const query = q.trim();
     if (!query) return [];
