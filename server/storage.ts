@@ -1,8 +1,8 @@
 import { users, type User, type InsertUser } from "@shared/schema";
-import { snippets, type Snippet, type InsertSnippet } from "@shared/schema";
+import { snippets, type Snippet, type InsertSnippet, recentSourceItems, recentSources } from "@shared/schema";
 import { normalizeTag } from "./utils/tags";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import bcrypt from "bcrypt";
 
 const SALT_ROUNDS = 10;
@@ -87,8 +87,27 @@ export interface ISnippetStorage {
 export class SnippetStorage implements ISnippetStorage {
   
   async getRecentSourceItems(limit: number) {
-    // TODO: replace with drizzle query once table exists
-    return [];
+    const rows = await db
+        .select({
+          id: recentSourceItems.id,
+          title: recentSourceItems.title,
+          url: recentSourceItems.url,
+          excerpt: recentSourceItems.excerpt,
+          publishedAt: recentSourceItems.publishedAt,
+          fetchedAt: recentSourceItems.fetchedAt,
+          capturedAt: recentSourceItems.capturedAt,
+          capturedSnippetId: recentSourceItems.capturedSnippetId,
+
+          sourceId: recentSourceItems.sourceId,
+          sourceName: recentSources.name,
+        })
+        .from(recentSourceItems)
+        .innerJoin(recentSources, eq(recentSourceItems.sourceId, recentSources.id))
+        .orderBy(desc(recentSourceItems.fetchedAt))
+        .limit(limit);
+
+      return rows;
+    
   }
 
   async refreshSources() {
@@ -97,13 +116,42 @@ export class SnippetStorage implements ISnippetStorage {
   }
 
   async captureSourceItem(id: string) {
-    // TODO: load item from recent_source_items, create snippet
-    // placeholder:
-    const created = await this.createSnippet({
-      content: `Captured item ${id}`,
-      tags: [],
-    } as any);
-    return created;
+    const [item] = await db
+        .select()
+        .from(recentSourceItems)
+        .where(eq(recentSourceItems.id, id))
+        .limit(1);
+
+      if (!item) throw new Error("Source item not found");
+      if (item.capturedAt) {
+        return { alreadyCaptured: true, snippetId: item.capturedSnippetId ?? null };
+      }
+
+      // create snippet content (simple + readable)
+      const content =
+        `# ${item.title}\n\n` +
+        `${item.url}\n\n` +
+        (item.excerpt ? `${item.excerpt}\n\n` : "") +
+        (item.rawText ? `${item.rawText}\n` : "");
+
+      const [snippet] = await db
+        .insert(snippets)
+        .values({
+          content,
+          tags: [], // you said auto-tagging later
+        })
+        .returning();
+
+      await db
+        .update(recentSourceItems)
+        .set({
+          capturedAt: new Date(),
+          capturedSnippetId: snippet.id,
+        })
+        .where(eq(recentSourceItems.id, item.id));
+
+      return { alreadyCaptured: false, snippetId: snippet.id };
+    
   }
 
   async globalSearch(q: string, limit = 20): Promise<GlobalSearchResult[]> {
