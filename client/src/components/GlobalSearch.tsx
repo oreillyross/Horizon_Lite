@@ -57,7 +57,7 @@ export function GlobalSearch() {
   const onPick = (id: string) => {
     setOpen(false);
     setQ("");
-    navigate(`/snippets/${id}`); // change if your route differs
+    navigate(`/snippet/${id}`); // change if your route differs
   };
 
   return (

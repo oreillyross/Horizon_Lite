@@ -71,6 +71,7 @@ export class DatabaseStorage implements IStorage {
 
 export interface ISnippetStorage {
   getSnippets(): Promise<Snippet[]>;
+  getSnippetById(id: string): Promise<Snippet>
   createSnippet(snippet: Snippet): Promise<Snippet>;
   updateSnippet(
     id: string,
@@ -120,6 +121,12 @@ export class SnippetStorage implements ISnippetStorage {
     results.sort((a, b) => b.score - a.score);
     return results.slice(0, limit);
   }
+
+  async getSnippetById(id: string) {
+    const [row] = await db.select().from(snippets).where(eq(snippets.id, id));
+    return row ?? null;
+  }
+
 
   async createSnippet(insertSnippet: InsertSnippet): Promise<Snippet> {
     const [snippet] = await db

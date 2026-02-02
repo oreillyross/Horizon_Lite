@@ -3,6 +3,8 @@ import { z } from "zod";
 import { storage } from "../storage";
 import { snippetStorage } from "../storage";
 import { insertUserSchema, insertSnippetSchema } from "@shared/schema";
+import { TRPCError } from "@trpc/server";
+
 
 export const appRouter = router({
   createSnippet: publicProcedure
@@ -14,6 +16,16 @@ export const appRouter = router({
   getSnippets: publicProcedure.query(async () => {
     return await snippetStorage.getSnippets();
   }),
+
+
+  getSnippetById: publicProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const s = await snippetStorage.getSnippetById(input.id);
+      if (!s) throw new TRPCError({ code: "NOT_FOUND" });
+      return s;
+    }),
+
 
   updateSnippet: publicProcedure
     .input(
