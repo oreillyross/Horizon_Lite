@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "wouter";
+import { trpc } from "@/lib/trpc";
 
 function normalizeUrl(input: string) {
   const s = input.trim();
@@ -23,6 +24,11 @@ export default function WebCutScreen() {
 
   const normalized = useMemo(() => normalizeUrl(urlInput), [urlInput]);
   const host = useMemo(() => hostFromUrl(loadedUrl), [loadedUrl]);
+
+  const readable = trpc.webcutFetchReadable.useQuery(
+    { url: loadedUrl },
+    { enabled: !!loadedUrl },
+  );
 
   function onGo() {
     const u = normalizeUrl(urlInput);
@@ -48,7 +54,10 @@ export default function WebCutScreen() {
 
           <div className="flex-1" />
 
-          <Link href="/snippets" className="text-sm text-muted-foreground hover:text-foreground">
+          <Link
+            href="/snippets"
+            className="text-sm text-muted-foreground hover:text-foreground"
+          >
             Snippets
           </Link>
         </div>
@@ -94,26 +103,54 @@ export default function WebCutScreen() {
             <div className="text-sm font-semibold">No page loaded</div>
             <div className="mt-1 text-sm text-muted-foreground">
               Paste a URL above and hit <span className="font-medium">Go</span>.
-              Next step will fetch readable text and render it here.
             </div>
-
+          </div>
+        ) : readable.isLoading ? (
+          <div className="rounded-xl border p-6">
+            <div className="text-sm font-semibold">Loading…</div>
+            <div className="mt-1 text-sm text-muted-foreground">
+              Fetching readable content for{" "}
+              <span className="font-mono">{loadedUrl}</span>
+            </div>
+          </div>
+        ) : readable.isError ? (
+          <div className="rounded-xl border p-6">
+            <div className="text-sm font-semibold">Couldn’t load page</div>
+            <div className="mt-1 text-sm text-muted-foreground">
+              {(readable.error as any)?.message ?? "Unknown error"}
+            </div>
             <div className="mt-4 text-xs text-muted-foreground">
-              Tip: you can paste just <span className="font-mono">example.com</span> and we’ll
-              assume <span className="font-mono">https://</span>.
+              Try a different URL, or a site that serves normal HTML without
+              blocking bots.
+            </div>
+          </div>
+        ) : !readable.isSuccess || !readable.data ? (
+          <div className="rounded-xl border p-6">
+            <div className="text-sm font-semibold">No content</div>
+            <div className="mt-1 text-sm text-muted-foreground">
+              The fetch succeeded but returned no readable content.
             </div>
           </div>
         ) : (
           <div className="rounded-xl border p-6">
-            <div className="text-sm font-semibold">Reader (placeholder)</div>
-            <div className="mt-1 text-sm text-muted-foreground">
-              In Step 2, we’ll call the backend readability fetch and render the extracted content
-              here for reliable selection + popover capture.
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="text-sm font-semibold">
+                  {readable.data.title}
+                </div>
+                <div className="mt-1 text-xs text-muted-foreground">
+                  {readable.data.host} ·{" "}
+                  <span className="font-mono">{readable.data.url}</span>
+                </div>
+              </div>
             </div>
 
-            <div className="mt-4 rounded-lg border bg-muted/30 p-4">
-              <div className="text-xs text-muted-foreground">Loaded URL</div>
-              <div className="mt-1 break-all font-mono text-sm">{loadedUrl}</div>
-            </div>
+            {/* This container is what Step 3 will attach selection listeners to */}
+            <div
+              id="webcut-reader"
+              className="prose prose-sm mt-6 max-w-none"
+              dangerouslySetInnerHTML={{ __html: readable.data.contentHtml }}
+            />
           </div>
         )}
       </main>
