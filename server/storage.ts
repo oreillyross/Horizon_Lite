@@ -1,8 +1,14 @@
 import { users, type User, type InsertUser } from "@shared/schema";
-import { snippets, type Snippet, type InsertSnippet } from "@shared/schema";
+import {
+  snippets,
+  type Snippet,
+  type InsertSnippet,
+  recentSourceItems,
+  recentSources,
+} from "@shared/schema";
 import { normalizeTag } from "./utils/tags";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import bcrypt from "bcrypt";
 
 const SALT_ROUNDS = 10;
@@ -70,18 +76,168 @@ export class DatabaseStorage implements IStorage {
 }
 
 export interface ISnippetStorage {
+  getRecentSourceItems(limit: number): Promise<
+    Array<{
+      id: string;
+      title: string;
+      url: string;
+      excerpt: string | null;
+      publishedAt: Date | null;
+      fetchedAt: Date;
+      capturedAt: Date | null;
+      capturedSnippetId: string | null;
+
+      sourceId: string;
+      sourceName: string;
+    }>
+  >;
+
+  refreshSources(): Promise<{ ok: true; inserted: number }>;
+
+  captureSourceItem(
+    id: string,
+  ): Promise<{ alreadyCaptured: boolean; snippetId: string | null }>;
+
   getSnippets(): Promise<Snippet[]>;
-  getSnippetById(id: string): Promise<Snippet>
-  createSnippet(snippet: Snippet): Promise<Snippet>;
+  getSnippetById(id: string): Promise<Snippet | null>;
+  createSnippet(snippet: InsertSnippet): Promise<Snippet>;
   updateSnippet(
     id: string,
     data: Pick<InsertSnippet, "content" | "tags">,
   ): Promise<Snippet>;
-  getTags(): Promise<Array<{ tag: string; count: number }>>;
+  deleteSnippet(id: string): Promise<Snippet | undefined>;
+  getTags(): Promise<Array<{ tag: string; slug: string; count: number }>>;
   globalSearch(q: string, limit: number): Promise<GlobalSearchResult[]>;
 }
 
 export class SnippetStorage implements ISnippetStorage {
+  async getRecentSourceItems(limit: number) {
+    const rows = await db
+      .select({
+        id: recentSourceItems.id,
+        title: recentSourceItems.title,
+        url: recentSourceItems.url,
+        excerpt: recentSourceItems.excerpt,
+        publishedAt: recentSourceItems.publishedAt,
+        fetchedAt: recentSourceItems.fetchedAt,
+        capturedAt: recentSourceItems.capturedAt,
+        capturedSnippetId: recentSourceItems.capturedSnippetId,
+
+        sourceId: recentSourceItems.sourceId,
+        sourceName: recentSources.name,
+      })
+      .from(recentSourceItems)
+      .innerJoin(
+        recentSources,
+        eq(recentSourceItems.sourceId, recentSources.id),
+      )
+      .orderBy(desc(recentSourceItems.fetchedAt))
+      .limit(limit);
+
+    return rows;
+  }
+
+  async refreshSources(): Promise<{ ok: true; inserted: number }> {
+    const existing = await db.select().from(recentSources).limit(1);
+    let sourceId = existing[0]?.id;
+
+    if (!sourceId) {
+      const [created] = await db
+        .insert(recentSources)
+        .values({
+          name: "My dummy source",
+          url: "https://dummy.net",
+          enabled: true,
+        })
+        .returning();
+
+      sourceId = created.id;
+    }
+
+    const now = new Date();
+    const candidates = [
+      {
+        sourceId,
+        title: "Example headline 1",
+        url: "https://example.com/article-1",
+        publishedAt: now,
+        excerpt: "Short preview text for article 1…",
+        rawText: null,
+      },
+      {
+        sourceId,
+        title: "Example headline 2",
+        url: "https://example.com/article-2",
+        publishedAt: now,
+        excerpt: "Short preview text for article 2…",
+        rawText: null,
+      },
+      {
+        sourceId,
+        title: "Example headline 3",
+        url: "https://example.com/article-3",
+        publishedAt: now,
+        excerpt: "Short preview text for article 3…",
+        rawText: null,
+      },
+    ] as const;
+
+    let inserted = 0;
+
+    for (const item of candidates) {
+      const res = await db
+        .insert(recentSourceItems)
+        .values(item)
+        .onConflictDoNothing({ target: recentSourceItems.url })
+        .returning({ id: recentSourceItems.id });
+
+      if (res.length > 0) inserted += 1;
+    }
+
+    return { ok: true as const, inserted };
+  }
+
+  async captureSourceItem(id: string) {
+    const [item] = await db
+      .select()
+      .from(recentSourceItems)
+      .where(eq(recentSourceItems.id, id))
+      .limit(1);
+
+    if (!item) throw new Error("Source item not found");
+    if (item.capturedAt) {
+      return {
+        alreadyCaptured: true,
+        snippetId: item.capturedSnippetId ?? null,
+      };
+    }
+
+    // create snippet content (simple + readable)
+    const content =
+      `# ${item.title}\n\n` +
+      `${item.url}\n\n` +
+      (item.excerpt ? `${item.excerpt}\n\n` : "") +
+      (item.rawText ? `${item.rawText}\n` : "");
+
+    const [snippet] = await db
+      .insert(snippets)
+      .values({
+        content,
+        tags: [], // you said auto-tagging later
+      })
+      .returning();
+
+    await db
+      .update(recentSourceItems)
+      .set({
+        capturedAt: new Date(),
+        capturedSnippetId: snippet.id,
+      })
+      .where(eq(recentSourceItems.id, item.id));
+
+    return { alreadyCaptured: false, snippetId: snippet.id };
+  }
+
   async globalSearch(q: string, limit = 20): Promise<GlobalSearchResult[]> {
     const query = q.trim();
     if (!query) return [];
@@ -126,7 +282,6 @@ export class SnippetStorage implements ISnippetStorage {
     const [row] = await db.select().from(snippets).where(eq(snippets.id, id));
     return row ?? null;
   }
-
 
   async createSnippet(insertSnippet: InsertSnippet): Promise<Snippet> {
     const [snippet] = await db

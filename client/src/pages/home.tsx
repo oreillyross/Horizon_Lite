@@ -66,37 +66,6 @@ function MetaBar({
   );
 }
 
-
-function StatCard({
-  label,
-  value,
-  subtext,
-}: {
-  label: string;
-  value: string | number;
-  subtext?: string;
-}) {
-  return (
-    <div className="rounded-lg border bg-background p-6 shadow-sm">
-      <div className="text-sm text-muted-foreground">{label}</div>
-      <div className="mt-2 text-3xl font-semibold">{value}</div>
-      {subtext ? (
-        <div className="mt-1 text-sm text-muted-foreground">{subtext}</div>
-      ) : null}
-    </div>
-  );
-}
-
-function SkeletonCard() {
-  return (
-    <div className="rounded-lg border bg-background p-6 shadow-sm">
-      <div className="h-4 w-24 animate-pulse rounded bg-muted" />
-      <div className="mt-3 h-8 w-16 animate-pulse rounded bg-muted" />
-      <div className="mt-2 h-4 w-32 animate-pulse rounded bg-muted" />
-    </div>
-  );
-}
-
 export default function Home() {
   const snippetsQuery = trpc.getSnippets.useQuery();
   const tagsQuery = trpc.getTags.useQuery();
@@ -227,7 +196,7 @@ export default function Home() {
                       <td className="py-3 pr-4">
                         <div className="flex flex-wrap gap-1">
                           {(s.tags ?? []).slice(0, 4).map((t) => (
-                            <Link key={t} href={`/?tag=${encodeURIComponent(t)}`}>
+                            <Link key={t} href={`/snippet/show?tag=${encodeURIComponent(t)}`}>
                               <a className="rounded-md border px-2 py-0.5 text-xs hover:bg-muted">
                                 {t}
                               </a>
