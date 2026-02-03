@@ -7,6 +7,27 @@ import { TRPCError } from "@trpc/server";
 
 
 export const appRouter = router({
+  
+  getRecentSourceItems: publicProcedure
+    .input(z.object({ limit: z.number().int().min(1).max(200).default(50) }))
+    .query(async ({ input }) => {
+      return await snippetStorage.getRecentSourceItems(input.limit);
+    }),
+
+  refreshSources: publicProcedure
+    .mutation(async () => {
+      return await snippetStorage.refreshSources();
+    }),
+
+  /**
+   * Takes a recent-source-item and creates a Snippet from it (content could be title + url for now)
+   */
+  captureSourceItem: publicProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ input }) => {
+      return await snippetStorage.captureSourceItem(input.id);
+    }),
+  
   createSnippet: publicProcedure
     .input(insertSnippetSchema)
     .mutation(async ({ input }) => {
