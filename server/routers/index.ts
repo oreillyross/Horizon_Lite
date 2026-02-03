@@ -2,11 +2,22 @@ import { router, publicProcedure } from "../trpc";
 import { z } from "zod";
 import { storage } from "../storage";
 import { snippetStorage } from "../storage";
+import {fetchReadable} from "../utils/webcut"
 import { insertUserSchema, insertSnippetSchema } from "@shared/schema";
 import { TRPCError } from "@trpc/server";
 
 
 export const appRouter = router({
+  
+  webcutFetchReadable: publicProcedure
+  .input(
+    z.object({
+      url: z.string().min(1),
+    }),
+  )
+  .query(async ({ input }) => {
+    return await fetchReadable(input.url);
+  }),
   
   getRecentSourceItems: publicProcedure
     .input(z.object({ limit: z.number().int().min(1).max(200).default(50) }))
