@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -8,6 +8,7 @@ import {
 import { Link, useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Loader2 } from "lucide-react";
+import {PillTabs, type TabValue} from "@/components/PillTabs"
 
 export type Snippet = {
   id: string;
@@ -119,6 +120,8 @@ export default function SnippetTable() {
     );
   }
 
+  const [activeTab, setActiveTab] = useState<TabValue>("all")
+  
   return (
     <div className="p-4">
       {activeTag && (
@@ -129,7 +132,7 @@ export default function SnippetTable() {
           </Link>
         </div>
       )}
-
+<div className="flex "><PillTabs value={activeTab} onValueChange={setActiveTab} className="justify-end"/></div>
       <table className="min-w-full border border-gray-300 dark:border-gray-700">
         <thead className="bg-gray-100">
           {table.getHeaderGroups().map((headerGroup) => (
