@@ -117,6 +117,9 @@ export type User = typeof users.$inferSelect;
 export const insertSnippetSchema = createInsertSchema(snippets).pick({
   content: true,
   tags: true,
+  sourceUrl: true,
+  sourceHost: true,
+  sourceTitle: true,
 });
 
 export type InsertSnippet = z.infer<typeof insertSnippetSchema>;
