@@ -21,7 +21,7 @@ export function PillTabs({
   className?: string 
 }) {
   return (
-    <div className={cn("flex items-center gap-1 p-1 rounded-full bg-muted", className)}>
+    <div className={cn("flex items-center gap-1 p-1 rounded-full bg-muted w-full", className)}>
       {tabs.map(({ value: tabValue, label }) => {
         const selected = value === tabValue
         return (

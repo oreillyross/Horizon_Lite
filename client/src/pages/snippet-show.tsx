@@ -19,7 +19,9 @@ export type Snippet = {
 
 export default function SnippetTable() {
   const snippetsQuery = trpc.getSnippets.useQuery();
-
+  const [activeTab, setActiveTab] = useState<TabValue>("all")
+  const showRecent = activeTab === "recent"
+  
   const search = useSearch();
 
   const activeTag = useMemo(() => {
@@ -37,6 +39,27 @@ export default function SnippetTable() {
       ),
     );
   }, [activeTag, rawData]);
+
+  const finalData = useMemo(() => {
+    // Start from tag-filtered data
+    let out = data;
+
+    if (showRecent) {
+      const RECENT_HOURS = 24;
+      const cutoff = Date.now() - RECENT_HOURS * 60 * 60 * 1000;
+
+      out = out.filter((s) => {
+        const t =
+          s.createdAt instanceof Date
+            ? s.createdAt.getTime()
+            : new Date(s.createdAt as any).getTime();
+        return t >= cutoff;
+      });
+    }
+
+    return out;
+  }, [data, showRecent]);
+
 
   const utils = trpc.useUtils();
 
@@ -103,7 +126,7 @@ export default function SnippetTable() {
   );
 
   const table = useReactTable({
-    data,
+    data: finalData,
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
@@ -120,7 +143,7 @@ export default function SnippetTable() {
     );
   }
 
-  const [activeTab, setActiveTab] = useState<TabValue>("all")
+  
   
   return (
     <div className="p-4">
