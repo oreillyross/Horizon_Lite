@@ -33,6 +33,9 @@ export const snippets = pgTable("snippets", {
     .notNull()
     .default(sql`'{}'::text[]`),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  sourceUrl: text("source_url"),
+  sourceTitle: text("source_title"),
+  sourceHost: text("source_host"),
 });
 
 export const recentSourceItems = pgTable(
