@@ -67,6 +67,7 @@ export const snippets = pgTable("snippets", {
   sourceUrl: text("source_url"),
   sourceTitle: text("source_title"),
   sourceHost: text("source_host"),
+  themeId: uuid("theme_id").references(() => themes.id, {onDelete: "set null" }  )
 });
 
 export const recentSourceItems = pgTable(
