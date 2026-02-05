@@ -2,13 +2,41 @@ import { sql } from "drizzle-orm";
 import {
   pgTable,
   text,
+  uuid,
   varchar,
   timestamp,
   boolean,
+  integer,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+
+// NEW
+export const themes = pgTable(
+  "themes",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    name: text("name").notNull(),
+    description: text("description"),
+
+    // optional but recommended for your “living synopsis” feature
+    synopsis: text("synopsis"),
+    synopsisUpdatedAt: timestamp("synopsis_updated_at", { withTimezone: true }),
+    synopsisModel: text("synopsis_model"),
+    synopsisVersion: integer("synopsis_version").default(0).notNull(),
+
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => ({
+    nameUnique: uniqueIndex("themes_name_unique").on(t.name),
+  }),
+);
 
 export const recentSources = pgTable("recent_sources", {
   id: varchar("id")
@@ -33,6 +61,12 @@ export const snippets = pgTable("snippets", {
     .notNull()
     .default(sql`'{}'::text[]`),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  sourceUrl: text("source_url"),
+  sourceTitle: text("source_title"),
+  sourceHost: text("source_host"),
+  themeId: uuid("theme_id").references(() => themes.id, {
+    onDelete: "set null",
+  }),
 });
 
 export const recentSourceItems = pgTable(
@@ -110,11 +144,35 @@ export const insertUserSchema = createInsertSchema(users).pick({
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
-
 export const insertSnippetSchema = createInsertSchema(snippets).pick({
   content: true,
   tags: true,
+  sourceUrl: true,
+  sourceHost: true,
+  sourceTitle: true,
+  themeId: true,
 });
 
 export type InsertSnippet = z.infer<typeof insertSnippetSchema>;
 export type Snippet = typeof snippets.$inferSelect;
+
+export type Theme = {
+  id: string;
+  name: string;
+  description: string | null;
+  synopsis: string | null;
+  synopsisUpdatedAt: Date | null;
+  synopsisModel: string | null;
+  synopsisVersion: number;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type ThemeListItem = {
+  id: string;
+  name: string;
+  description: string | null;
+  synopsisUpdatedAt: Date | null;
+  synopsisVersion: number;
+  snippetCount: number;
+};

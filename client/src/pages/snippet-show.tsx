@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -8,6 +8,7 @@ import {
 import { Link, useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Loader2 } from "lucide-react";
+import {PillTabs, type TabValue} from "@/components/PillTabs"
 
 export type Snippet = {
   id: string;
@@ -18,7 +19,9 @@ export type Snippet = {
 
 export default function SnippetTable() {
   const snippetsQuery = trpc.getSnippets.useQuery();
-
+  const [activeTab, setActiveTab] = useState<TabValue>("all")
+  const showRecent = activeTab === "recent"
+  
   const search = useSearch();
 
   const activeTag = useMemo(() => {
@@ -36,6 +39,27 @@ export default function SnippetTable() {
       ),
     );
   }, [activeTag, rawData]);
+
+  const finalData = useMemo(() => {
+    // Start from tag-filtered data
+    let out = data;
+
+    if (showRecent) {
+      const RECENT_HOURS = 24;
+      const cutoff = Date.now() - RECENT_HOURS * 60 * 60 * 1000;
+
+      out = out.filter((s) => {
+        const t =
+          s.createdAt instanceof Date
+            ? s.createdAt.getTime()
+            : new Date(s.createdAt as any).getTime();
+        return t >= cutoff;
+      });
+    }
+
+    return out;
+  }, [data, showRecent]);
+
 
   const utils = trpc.useUtils();
 
@@ -102,7 +126,7 @@ export default function SnippetTable() {
   );
 
   const table = useReactTable({
-    data,
+    data: finalData,
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
@@ -119,6 +143,8 @@ export default function SnippetTable() {
     );
   }
 
+  
+  
   return (
     <div className="p-4">
       {activeTag && (
@@ -129,7 +155,7 @@ export default function SnippetTable() {
           </Link>
         </div>
       )}
-
+<div className="flex "><PillTabs value={activeTab} onValueChange={setActiveTab} className="justify-end"/></div>
       <table className="min-w-full border border-gray-300 dark:border-gray-700">
         <thead className="bg-gray-100">
           {table.getHeaderGroups().map((headerGroup) => (

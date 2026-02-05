@@ -2,12 +2,20 @@ import { useState, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import {trpc} from "@/lib/trpc"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { trpc } from "@/lib/trpc";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import ThemeSelect from "@/components/ThemeSelect";
+
 import {
   Form,
   FormControl,
@@ -23,33 +31,37 @@ import { Code2, Plus, X, Hash, Send } from "lucide-react";
 const snippetFormSchema = z.object({
   content: z.string().min(1, "Snippet content is required"),
   tags: z.array(z.string()).default([]),
+  themeId: z.string().uuid().nullable(),
 });
+
 type SnippetFormValues = z.infer<typeof snippetFormSchema>;
 
 export default function SnippetForm() {
-  
   const { toast } = useToast();
   const [tagInput, setTagInput] = useState("");
-  
-  
+
   const form = useForm<SnippetFormValues>({
     resolver: zodResolver(snippetFormSchema),
     defaultValues: {
       content: "",
       tags: [],
+      themeId: null,
     },
   });
-  
+
   const tags = form.watch("tags");
-  
+
   const handleAddTag = useCallback(() => {
     const trimmedTag = tagInput.trim().replace(/^#/, "");
     if (trimmedTag && !tags.includes(trimmedTag)) {
-      form.setValue("tags", [...tags, trimmedTag]);
+      form.setValue("tags", [...tags, trimmedTag], {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
       setTagInput("");
     }
   }, [tagInput, tags, form]);
-  
+
   const handleTagInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -59,26 +71,25 @@ export default function SnippetForm() {
   const handleRemoveTag = (tagToRemove: string) => {
     form.setValue(
       "tags",
-      tags.filter((tag) => tag !== tagToRemove)
+      tags.filter((tag) => tag !== tagToRemove),
+      { shouldDirty: true, shouldValidate: true },
     );
   };
 
   const createSnippetMutation = trpc.createSnippet.useMutation({
     onSuccess: () => {
-      form.reset()
-      console.log("Snippet created")
-    }
-  })
-  
+      form.reset();
+      console.log("Snippet created");
+    },
+  });
+
   const onSubmit = async (data: SnippetFormValues) => {
     console.log("Snippet data ready for API:", data);
     toast({
       title: "Snippet Ready",
       description: `Content: ${data.content.substring(0, 50)}... with ${data.tags.length} tags`,
     });
-    createSnippetMutation.mutate(data)
-    
-    
+    createSnippetMutation.mutate(data);
   };
   return (
     <div className="min-h-screen bg-background p-6">
@@ -95,7 +106,31 @@ export default function SnippetForm() {
           </CardHeader>
           <CardContent>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-6"
+              >
+                <FormField
+                  control={form.control}
+                  name="themeId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Theme</FormLabel>
+                      <FormControl>
+                        <ThemeSelect
+                          value={field.value}
+                          onChange={field.onChange}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Optional. Group snippets to build a living synopsis
+                        later.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
                 <FormField
                   control={form.control}
                   name="content"
@@ -111,7 +146,8 @@ export default function SnippetForm() {
                         />
                       </FormControl>
                       <FormDescription>
-                       Capture the substance of the information snippet here, including a title
+                        Capture the substance of the information snippet here,
+                        including a title
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -177,7 +213,9 @@ export default function SnippetForm() {
                   <Button
                     type="submit"
                     data-testid="button-submit-snippet"
-                    disabled={!form.formState.isValid}
+                    disabled={
+                      !form.formState.isValid || createSnippetMutation.isPending
+                    }
                   >
                     <Send className="h-4 w-4 mr-2" />
                     Save Snippet

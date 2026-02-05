@@ -3,7 +3,7 @@ import { trpc } from "@/lib/trpc";
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { Loader2, Plus, X, Hash, Send } from "lucide-react";
 
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
@@ -11,10 +11,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import ThemeSelect from "@/components/ThemeSelect";
 
 const editSnippetSchema = z.object({
   content: z.string().min(1, "Snippet content is required"),
   tags: z.array(z.string()).default([]),
+  themeId: z.string().uuid().nullable(),
 });
 type EditSnippetValues = z.infer<typeof editSnippetSchema>;
 
@@ -26,13 +28,13 @@ export default function EditSnippetScreen() {
   const snippetsQuery = trpc.getSnippets.useQuery();
   const snippet = useMemo(
     () => snippetsQuery.data?.find((s) => s.id === id),
-    [snippetsQuery.data, id]
+    [snippetsQuery.data, id],
   );
 
   const updateSnippetMutation = trpc.updateSnippet.useMutation({
     onSuccess: (updated) => {
       utils.getSnippets.setData(undefined, (old) =>
-        old?.map((s) => (s.id === updated.id ? updated : s))
+        old?.map((s) => (s.id === updated.id ? updated : s)),
       );
       setLocation("/snippet/show");
     },
@@ -40,7 +42,7 @@ export default function EditSnippetScreen() {
 
   const form = useForm<EditSnippetValues>({
     resolver: zodResolver(editSnippetSchema),
-    defaultValues: { content: "", tags: [] },
+    defaultValues: { content: "", tags: [], themeId: null },
     mode: "onChange",
   });
 
@@ -53,6 +55,7 @@ export default function EditSnippetScreen() {
       form.reset({
         content: snippet.content ?? "",
         tags: Array.isArray(snippet.tags) ? snippet.tags : [],
+        themeId: snippet.themeId ?? null,
       });
       setTagInput("");
     }
@@ -65,7 +68,10 @@ export default function EditSnippetScreen() {
       setTagInput("");
       return;
     }
-    form.setValue("tags", [...tags, trimmed], { shouldDirty: true, shouldValidate: true });
+    form.setValue("tags", [...tags, trimmed], {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
     setTagInput("");
   }, [tagInput, tags, form]);
 
@@ -74,10 +80,10 @@ export default function EditSnippetScreen() {
       form.setValue(
         "tags",
         tags.filter((t) => t !== tagToRemove),
-        { shouldDirty: true, shouldValidate: true }
+        { shouldDirty: true, shouldValidate: true },
       );
     },
-    [tags, form]
+    [tags, form],
   );
 
   const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -94,6 +100,7 @@ export default function EditSnippetScreen() {
       id: snippet.id,
       content: data.content,
       tags: data.tags,
+      themeId: data.themeId,
     });
   };
 
@@ -109,7 +116,10 @@ export default function EditSnippetScreen() {
     return (
       <div className="p-6 max-w-3xl mx-auto">
         <p className="text-sm text-muted-foreground mb-4">Snippet not found.</p>
-        <button className="underline text-sm" onClick={() => setLocation("/snippet/show")}>
+        <button
+          className="underline text-sm"
+          onClick={() => setLocation("/snippet/show")}
+        >
           ← Back to list
         </button>
       </div>
@@ -121,28 +131,44 @@ export default function EditSnippetScreen() {
       <h1 className="text-xl font-semibold">Edit Snippet</h1>
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <Controller
+          control={form.control}
+          name="themeId"
+          render={({ field }) => (
+            <ThemeSelect value={field.value} onChange={field.onChange} />
+          )}
+        />
+
         <div>
-          <label htmlFor="snippet-content" className="block text-sm font-medium mb-1">
+          <label
+            htmlFor="snippet-content"
+            className="block text-sm font-medium mb-1"
+          >
             Content
           </label>
           <Textarea
             id="snippet-content"
             className="min-h-[300px] font-mono text-sm resize-y whitespace-pre-wrap break-words"
-            value={form.watch("content")}
             {...form.register("content")}
             onChange={(e) =>
-              form.setValue("content", e.target.value, { shouldDirty: true, shouldValidate: true })
+              form.setValue("content", e.target.value, {
+                shouldDirty: true,
+                shouldValidate: true,
+              })
             }
-            
           />
           {/* Optional inline error */}
           {form.formState.errors.content?.message && (
-            <p className="text-sm text-red-600 mt-1">{form.formState.errors.content.message}</p>
+            <p className="text-sm text-red-600 mt-1">
+              {form.formState.errors.content.message}
+            </p>
           )}
         </div>
 
         <div className="space-y-3">
-          <label htmlFor="snippet-tags" className="block text-sm font-medium">Tags</label>
+          <label htmlFor="snippet-tags" className="block text-sm font-medium">
+            Tags
+          </label>
 
           <div className="flex gap-2">
             <div className="relative flex-1">
@@ -194,12 +220,23 @@ export default function EditSnippetScreen() {
         </div>
 
         <div className="flex gap-3">
-          <Button type="submit" disabled={updateSnippetMutation.isPending || !form.formState.isValid}>
+          <Button
+            type="submit"
+            disabled={
+              updateSnippetMutation.isPending ||
+              !form.formState.isValid ||
+              !form.formState.isDirty
+            }
+          >
             <Send className="h-4 w-4 mr-2" />
             Save
           </Button>
 
-          <Button type="button" variant="outline" onClick={() => setLocation("/snippet/show")}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setLocation("/snippet/show")}
+          >
             Cancel
           </Button>
         </div>
