@@ -1,14 +1,17 @@
 import { users, type User, type InsertUser } from "@shared/schema";
 import {
   snippets,
+  themes,
   type Snippet,
   type InsertSnippet,
+  type Theme,
+  type ThemeListItem,
   recentSourceItems,
   recentSources,
 } from "@shared/schema";
 import { normalizeTag } from "./utils/tags";
 import { db } from "./db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
 import bcrypt from "bcrypt";
 
 const SALT_ROUNDS = 10;
@@ -31,6 +34,130 @@ function makeExcerpt(content: string, q: string, max = 140) {
   const prefix = start > 0 ? "…" : "";
   const suffix = end < content.length ? "…" : "";
   return `${prefix}${content.slice(start, end)}${suffix}`;
+}
+
+export interface IThemeStorage {
+  // themes
+  getThemes(): Promise<ThemeListItem[]>;
+  getThemeById(id: string): Promise<Theme | undefined>;
+  createTheme(input: {
+    name: string;
+    description?: string | null;
+  }): Promise<Theme>;
+  updateTheme(input: {
+    id: string;
+    name?: string;
+    description?: string | null;
+  }): Promise<Theme>;
+  deleteTheme(id: string): Promise<boolean>;
+
+  // snippets
+  setSnippetTheme(input: {
+    snippetId: string;
+    themeId: string | null;
+  }): Promise<void>;
+}
+
+export class ThemeStorage implements IThemeStorage {
+  async getThemes(): Promise<ThemeListItem[]> {
+    // Left join snippets to compute counts
+    const rows = await db
+      .select({
+        id: themes.id,
+        name: themes.name,
+        description: themes.description,
+        synopsisUpdatedAt: themes.synopsisUpdatedAt,
+        synopsisVersion: themes.synopsisVersion,
+        snippetCount: sql<number>`count(${snippets.id})`.as("snippet_count"),
+      })
+      .from(themes)
+      .leftJoin(snippets, eq(snippets.themeId, themes.id))
+      .groupBy(
+        themes.id,
+        themes.name,
+        themes.description,
+        themes.synopsisUpdatedAt,
+        themes.synopsisVersion,
+      )
+      .orderBy(desc(themes.updatedAt), themes.name);
+
+    return rows.map((r) => ({
+      id: r.id,
+      name: r.name,
+      description: r.description ?? null,
+      synopsisUpdatedAt: r.synopsisUpdatedAt ?? null,
+      synopsisVersion: r.synopsisVersion ?? 0,
+      snippetCount: Number(r.snippetCount ?? 0),
+    }));
+  }
+
+  async getThemeById(id: string): Promise<Theme | undefined> {
+    const [row] = await db
+      .select()
+      .from(themes)
+      .where(eq(themes.id, id))
+      .limit(1);
+    return row ? (row as Theme) : undefined;
+  }
+
+  async createTheme(input: {
+    name: string;
+    description?: string | null;
+  }): Promise<Theme> {
+    const [row] = await db
+      .insert(themes)
+      .values({
+        name: input.name.trim(),
+        description: input.description ?? null,
+        // synopsis fields default null/0 via schema defaults
+      })
+      .returning();
+
+    return row as Theme;
+  }
+
+  async updateTheme(input: {
+    id: string;
+    name?: string;
+    description?: string | null;
+  }): Promise<Theme> {
+    const patch: Record<string, any> = {
+      updatedAt: new Date(),
+    };
+
+    if (typeof input.name === "string") patch.name = input.name.trim();
+    if (input.description !== undefined) patch.description = input.description;
+
+    const [row] = await db
+      .update(themes)
+      .set(patch)
+      .where(eq(themes.id, input.id))
+      .returning();
+
+    if (!row) throw new Error("Theme not found");
+    return row as Theme;
+  }
+
+  async deleteTheme(id: string): Promise<boolean> {
+    const [row] = await db
+      .delete(themes)
+      .where(eq(themes.id, id))
+      .returning({ id: themes.id });
+    return !!row;
+  }
+
+  async setSnippetTheme(input: {
+    snippetId: string;
+    themeId: string | null;
+  }): Promise<void> {
+    await db
+      .update(snippets)
+      .set({
+        themeId: input.themeId, // null allowed
+        // TODO updatedAt: new Date(),  // keep snippet "last updated" accurate if you track it
+      })
+      .where(eq(snippets.id, input.snippetId));
+  }
 }
 
 export interface IStorage {
@@ -346,3 +473,5 @@ export class SnippetStorage implements ISnippetStorage {
 export const snippetStorage = new SnippetStorage();
 
 export const storage = new DatabaseStorage();
+
+export const themeStorage = new ThemeStorage();
