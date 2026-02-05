@@ -150,7 +150,7 @@ export const insertSnippetSchema = createInsertSchema(snippets).pick({
   sourceUrl: true,
   sourceHost: true,
   sourceTitle: true,
-  
+  themeId: true,
 });
 
 export type InsertSnippet = z.infer<typeof insertSnippetSchema>;
