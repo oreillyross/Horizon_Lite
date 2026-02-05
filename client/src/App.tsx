@@ -8,14 +8,13 @@ import Home from "@/pages/home";
 import SnippetScreen from "./pages/snippet";
 import NavigationBar from "@/components/NavigationBar";
 import SnippetTable from "./pages/snippet-show";
-import EditSnippetScreen from "./pages/EditSnippetScreen"
+import EditSnippetScreen from "./pages/EditSnippetScreen";
 import TagsScreen from "./pages/TagsScreen";
-import SnippetViewScreen from "@/pages/SnippetViewScreen"
-import RecentSourcesScreen from "@/pages/RecentSourcesScreen"
-import WebcutScreen from "@/pages/WebcutScreen"
-import ThemeViewScreen from "@/pages/ThemeViewScreen"
-import ThemesScreen from "@/pages/ThemesScreen"
-
+import SnippetViewScreen from "@/pages/SnippetViewScreen";
+import RecentSourcesScreen from "@/pages/RecentSourcesScreen";
+import WebcutScreen from "@/pages/WebcutScreen";
+import ThemeViewScreen from "@/pages/ThemeViewScreen";
+import ThemesScreen from "@/pages/ThemesScreen";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -41,7 +40,6 @@ function Router() {
       <Route path="/webcut" component={WebcutScreen} />
       <Route component={NotFound} />
     </Switch>
-
   );
 }
 
@@ -55,6 +53,7 @@ function App() {
             items={[
               { linkName: "Home", href: "/" },
               { linkName: "Webcut", href: "/webcut" },
+              { linkName: "Themes", href: "/themes" },
               { linkName: "Sources", href: "/sources/recent" },
               { linkName: "Snippets", href: "/snippet/show" },
               { linkName: "Tags", href: "/tags/show" },
@@ -63,7 +62,6 @@ function App() {
             ]}
           />
           <Router />
-          
         </TooltipProvider>
       </QueryClientProvider>
     </trpc.Provider>
