@@ -9,7 +9,7 @@ import { Link, useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Loader2 } from "lucide-react";
 import {PillTabs, type TabValue} from "@/components/PillTabs"
-import {type Snippet} from "../../../shared/schema"
+import {type Snippet} from "@shared"
 
 
 export default function SnippetTable() {

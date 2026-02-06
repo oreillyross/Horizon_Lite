@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+
 import { trpc } from "@/lib/trpc";
 import {
   Card,
@@ -27,14 +27,8 @@ import {
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { Code2, Plus, X, Hash, Send } from "lucide-react";
+import {snippetFormSchema, type SnippetFormValues } from "@shared"
 
-const snippetFormSchema = z.object({
-  content: z.string().min(1, "Snippet content is required"),
-  tags: z.array(z.string()).default([]),
-  themeId: z.string().uuid().nullable(),
-});
-
-type SnippetFormValues = z.infer<typeof snippetFormSchema>;
 
 export default function SnippetCreateForm() {
   const { toast } = useToast();

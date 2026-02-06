@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 type RecentRow = {

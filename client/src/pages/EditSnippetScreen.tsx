@@ -5,20 +5,15 @@ import { Loader2, Plus, X, Hash, Send } from "lucide-react";
 
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import ThemeSelect from "@/components/ThemeSelect";
+import {editSnippetSchema, type EditSnippetValues} from "@shared"
 
-const editSnippetSchema = z.object({
-  content: z.string().min(1, "Snippet content is required"),
-  tags: z.array(z.string()).default([]),
-  themeId: z.string().uuid().nullable().optional(),
-});
-type EditSnippetValues = z.infer<typeof editSnippetSchema>;
 
 export default function EditSnippetScreen() {
   const utils = trpc.useUtils();

@@ -5,16 +5,16 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { trpc, trpcClient } from "@/lib/trpc";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
-import SnippetScreen from "./pages/snippet";
+import SnippetScreen from "./pages/SnippetScreen";
 import NavigationBar from "@/components/NavigationBar";
-import SnippetTable from "./pages/snippet-show";
+import SnippetTable from "./pages/SnippetTable";
 import EditSnippetScreen from "./pages/EditSnippetScreen";
 import TagsScreen from "./pages/TagsScreen";
 import SnippetViewScreen from "@/pages/SnippetViewScreen";
 import RecentSourcesScreen from "@/pages/RecentSourcesScreen";
 import WebcutScreen from "@/pages/WebcutScreen";
 import ThemeViewScreen from "@/pages/ThemeViewScreen";
-import ThemeCreateScreen from "@/pages/ThemeCreateScreen"
+import ThemeCreateForm from "@/pages/forms/ThemeCreateForm"
 import ThemesScreen from "@/pages/ThemesScreen";
 
 const queryClient = new QueryClient({
@@ -37,7 +37,7 @@ function Router() {
       <Route path="/sources/recent" component={RecentSourcesScreen} />
       <Route path="/tags/show" component={TagsScreen} />
       <Route path="/themes" component={ThemesScreen} />
-      <Route path="/theme/create" component={ThemeCreateScreen}/>
+      <Route path="/theme/create" component={ThemeCreateForm}/>
       <Route path="/theme/:id" component={ThemeViewScreen} />
       <Route path="/webcut" component={WebcutScreen} />
       <Route component={NotFound} />

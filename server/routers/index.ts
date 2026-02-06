@@ -3,7 +3,7 @@ import { z } from "zod";
 import { storage } from "../storage";
 import { snippetStorage } from "../storage";
 import { fetchReadable } from "../utils/webcut";
-import { insertUserSchema, insertSnippetSchema } from "@shared/schema";
+import { insertUserSchema, insertSnippetSchema } from "@shared/db";
 import { TRPCError } from "@trpc/server";
 import { themesRouter } from "./themes.router";
 

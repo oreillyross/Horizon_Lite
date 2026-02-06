@@ -12,7 +12,6 @@ import {
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// NEW
 export const themes = pgTable(
   "themes",
   {
