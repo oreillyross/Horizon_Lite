@@ -1,8 +1,8 @@
-import SnippetForm from "./forms/snippet-form";
+import SnippetCreateForm from "./forms/SnippetCreateForm";
 export default function SnippetScreen() {
   return (
     <div>
-      <SnippetForm />
+      <SnippetCreateForm />
     </div>
   );
 }

@@ -36,7 +36,7 @@ const snippetFormSchema = z.object({
 
 type SnippetFormValues = z.infer<typeof snippetFormSchema>;
 
-export default function SnippetForm() {
+export default function SnippetCreateForm() {
   const { toast } = useToast();
   const [tagInput, setTagInput] = useState("");
 
