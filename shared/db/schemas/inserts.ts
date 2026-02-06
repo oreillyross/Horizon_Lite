@@ -1,8 +1,6 @@
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-
-import { recentSources, recentSourceItems, users, snippets } from "../tables";
-
+import { recentSources, recentSourceItems, users, snippets, themes } from "../tables";
 
 export const insertRecentSourceSchema = createInsertSchema(recentSources).pick({
   name: true,
@@ -39,3 +37,12 @@ export const insertSnippetSchema = createInsertSchema(snippets).pick({
   themeId: true,
 });
 export type InsertSnippet = z.infer<typeof insertSnippetSchema>;
+
+
+export const insertThemeSchema = createInsertSchema(themes).pick({
+  name: true,
+  description: true,
+  synopsis: true,
+});
+
+export type InsertTheme = z.infer<typeof insertThemeSchema>;

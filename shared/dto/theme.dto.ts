@@ -1,4 +1,4 @@
-import type { ThemeRow } from "../db";
+import type { ThemeRow } from "@shared/db";
 
 export type Theme = ThemeRow;
 

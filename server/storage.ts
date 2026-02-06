@@ -5,7 +5,6 @@ import {
   type SnippetRow,
   type InsertSnippet,
   type ThemeRow,
-  
   recentSourceItems,
   recentSources,
 } from "@shared/db";
@@ -38,7 +37,6 @@ function makeExcerpt(content: string, q: string, max = 140) {
 }
 
 export interface IThemeStorage {
-  // themes
   getThemes(): Promise<ThemeListItem[]>;
   getThemeById(id: string): Promise<ThemeRow | undefined>;
   createTheme(input: {

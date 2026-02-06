@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useLocation } from "wouter";
 
@@ -12,21 +11,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-
+import {useToast} from "@/hooks/use-toast" 
 import { Loader2 } from "lucide-react";
+import {ThemeCreateSchema, type ThemeCreateValues} from "@shared"
 
-const ThemeCreateSchema = z.object({
-  name: z.string().min(1, "Name is required").max(80, "Keep it under 80 chars"),
-  description: z.string().max(280, "Keep it under 280 chars").optional().or(z.literal("")),
-  // keep this flexible: you can later rename to `prompt`, `systemPrompt`, etc.
-  prompt: z.string().max(8000, "Keep it under 8000 chars").optional().or(z.literal("")),
-});
-
-type ThemeCreateValues = z.infer<typeof ThemeCreateSchema>;
 
 export default function ThemeCreateScreen() {
   const [, setLocation] = useLocation();
-
+  const {toast} = useToast()
 
   const form = useForm<ThemeCreateValues>({
     resolver: zodResolver(ThemeCreateSchema),
@@ -40,18 +32,18 @@ export default function ThemeCreateScreen() {
 
   const createTheme = trpc.createTheme.useMutation({
     onSuccess: (created) => {
-      // toast({ title: "Theme created" });
+      toast({ title: "Theme created" });
 
       // Prefer redirecting to detail if you have it; fallback to list.
       if (created?.id) setLocation(`/theme/${created.id}`);
       else setLocation("/themes");
     },
     onError: (err) => {
-      // toast({
-      //   title: "Create failed",
-      //   description: err.message,
-      //   variant: "destructive",
-      // });
+      toast({
+        title: "Create failed",
+        description: err.message,
+        variant: "destructive",
+      });
     },
   });
 
