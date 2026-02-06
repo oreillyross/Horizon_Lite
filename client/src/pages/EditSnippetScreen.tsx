@@ -16,7 +16,7 @@ import ThemeSelect from "@/components/ThemeSelect";
 const editSnippetSchema = z.object({
   content: z.string().min(1, "Snippet content is required"),
   tags: z.array(z.string()).default([]),
-  themeId: z.string().uuid().nullable(),
+  themeId: z.string().uuid().nullable().optional(),
 });
 type EditSnippetValues = z.infer<typeof editSnippetSchema>;
 

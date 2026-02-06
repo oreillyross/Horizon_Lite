@@ -9,13 +9,8 @@ import { Link, useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Loader2 } from "lucide-react";
 import {PillTabs, type TabValue} from "@/components/PillTabs"
+import {type Snippet} from "../../../shared/schema"
 
-export type Snippet = {
-  id: string;
-  createdAt: Date;
-  content: string;
-  tags: string[];
-};
 
 export default function SnippetTable() {
   const snippetsQuery = trpc.getSnippets.useQuery();

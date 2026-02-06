@@ -424,7 +424,7 @@ export class SnippetStorage implements ISnippetStorage {
   async getTags(): Promise<
     Array<{ tag: string; slug: string; count: number }>
   > {
-    const all = await this.getSnippets();
+    const all = await this.getSnippets();1
 
     const counts = new Map<string, number>();
 
@@ -443,13 +443,14 @@ export class SnippetStorage implements ISnippetStorage {
 
   async updateSnippet(
     id: string,
-    data: Pick<Snippet, "content" | "tags">,
+    data: Pick<Snippet, "content" | "tags" | "themeId">,
   ): Promise<Snippet> {
     const [updated] = await db
       .update(snippets)
       .set({
         content: data.content,
         tags: data.tags,
+        themeId: data.themeId ?? null,
       })
       .where(eq(snippets.id, id))
       .returning();

@@ -14,6 +14,7 @@ import SnippetViewScreen from "@/pages/SnippetViewScreen";
 import RecentSourcesScreen from "@/pages/RecentSourcesScreen";
 import WebcutScreen from "@/pages/WebcutScreen";
 import ThemeViewScreen from "@/pages/ThemeViewScreen";
+import ThemeCreateScreen from "@/pages/ThemeCreateScreen"
 import ThemesScreen from "@/pages/ThemesScreen";
 
 const queryClient = new QueryClient({
@@ -36,6 +37,7 @@ function Router() {
       <Route path="/sources/recent" component={RecentSourcesScreen} />
       <Route path="/tags/show" component={TagsScreen} />
       <Route path="/themes" component={ThemesScreen} />
+      <Route path="/theme/create" component={ThemeCreateScreen}/>
       <Route path="/theme/:id" component={ThemeViewScreen} />
       <Route path="/webcut" component={WebcutScreen} />
       <Route component={NotFound} />

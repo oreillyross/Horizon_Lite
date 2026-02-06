@@ -61,6 +61,7 @@ export const appRouter = router({
         id: z.string(),
         content: z.string(),
         tags: z.array(z.string()),
+        themeId: z.string().uuid().nullable(),
       }),
     )
     .mutation(async ({ input }) => {
@@ -68,6 +69,7 @@ export const appRouter = router({
       return await snippetStorage.updateSnippet(input.id, {
         content: input.content,
         tags: input.tags,
+        themeId: input.themeId,
       });
     }),
 
