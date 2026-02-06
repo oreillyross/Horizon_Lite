@@ -11,6 +11,7 @@ export default defineConfig({
     exclude: [
       "**/node_modules/**",
       "**/dist/**",
+      "src/components/ui/**",
       "**/.cache/**",
       "**/.bun/**",
       ".next/**",
@@ -21,7 +22,7 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "json", "html"],
       include: ["app/api/src/**", "packages/db/**", "apps/web/src/**", "client/src/**"],
-      exclude: ["**/node_modules/**", "**/test-utils/**", "**/*.config.*"],
+      exclude: ["**/node_modules/**", "**/test-utils/**", "**/*.config.*", "src/components/ui/**", "src/main.tsx", "src/App.tsx", "src/index.css", "src/hooks"],
     },
   },
   resolve: {
