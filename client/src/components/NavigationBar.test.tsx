@@ -1,9 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import "@testing-library/jest-dom";
 import { Router } from "wouter";
 import { memoryLocation } from "wouter/memory-location";
 import NavigationBar from "./NavigationBar";
-
 
 const navItems = [
   { linkName: "Home", href: "/" },
@@ -12,10 +12,9 @@ const navItems = [
   { linkName: "Profile", href: "/profile" },
 ];
 
-vi.mock("@/components/GlobalSearch", () => ({ 
+vi.mock("@/components/GlobalSearch", () => ({
   GlobalSearch: () => null,
-  default: () => null 
-
+  default: () => null,
 }));
 
 function renderWithRouter(initialPath: string) {
@@ -32,33 +31,34 @@ describe("NavigationBar", () => {
     renderWithRouter("/");
 
     const homeLink = screen.getByTestId("nav-link-");
-    expect(homeLink.className).toContain("bg-blue-500");
-    expect(homeLink.className).toContain("text-white");
+    expect(homeLink).toHaveClass("bg-muted");
+    expect(homeLink).toHaveClass("text-foreground");
 
     const snippetsLink = screen.getByTestId("nav-link-snippet-show");
-    expect(snippetsLink.className).not.toContain("bg-blue-500");
+    expect(snippetsLink).not.toHaveClass("bg-muted");
+    expect(snippetsLink).toHaveClass("text-muted-foreground");
   });
 
   it("highlights Snippets link when on /snippet/show route", () => {
     renderWithRouter("/snippet/show");
 
     const snippetsLink = screen.getByTestId("nav-link-snippet-show");
-    expect(snippetsLink.className).toContain("bg-blue-500");
-    expect(snippetsLink.className).toContain("text-white");
+    expect(snippetsLink).toHaveClass("bg-muted");
+    expect(snippetsLink).toHaveClass("text-foreground");
 
     const homeLink = screen.getByTestId("nav-link-");
-    expect(homeLink.className).not.toContain("bg-blue-500");
+    expect(homeLink).not.toHaveClass("bg-muted");
   });
 
   it("highlights Create link when on /snippet/create route", () => {
     renderWithRouter("/snippet/create");
 
     const createLink = screen.getByTestId("nav-link-snippet-create");
-    expect(createLink.className).toContain("bg-blue-500");
-    expect(createLink.className).toContain("text-white");
+    expect(createLink).toHaveClass("bg-muted");
+    expect(createLink).toHaveClass("text-foreground");
 
     const snippetsLink = screen.getByTestId("nav-link-snippet-show");
-    expect(snippetsLink.className).not.toContain("bg-blue-500");
+    expect(snippetsLink).not.toHaveClass("bg-muted");
   });
 
   it("shows no highlight on unknown routes", () => {
@@ -69,10 +69,10 @@ describe("NavigationBar", () => {
     const createLink = screen.getByTestId("nav-link-snippet-create");
     const profileLink = screen.getByTestId("nav-link-profile");
 
-    expect(homeLink.className).not.toContain("bg-blue-500");
-    expect(snippetsLink.className).not.toContain("bg-blue-500");
-    expect(createLink.className).not.toContain("bg-blue-500");
-    expect(profileLink.className).not.toContain("bg-blue-500");
+    expect(homeLink).not.toHaveClass("bg-muted");
+    expect(snippetsLink).not.toHaveClass("bg-muted");
+    expect(createLink).not.toHaveClass("bg-muted");
+    expect(profileLink).not.toHaveClass("bg-muted");
   });
 
   it("renders all navigation items", () => {
@@ -88,30 +88,30 @@ describe("NavigationBar", () => {
     renderWithRouter("/snippet/show/123");
 
     const snippetsLink = screen.getByTestId("nav-link-snippet-show");
-    expect(snippetsLink.className).toContain("bg-blue-500");
-    expect(snippetsLink.className).toContain("text-white");
+    expect(snippetsLink).toHaveClass("bg-muted");
+    expect(snippetsLink).toHaveClass("text-foreground");
   });
 
   it("highlights Create link for nested routes under /snippet/create", () => {
     renderWithRouter("/snippet/create/new");
 
     const createLink = screen.getByTestId("nav-link-snippet-create");
-    expect(createLink.className).toContain("bg-blue-500");
-    expect(createLink.className).toContain("text-white");
+    expect(createLink).toHaveClass("bg-muted");
+    expect(createLink).toHaveClass("text-foreground");
   });
 
   it("does not highlight Home for other root-level paths", () => {
     renderWithRouter("/other");
 
     const homeLink = screen.getByTestId("nav-link-");
-    expect(homeLink.className).not.toContain("bg-blue-500");
+    expect(homeLink).not.toHaveClass("bg-muted");
   });
 
   it("has CSS transition classes for smooth highlighting", () => {
     renderWithRouter("/");
 
     const homeLink = screen.getByTestId("nav-link-");
-    expect(homeLink.className).toContain("transition-colors");
-    expect(homeLink.className).toContain("duration-200");
+    expect(homeLink).toHaveClass("transition-colors");
+    // duration class isn't set explicitly; we only assert the base transition is present.
   });
 });

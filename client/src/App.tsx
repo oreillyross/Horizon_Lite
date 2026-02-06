@@ -8,11 +8,14 @@ import Home from "@/pages/home";
 import SnippetScreen from "./pages/snippet";
 import NavigationBar from "@/components/NavigationBar";
 import SnippetTable from "./pages/snippet-show";
-import EditSnippetScreen from "./pages/EditSnippetScreen"
+import EditSnippetScreen from "./pages/EditSnippetScreen";
 import TagsScreen from "./pages/TagsScreen";
-import SnippetViewScreen from "@/pages/SnippetViewScreen"
-import RecentSourcesScreen from "@/pages/RecentSourcesScreen"
-import WebcutScreen from "@/pages/WebcutScreen"
+import SnippetViewScreen from "@/pages/SnippetViewScreen";
+import RecentSourcesScreen from "@/pages/RecentSourcesScreen";
+import WebcutScreen from "@/pages/WebcutScreen";
+import ThemeViewScreen from "@/pages/ThemeViewScreen";
+import ThemeCreateScreen from "@/pages/ThemeCreateScreen"
+import ThemesScreen from "@/pages/ThemesScreen";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -29,11 +32,14 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/snippet/create" component={SnippetScreen} />
       <Route path="/snippet/show" component={SnippetTable} />
-      <Route path="/snippet/:id/edit" component={EditSnippetScreen}/>
-      <Route path="/snippet/:id" component={SnippetViewScreen}/>
-      <Route path="/sources/recent" component={RecentSourcesScreen}/>
+      <Route path="/snippet/:id/edit" component={EditSnippetScreen} />
+      <Route path="/snippet/:id" component={SnippetViewScreen} />
+      <Route path="/sources/recent" component={RecentSourcesScreen} />
       <Route path="/tags/show" component={TagsScreen} />
-      <Route path="/webcut" component={WebcutScreen}/>
+      <Route path="/themes" component={ThemesScreen} />
+      <Route path="/theme/create" component={ThemeCreateScreen}/>
+      <Route path="/theme/:id" component={ThemeViewScreen} />
+      <Route path="/webcut" component={WebcutScreen} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -49,6 +55,7 @@ function App() {
             items={[
               { linkName: "Home", href: "/" },
               { linkName: "Webcut", href: "/webcut" },
+              { linkName: "Themes", href: "/themes" },
               { linkName: "Sources", href: "/sources/recent" },
               { linkName: "Snippets", href: "/snippet/show" },
               { linkName: "Tags", href: "/tags/show" },
@@ -57,7 +64,6 @@ function App() {
             ]}
           />
           <Router />
-          
         </TooltipProvider>
       </QueryClientProvider>
     </trpc.Provider>
