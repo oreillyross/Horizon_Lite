@@ -13,7 +13,7 @@ export default function ThemeViewScreen() {
   const id = params?.id ?? "";
 
   const themeQuery = trpc.themes.getThemeById.useQuery({ id }, { enabled: !!id });
-  const snippetsQuery = trpc.getSnippets.useQuery(); // we’ll filter client-side for now
+  const snippetsQuery = trpc.snippets.getSnippets.useQuery(); // we’ll filter client-side for now
 
   // (Optional now, useful later) stub refresh button can call a future mutation
   // const refresh = trpc.themes.refreshThemeSynopsis.useMutation();

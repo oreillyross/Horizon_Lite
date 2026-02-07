@@ -48,8 +48,8 @@ function MetaBar({
             {isLoading
               ? "—"
               : lastUpdatedAt
-              ? formatDistanceToNow(lastUpdatedAt, { addSuffix: true })
-              : "—"}
+                ? formatDistanceToNow(lastUpdatedAt, { addSuffix: true })
+                : "—"}
           </span>
         </div>
 
@@ -57,8 +57,8 @@ function MetaBar({
           {isLoading
             ? "Loading…"
             : lastUpdatedAt
-            ? lastUpdatedAt.toLocaleString()
-            : "No activity yet"}
+              ? lastUpdatedAt.toLocaleString()
+              : "No activity yet"}
         </div>
       </div>
     </section>
@@ -68,8 +68,6 @@ function MetaBar({
 export default function Home() {
   const snippetsQuery = trpc.snippets.getSnippets.useQuery();
   const tagsQuery = trpc.snippets.getTags.useQuery();
-  
-  
 
   const snippets = (snippetsQuery.data ?? []) as RecentRow[];
 
@@ -80,7 +78,8 @@ export default function Home() {
     if (!snippets.length) return null;
     // If/when you add updatedAt later, prefer that. For now: createdAt.
     const newest = [...snippets].sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     )[0];
     return newest?.createdAt ? new Date(newest.createdAt) : null;
   }, [snippets]);
@@ -88,7 +87,8 @@ export default function Home() {
   const recent = useMemo(() => {
     return [...snippets]
       .sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
       )
       .slice(0, 5);
   }, [snippets]);
@@ -101,22 +101,23 @@ export default function Home() {
       {/* Top bar */}
       <div className="flex items-center justify-between gap-4">
         <div>
-
           <p className="mt-1 text-sm text-muted-foreground">
             Quick overview and recent activity.
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-          <Link href="/snippet/create">
-            <a className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">
-              New Snippet
-            </a>
+          <Link
+            href="/snippet/create"
+            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+          >
+            New Snippet
           </Link>
-          <Link href="/snippet/show">
-            <a className="inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted">
-              Browse
-            </a>
+          <Link
+            href="/snippet/show"
+            className="inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted"
+          >
+            Browse
           </Link>
         </div>
       </div>
@@ -129,16 +130,15 @@ export default function Home() {
         isLoading={isLoading}
       />
 
-
-
       {/* Recent snippets */}
       <section className="rounded-lg border bg-background p-6 shadow-sm">
         <div className="flex items-center justify-between gap-4">
           <h2 className="text-xl font-medium">Recent snippets</h2>
-          <Link href="/snippet/show">
-            <a className="text-sm font-medium text-muted-foreground hover:underline">
-              View all
-            </a>
+          <Link
+            href="/snippet/show"
+            className="text-sm font-medium text-muted-foreground hover:underline"
+          >
+            View all
           </Link>
         </div>
 
@@ -159,10 +159,11 @@ export default function Home() {
               Create your first snippet to see activity here.
             </div>
             <div className="mt-4">
-              <Link href="/snippet/create">
-                <a className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">
-                  Create your first snippet
-                </a>
+              <Link
+                href="/snippet/create"
+                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+              >
+                Create your first snippet
               </Link>
             </div>
           </div>
@@ -185,20 +186,23 @@ export default function Home() {
                   return (
                     <tr key={s.id} className="border-t">
                       <td className="py-3 pr-4">
-                        <Link href={`/snippet/${s.id}/edit`}>
-                          <a className="font-medium hover:underline">
-                            {preview || "(empty snippet)"}
-                          </a>
+                        <Link
+                          href={`/snippet/${s.id}/edit`}
+                          className="font-medium hover:underline"
+                        >
+                          {preview || "(empty snippet)"}
                         </Link>
                       </td>
 
                       <td className="py-3 pr-4">
                         <div className="flex flex-wrap gap-1">
                           {(s.tags ?? []).slice(0, 4).map((t) => (
-                            <Link key={t} href={`/snippet/show?tag=${encodeURIComponent(t)}`}>
-                              <a className="rounded-md border px-2 py-0.5 text-xs hover:bg-muted">
-                                {t}
-                              </a>
+                            <Link
+                              key={t}
+                              href={`/snippet/show?tag=${encodeURIComponent(t)}`}
+                              className="rounded-md border px-2 py-0.5 text-xs hover:bg-muted"
+                            >
+                              {t}
                             </Link>
                           ))}
                           {(s.tags ?? []).length > 4 ? (
@@ -210,7 +214,9 @@ export default function Home() {
                       </td>
 
                       <td className="py-3 text-muted-foreground">
-                        {formatDistanceToNow(new Date(s.createdAt), { addSuffix: true })}
+                        {formatDistanceToNow(new Date(s.createdAt), {
+                          addSuffix: true,
+                        })}
                       </td>
                     </tr>
                   );
