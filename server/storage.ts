@@ -1,14 +1,14 @@
-import { users, type User, type InsertUser } from "@shared/schema";
+import { users, type UserRow, type InsertUser } from "@shared/db";
 import {
   snippets,
   themes,
-  type Snippet,
+  type SnippetRow,
   type InsertSnippet,
-  type Theme,
-  type ThemeListItem,
+  type ThemeRow,
   recentSourceItems,
   recentSources,
-} from "@shared/schema";
+} from "@shared/db";
+import {type ThemeListItem} from "@shared"
 import { normalizeTag } from "./utils/tags";
 import { db } from "./db";
 import { eq, desc, sql } from "drizzle-orm";
@@ -37,18 +37,17 @@ function makeExcerpt(content: string, q: string, max = 140) {
 }
 
 export interface IThemeStorage {
-  // themes
   getThemes(): Promise<ThemeListItem[]>;
-  getThemeById(id: string): Promise<Theme | undefined>;
+  getThemeById(id: string): Promise<ThemeRow | undefined>;
   createTheme(input: {
     name: string;
     description?: string | null;
-  }): Promise<Theme>;
+  }): Promise<ThemeRow>;
   updateTheme(input: {
     id: string;
     name?: string;
     description?: string | null;
-  }): Promise<Theme>;
+  }): Promise<ThemeRow>;
   deleteTheme(id: string): Promise<boolean>;
 
   // snippets
@@ -91,19 +90,19 @@ export class ThemeStorage implements IThemeStorage {
     }));
   }
 
-  async getThemeById(id: string): Promise<Theme | undefined> {
+  async getThemeById(id: string): Promise<ThemeRow | undefined> {
     const [row] = await db
       .select()
       .from(themes)
       .where(eq(themes.id, id))
       .limit(1);
-    return row ? (row as Theme) : undefined;
+    return row ? (row as ThemeRow) : undefined;
   }
 
   async createTheme(input: {
     name: string;
     description?: string | null;
-  }): Promise<Theme> {
+  }): Promise<ThemeRow> {
     const [row] = await db
       .insert(themes)
       .values({
@@ -113,14 +112,14 @@ export class ThemeStorage implements IThemeStorage {
       })
       .returning();
 
-    return row as Theme;
+    return row as ThemeRow;
   }
 
   async updateTheme(input: {
     id: string;
     name?: string;
     description?: string | null;
-  }): Promise<Theme> {
+  }): Promise<ThemeRow> {
     const patch: Record<string, any> = {
       updatedAt: new Date(),
     };
@@ -135,7 +134,7 @@ export class ThemeStorage implements IThemeStorage {
       .returning();
 
     if (!row) throw new Error("Theme not found");
-    return row as Theme;
+    return row as ThemeRow;
   }
 
   async deleteTheme(id: string): Promise<boolean> {
@@ -161,25 +160,25 @@ export class ThemeStorage implements IThemeStorage {
 }
 
 export interface IStorage {
-  getUser(id: string): Promise<User | undefined>;
-  getUsers(): Promise<User[]>;
-  getUserByUsername(username: string): Promise<User | undefined>;
+  getUser(id: string): Promise<UserRow | undefined>;
+  getUsers(): Promise<UserRow[]>;
+  getUserByUsername(username: string): Promise<UserRow | undefined>;
 
-  createUser(user: InsertUser): Promise<User>;
+  createUser(user: InsertUser): Promise<UserRow>;
   deleteUser(id: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
-  async getUser(id: string): Promise<User | undefined> {
+  async getUser(id: string): Promise<UserRow | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user || undefined;
   }
 
-  async getUsers(): Promise<User[]> {
+  async getUsers(): Promise<UserRow[]> {
     return await db.select().from(users);
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
+  async getUserByUsername(username: string): Promise<UserRow | undefined> {
     const [user] = await db
       .select()
       .from(users)
@@ -187,7 +186,7 @@ export class DatabaseStorage implements IStorage {
     return user || undefined;
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
+  async createUser(insertUser: InsertUser): Promise<UserRow> {
     const hashedPassword = await bcrypt.hash(insertUser.password, SALT_ROUNDS);
     const [user] = await db
       .insert(users)
@@ -225,14 +224,14 @@ export interface ISnippetStorage {
     id: string,
   ): Promise<{ alreadyCaptured: boolean; snippetId: string | null }>;
 
-  getSnippets(): Promise<Snippet[]>;
-  getSnippetById(id: string): Promise<Snippet | null>;
-  createSnippet(snippet: InsertSnippet): Promise<Snippet>;
+  getSnippets(): Promise<SnippetRow[]>;
+  getSnippetById(id: string): Promise<SnippetRow | null>;
+  createSnippet(snippet: InsertSnippet): Promise<SnippetRow>;
   updateSnippet(
     id: string,
     data: Pick<InsertSnippet, "content" | "tags">,
-  ): Promise<Snippet>;
-  deleteSnippet(id: string): Promise<Snippet | undefined>;
+  ): Promise<SnippetRow>;
+  deleteSnippet(id: string): Promise<SnippetRow | undefined>;
   getTags(): Promise<Array<{ tag: string; slug: string; count: number }>>;
   globalSearch(q: string, limit: number): Promise<GlobalSearchResult[]>;
 }
@@ -379,7 +378,7 @@ export class SnippetStorage implements ISnippetStorage {
       const tags = s.tags ?? [];
 
       const contentHit = content.toLowerCase().includes(ql);
-      const tagHit = tags.some((t) => (t ?? "").toLowerCase().includes(ql));
+      const tagHit = tags.some((t: any) => (t ?? "").toLowerCase().includes(ql));
 
       if (!contentHit && !tagHit) continue;
 
@@ -410,14 +409,14 @@ export class SnippetStorage implements ISnippetStorage {
     return row ?? null;
   }
 
-  async createSnippet(insertSnippet: InsertSnippet): Promise<Snippet> {
+  async createSnippet(insertSnippet: InsertSnippet): Promise<SnippetRow> {
     const [snippet] = await db
       .insert(snippets)
       .values(insertSnippet)
       .returning();
     return snippet;
   }
-  async getSnippets(): Promise<Snippet[]> {
+  async getSnippets(): Promise<SnippetRow[]> {
     return await db.select().from(snippets);
   }
 
@@ -443,8 +442,8 @@ export class SnippetStorage implements ISnippetStorage {
 
   async updateSnippet(
     id: string,
-    data: Pick<Snippet, "content" | "tags" | "themeId">,
-  ): Promise<Snippet> {
+    data: Pick<SnippetRow, "content" | "tags" | "themeId">,
+  ): Promise<SnippetRow> {
     const [updated] = await db
       .update(snippets)
       .set({

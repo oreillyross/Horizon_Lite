@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 type RecentRow = {
@@ -67,8 +66,8 @@ function MetaBar({
 }
 
 export default function Home() {
-  const snippetsQuery = trpc.getSnippets.useQuery();
-  const tagsQuery = trpc.getTags.useQuery();
+  const snippetsQuery = trpc.snippets.getSnippets.useQuery();
+  const tagsQuery = trpc.snippets.getTags.useQuery();
   
   
 

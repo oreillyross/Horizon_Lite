@@ -47,7 +47,7 @@ export function GlobalSearch() {
   );
 
   // ✅ THIS is where you call it
-  const searchQuery = trpc.globalSearch.useQuery(
+  const searchQuery = trpc.snippets.globalSearch.useQuery(
     { q: dq || "x", limit: 20 },
     { enabled: open && dq.length > 0, staleTime: 10_000 }
   );

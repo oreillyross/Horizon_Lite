@@ -1,9 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import "@testing-library/jest-dom";
 
 import EditSnippetScreen from "./EditSnippetScreen";
-import { trpc } from "@/lib/trpc";
 import { useParams, useLocation } from "wouter";
 
 // ---------- mocks ----------
@@ -43,15 +42,20 @@ vi.mock("@/components/ThemeSelect", () => ({
 
 const mockTrpc = vi.hoisted(() => ({
   useUtils: vi.fn(() => ({
-    getSnippets: { setData: mockSetData },
+    snippets: {
+      getSnippets: { setData: mockSetData },
+    },
   })),
-  getSnippets: {
-    useQuery: vi.fn(),
-  },
-  updateSnippet: {
-    useMutation: vi.fn(),
+  snippets: {
+    getSnippets: {
+      useQuery: vi.fn(),
+    },
+    updateSnippet: {
+      useMutation: vi.fn(),
+    },
   },
 }));
+
 
 vi.mock("@/lib/trpc", () => ({ trpc: mockTrpc }));
 
@@ -70,7 +74,7 @@ function arrangeQuery({
   isLoading?: boolean;
   data?: any[];
 }) {
-  mockTrpc.getSnippets.useQuery.mockReturnValue({
+  mockTrpc.snippets.getSnippets.useQuery.mockReturnValue({
     isLoading,
     data,
     error: null,
@@ -78,9 +82,9 @@ function arrangeQuery({
 }
 
 function arrangeMutation({ isPending = false }: { isPending?: boolean } = {}) {
-  mockTrpc.updateSnippet.useMutation.mockImplementation((config: any) => {
+  mockTrpc.snippets.updateSnippet.useMutation.mockImplementation((config: any) => {
     // capture config so tests can call config.onSuccess(...)
-    (mockTrpc.updateSnippet.useMutation as any)._config = config;
+    (mockTrpc.snippets.updateSnippet.useMutation as any)._config = config;
 
     return {
       mutate: mockMutate,
@@ -106,8 +110,8 @@ describe("EditSnippetScreen", () => {
     mockSetLocation.mockReset();
     mockMutate.mockReset();
     mockSetData.mockReset();
-    mockTrpc.getSnippets.useQuery.mockReset();
-    mockTrpc.updateSnippet.useMutation.mockReset();
+    mockTrpc.snippets.getSnippets.useQuery.mockReset();
+    mockTrpc.snippets.updateSnippet.useMutation.mockReset();
     mockTrpc.useUtils.mockClear();
     arrangeRoute("1");
   });
@@ -180,7 +184,7 @@ describe("EditSnippetScreen", () => {
     // simulate server returning updated snippet
     const updated = { id: "1", content: "Updated", tags: ["x"], themeId: null };
 
-    const config = (mockTrpc.updateSnippet.useMutation as any)._config;
+    const config = (mockTrpc.snippets.updateSnippet.useMutation as any)._config;
     config.onSuccess(updated);
 
     // 1) cache updated via setData

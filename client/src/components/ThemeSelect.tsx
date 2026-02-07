@@ -2,8 +2,8 @@ import { trpc } from "@/lib/trpc";
 import { Loader2 } from "lucide-react";
 
 type Props = {
-  value: string | null;
-  onChange: (themeId: string | null) => void;
+  value: string | null | undefined;
+  onChange: (themeId: string | null ) => void;
   label?: string;
 };
 
