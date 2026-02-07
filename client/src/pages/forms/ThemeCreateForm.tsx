@@ -9,16 +9,21 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import {useToast} from "@/hooks/use-toast" 
+import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
-import {ThemeCreateSchema, type ThemeCreateValues} from "@shared"
-
+import { ThemeCreateSchema, type ThemeCreateValues } from "@shared";
 
 export default function ThemeCreateScreen() {
   const [, setLocation] = useLocation();
-  const {toast} = useToast()
+  const { toast } = useToast();
 
   const form = useForm<ThemeCreateValues>({
     resolver: zodResolver(ThemeCreateSchema),
@@ -30,7 +35,7 @@ export default function ThemeCreateScreen() {
     mode: "onBlur",
   });
 
-  const createTheme = trpc.createTheme.useMutation({
+  const createTheme = trpc.themes.createTheme.useMutation({
     onSuccess: (created) => {
       toast({ title: "Theme created" });
 
@@ -53,7 +58,6 @@ export default function ThemeCreateScreen() {
     createTheme.mutate({
       name: values.name.trim(),
       description: values.description?.trim() || null,
-      prompt: values.prompt?.trim() || null,
     });
   }
 
@@ -62,7 +66,9 @@ export default function ThemeCreateScreen() {
       <div className="max-w-3xl">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-semibold tracking-tight">Create theme</h1>
+            <h1 className="text-3xl font-semibold tracking-tight">
+              Create theme
+            </h1>
             <p className="text-sm text-muted-foreground mt-1">
               Themes help you reuse a consistent style/prompt across snippets.
             </p>
@@ -150,7 +156,11 @@ export default function ThemeCreateScreen() {
                   Cancel
                 </Button>
 
-                <Button type="submit" disabled={isSaving} className="w-full sm:w-auto">
+                <Button
+                  type="submit"
+                  disabled={isSaving}
+                  className="w-full sm:w-auto"
+                >
                   {isSaving ? <Loader2 className="animate-spin" /> : null}
                   Create theme
                 </Button>

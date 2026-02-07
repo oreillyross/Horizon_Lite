@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import {  type Server } from "http";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
-import { appRouter } from "./routers";
+import { appRouter } from "./routers/appRouter";
 
 export async function registerRoutes(
   httpServer: Server,

@@ -20,15 +20,15 @@ export default function EditSnippetScreen() {
   const { id } = useParams<{ id: string }>();
   const [, setLocation] = useLocation();
 
-  const snippetsQuery = trpc.getSnippets.useQuery();
+  const snippetsQuery = trpc.snippets.getSnippets.useQuery();
   const snippet = useMemo(
     () => snippetsQuery.data?.find((s) => s.id === id),
     [snippetsQuery.data, id],
   );
 
-  const updateSnippetMutation = trpc.updateSnippet.useMutation({
+  const updateSnippetMutation = trpc.snippets.updateSnippet.useMutation({
     onSuccess: (updated) => {
-      utils.getSnippets.setData(undefined, (old) =>
+      utils.snippets.getSnippets.setData(undefined, (old) =>
         old?.map((s) => (s.id === updated.id ? updated : s)),
       );
       setLocation("/snippet/show");

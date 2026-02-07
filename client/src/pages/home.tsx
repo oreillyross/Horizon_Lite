@@ -66,8 +66,8 @@ function MetaBar({
 }
 
 export default function Home() {
-  const snippetsQuery = trpc.getSnippets.useQuery();
-  const tagsQuery = trpc.getTags.useQuery();
+  const snippetsQuery = trpc.snippets.getSnippets.useQuery();
+  const tagsQuery = trpc.snippets.getTags.useQuery();
   
   
 
