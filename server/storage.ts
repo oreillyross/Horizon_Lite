@@ -8,7 +8,7 @@ import {
   recentSourceItems,
   recentSources,
 } from "@shared/db";
-import {type ThemeListItem} from "@shared"
+import { type ThemeListItem } from "@shared";
 import { normalizeTag } from "./utils/tags";
 import { db } from "./db";
 import { eq, desc, sql } from "drizzle-orm";
@@ -37,6 +37,14 @@ function makeExcerpt(content: string, q: string, max = 140) {
 }
 
 export interface IThemeStorage {
+  updateThemeSynopsis(input: {
+    themeId: string;
+    synopsis: string; // JSON string
+    synopsisModel: string;
+  }): Promise<ThemeRow>;
+
+  // OPTIONAL (dirty/version)
+  markSynopsisDirty(themeId: string): Promise<{ ok: true }>;
   getThemes(): Promise<ThemeListItem[]>;
   getThemeById(id: string): Promise<ThemeRow | undefined>;
   createTheme(input: {
@@ -58,6 +66,45 @@ export interface IThemeStorage {
 }
 
 export class ThemeStorage implements IThemeStorage {
+   async updateThemeSynopsis(input: {
+      themeId: string;
+      synopsis: string; // JSON string
+      synopsisModel: string;
+    }) {
+      const now = new Date();
+
+      const [row] = await db
+        .update(themes)
+        .set({
+          synopsis: input.synopsis,
+          synopsisModel: input.synopsisModel,
+          synopsisUpdatedAt: now,
+          synopsisVersion: sql`${themes.synopsisVersion} + 1`,
+          updatedAt: now, // if you track updatedAt (you do in orderBy)
+        })
+        .where(eq(themes.id, input.themeId))
+        .returning();
+
+      if (!row) throw new Error("Theme not found");
+      return row;
+    }
+
+    // Optional: bump version whenever snippets change
+    async markSynopsisDirty(themeId: string) {
+      const now = new Date();
+
+      const updated = await db
+        .update(themes)
+        .set({
+          synopsisVersion: sql`${themes.synopsisVersion} + 1`,
+          updatedAt: now,
+        })
+        .where(eq(themes.id, themeId));
+
+      // drizzle returns command result; keep it simple
+      return { ok: true as const };
+    }
+  
   async getThemes(): Promise<ThemeListItem[]> {
     // Left join snippets to compute counts
     const rows = await db
@@ -160,6 +207,7 @@ export class ThemeStorage implements IThemeStorage {
 }
 
 export interface IStorage {
+  
   getUser(id: string): Promise<UserRow | undefined>;
   getUsers(): Promise<UserRow[]>;
   getUserByUsername(username: string): Promise<UserRow | undefined>;
@@ -202,6 +250,18 @@ export class DatabaseStorage implements IStorage {
 }
 
 export interface ISnippetStorage {
+  getSnippetsByThemeId(
+    themeId: string,
+    limit?: number,
+  ): Promise<
+    Array<{
+      id: string;
+      content: string;
+      tags: string[];
+      createdAt: Date;
+      themeId: string | null;
+    }>
+  >;
   getRecentSourceItems(limit: number): Promise<
     Array<{
       id: string;
@@ -237,6 +297,21 @@ export interface ISnippetStorage {
 }
 
 export class SnippetStorage implements ISnippetStorage {
+  async getSnippetsByThemeId(themeId: string, limit = 300) {
+    return await db
+      .select({
+        id: snippets.id,
+        content: snippets.content,
+        tags: snippets.tags,
+        createdAt: snippets.createdAt,
+        themeId: snippets.themeId,
+      })
+      .from(snippets)
+      .where(eq(snippets.themeId, themeId))
+      .orderBy(desc(snippets.createdAt))
+      .limit(limit);
+  }
+
   async getRecentSourceItems(limit: number) {
     const rows = await db
       .select({
@@ -378,7 +453,9 @@ export class SnippetStorage implements ISnippetStorage {
       const tags = s.tags ?? [];
 
       const contentHit = content.toLowerCase().includes(ql);
-      const tagHit = tags.some((t: any) => (t ?? "").toLowerCase().includes(ql));
+      const tagHit = tags.some((t: any) =>
+        (t ?? "").toLowerCase().includes(ql),
+      );
 
       if (!contentHit && !tagHit) continue;
 
@@ -423,7 +500,8 @@ export class SnippetStorage implements ISnippetStorage {
   async getTags(): Promise<
     Array<{ tag: string; slug: string; count: number }>
   > {
-    const all = await this.getSnippets();1
+    const all = await this.getSnippets();
+    1;
 
     const counts = new Map<string, number>();
 
