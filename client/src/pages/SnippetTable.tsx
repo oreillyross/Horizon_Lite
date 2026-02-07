@@ -283,7 +283,7 @@ export default function SnippetTable() {
                     {g.themeId && (
                       <>
                         <Link
-                          href={`/themes/${g.themeId}`}
+                          href={`/theme/${g.themeId}`}
                           className="text-sm text-muted-foreground hover:underline"
                         >
                           view
