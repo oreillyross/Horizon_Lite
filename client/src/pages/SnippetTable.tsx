@@ -13,7 +13,7 @@ import {type Snippet} from "@shared"
 
 
 export default function SnippetTable() {
-  const snippetsQuery = trpc.getSnippets.useQuery();
+  const snippetsQuery = trpc.snippets.getSnippets.useQuery();
   const [activeTab, setActiveTab] = useState<TabValue>("all")
   const showRecent = activeTab === "recent"
   
@@ -58,9 +58,9 @@ export default function SnippetTable() {
 
   const utils = trpc.useUtils();
 
-  const deleteSnippetMutation = trpc.deleteSnippet.useMutation({
+  const deleteSnippetMutation = trpc.snippets.deleteSnippet.useMutation({
     onSuccess: (_, { id }) => {
-      utils.getSnippets.setData(undefined, (old) =>
+      utils.snippets.getSnippets.setData(undefined, (old) =>
         old?.filter((s) => s.id !== id),
       );
     },

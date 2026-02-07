@@ -11,7 +11,7 @@ export default function SnippetViewScreen() {
   const [, params] = useRoute("/snippet/:id");
   const id = params?.id ?? "";
 
-  const { data, isLoading, isError } = trpc.getSnippetById.useQuery(
+  const { data, isLoading, isError } = trpc.snippets.getSnippetById.useQuery(
     { id },
     { enabled: !!id }
   );
@@ -57,7 +57,7 @@ export default function SnippetViewScreen() {
 
           <div className="text-sm text-muted-foreground">
             Created {formatDate(data.createdAt)}
-            {data.updatedAt ? ` · Updated ${formatDate(data.updatedAt)}` : null}
+            {/* {data.updatedAt ? ` · Updated ${formatDate(data.updatedAt)}` : null} */}
           </div>
         </div>
 

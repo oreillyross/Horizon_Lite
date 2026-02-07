@@ -1,40 +1,56 @@
+import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, beforeEach, expect, it, vi } from "vitest";
-import SnippetTable from "./snippet-show";
-import type { Snippet } from "./snippet-show";
+import SnippetTable from "./SnippetTable";
+import type { SnippetRow } from "@shared/db";
 
-// Mock
-
+// ---- hoisted mocks (best for TS + runtime) ----
 const mockSetData = vi.fn();
+const mockGetSnippetsQuery = vi.hoisted(() => vi.fn());
+const mockDeleteSnippetMutation = vi.hoisted(() => vi.fn());
 
 const mockTrpc = vi.hoisted(() => ({
   useUtils: vi.fn(() => ({
-    getSnippets: {
-      setData: mockSetData,
+    snippets: {
+      getSnippets: {
+        setData: mockSetData,
+        // add invalidate if your component uses it
+        invalidate: vi.fn(),
+      },
     },
   })),
-  getSnippets: {
-    useQuery: vi.fn(),
-  },
-  deleteSnippet: {
-    useMutation: vi.fn(),
+  snippets: {
+    getSnippets: {
+      useQuery: mockGetSnippetsQuery,
+    },
+    deleteSnippet: {
+      useMutation: mockDeleteSnippetMutation,
+    },
   },
 }));
 
-const mockSnippets: Snippet[] = [
+const mockSnippets: SnippetRow[] = [
   {
     id: "1",
     createdAt: new Date("2026-01-23"),
     content: "Test snippet 1",
     tags: ["javascript", "react"],
+    sourceHost: null,
+    sourceTitle: null,
+    sourceUrl: null,
+    themeId: null,
   },
   {
     id: "2",
     createdAt: new Date("2026-01-23"),
     content: "Test snippet 2",
     tags: ["typescript"],
+    sourceHost: null,
+    sourceTitle: null,
+    sourceUrl: null,
+    themeId: null,
   },
 ];
 
@@ -58,7 +74,7 @@ const renderWithQueryClient = (ui: React.ReactElement) => {
 
 let mockMutation: {
   mutate: ReturnType<typeof vi.fn>;
-  isPending: boolean,
+  isPending: boolean;
 };
 
 describe("SnippetTable", () => {
@@ -66,17 +82,16 @@ describe("SnippetTable", () => {
     vi.clearAllMocks();
     vi.spyOn(window, "confirm").mockReturnValue(true);
 
-     mockMutation = {
+    mockMutation = {
       mutate: vi.fn(),
       isPending: false,
     };
 
-    mockTrpc.deleteSnippet.useMutation.mockReturnValue(mockMutation as any);
+    mockDeleteSnippetMutation.mockReturnValue(mockMutation as any);
   });
 
-
   it("renders loading state while fetching snippets", () => {
-    mockTrpc.getSnippets.useQuery.mockReturnValue({
+    mockGetSnippetsQuery.mockReturnValue({
       isLoading: true,
       data: undefined,
       refetch: vi.fn(),
@@ -89,7 +104,7 @@ describe("SnippetTable", () => {
   });
 
   it("renders snippet table with data", () => {
-    mockTrpc.getSnippets.useQuery.mockReturnValue({
+    mockGetSnippetsQuery.mockReturnValue({
       isLoading: false,
       data: mockSnippets,
       refetch: vi.fn(),
@@ -103,7 +118,7 @@ describe("SnippetTable", () => {
   });
 
   it("calls delete mutation when trash icon clicked", () => {
-    mockTrpc.getSnippets.useQuery.mockReturnValue({
+    mockGetSnippetsQuery.mockReturnValue({
       isPending: false,
       data: mockSnippets,
       refetch: vi.fn(),
@@ -120,28 +135,28 @@ describe("SnippetTable", () => {
   });
 
   it("disables delete button during mutation loading", () => {
-    mockTrpc.getSnippets.useQuery.mockReturnValue({
+    mockGetSnippetsQuery.mockReturnValue({
       isPending: false,
       data: mockSnippets,
       refetch: vi.fn(),
     } as any);
 
-    const mockMutation = {
+    const pendingMutation = {
       mutate: vi.fn(),
       isPending: true,
     };
-    mockTrpc.deleteSnippet.useMutation.mockReturnValue(mockMutation as any);
+    mockDeleteSnippetMutation.mockReturnValue(pendingMutation as any);
 
     renderWithQueryClient(<SnippetTable />);
 
-    const trashIcons = screen.getAllByLabelText("Delete snippet");
-
+    const trashIcons = screen.getAllByLabelText(/delete snippet/i);
     fireEvent.click(trashIcons[0]);
-    expect(mockMutation.mutate).not.toHaveBeenCalled();
+
+    expect(pendingMutation.mutate).not.toHaveBeenCalled();
   });
 
   it("handles empty snippet list", () => {
-    mockTrpc.getSnippets.useQuery.mockReturnValue({
+    mockGetSnippetsQuery.mockReturnValue({
       isLoading: false,
       data: [],
       refetch: vi.fn(),
