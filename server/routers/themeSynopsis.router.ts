@@ -3,7 +3,7 @@ import { publicProcedure, router } from "../trpc";
 import { themeStorage, snippetStorage } from "../storage";
 import { generateThemeSynopsis } from "../llm/generateThemeSynopsis";
 
-export const themesRouter = router({
+export const themeSynopsisRouter = router({
   // ...existing procedures
 
   refreshThemeSynopsis: publicProcedure

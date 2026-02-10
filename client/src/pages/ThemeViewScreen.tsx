@@ -1,6 +1,7 @@
 import { trpc } from "@/lib/trpc";
 import { Link, useRoute } from "wouter";
 import { Loader2 } from "lucide-react";
+import { RefreshSynopsisButton } from "@/components/RefreshSynopsisButton";
 
 function fmtDate(d?: Date | null) {
   if (!d) return "—";
@@ -59,8 +60,10 @@ export default function ThemeViewScreen() {
             <p className="mt-2 text-sm text-muted-foreground max-w-3xl">
               {theme.description}
             </p>
+      
           ) : null}
         </div>
+        <RefreshSynopsisButton themeId={theme.id}/>
 
         <div className="text-right text-sm text-muted-foreground">
           <div>Synopsis updated: {fmtDate(theme.synopsisUpdatedAt)}</div>
