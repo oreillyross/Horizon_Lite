@@ -10,6 +10,7 @@ import type { SnippetRow } from "@shared/db";
 const mockSetData = vi.fn();
 const mockGetSnippetsQuery = vi.hoisted(() => vi.fn());
 const mockDeleteSnippetMutation = vi.hoisted(() => vi.fn());
+const mockGetThemesQuery = vi.hoisted(() => vi.fn());
 
 const mockTrpc = vi.hoisted(() => ({
   useUtils: vi.fn(() => ({
@@ -18,6 +19,11 @@ const mockTrpc = vi.hoisted(() => ({
         setData: mockSetData,
         // add invalidate if your component uses it
         invalidate: vi.fn(),
+      },
+      themes: {
+        getThemes: {
+          invalidate: vi.fn(),
+        },
       },
     },
   })),
@@ -28,6 +34,9 @@ const mockTrpc = vi.hoisted(() => ({
     deleteSnippet: {
       useMutation: mockDeleteSnippetMutation,
     },
+  },
+  themes: {
+    getThemes: { useQuery: mockGetThemesQuery },
   },
 }));
 
@@ -81,6 +90,13 @@ describe("SnippetTable", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.spyOn(window, "confirm").mockReturnValue(true);
+
+    mockGetThemesQuery.mockReturnValue({
+      data: [],
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as any);
 
     mockMutation = {
       mutate: vi.fn(),
@@ -164,7 +180,10 @@ describe("SnippetTable", () => {
 
     renderWithQueryClient(<SnippetTable />);
 
-    expect(screen.getByRole("table")).toBeInTheDocument();
-    expect(screen.getAllByRole("row")).toHaveLength(1); // header only
+    expect(screen.getByText(/you have no snippets/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /create snippet/i }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
   });
 });

@@ -75,16 +75,13 @@ export default function ThemeViewScreen() {
         <div className="lg:col-span-2 rounded-md border p-4">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-medium">Synopsis</h2>
-            {/* Wire this later */}
-            {/* <button className="text-sm underline" onClick={() => refresh.mutate({ themeId: theme.id })}>
-              Refresh
-            </button> */}
+           
           </div>
 
           <div className="mt-3 text-sm whitespace-pre-wrap">
             {theme.synopsis?.trim()
-              ? theme.synopsis
-              : "No synopsis yet. (We’ll add the refresh button once the LLM mutation is wired.)"}
+              ? JSON.parse(theme.synopsis ?? "{}").synopsis 
+              : "No synopsis yet. "}
           </div>
         </div>
 

@@ -5,11 +5,25 @@ import "@testing-library/jest-dom";
 import RecentSourcesScreen from "./RecentSourcesScreen";
 import { trpc } from "@/lib/trpc";
 
-// ------------------
-// mocks
-// ------------------
+const mockGetRecentSourceItemsQuery = vi.hoisted(() => vi.fn());
+const mockCaptureMutation = vi.hoisted(() => vi.fn());
+const mockRefreshMutation = vi.hoisted(() => vi.fn());
 
-// mock wouter Link
+const mockTrpc = vi.hoisted(() => ({
+  useUtils: vi.fn(() => ({
+    sources: {
+      getRecentSourceItems: { invalidate: vi.fn() },
+    },
+  })),
+  sources: {
+    getRecentSourceItems: { useQuery: mockGetRecentSourceItemsQuery },
+    captureSourceItem: { useMutation: mockCaptureMutation },     // adjust names to your router
+    refreshRecentSources: { useMutation: mockRefreshMutation },   // adjust names to your router
+  },
+}));
+
+vi.mock("@/lib/trpc", () => ({ trpc: mockTrpc }));
+
 vi.mock("wouter", () => ({
   Link: ({ to, children, ...rest }: any) => (
     <a href={to} {...rest}>

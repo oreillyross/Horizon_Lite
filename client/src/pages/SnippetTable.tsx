@@ -1,9 +1,5 @@
 import React, { useMemo, useState } from "react";
-import {
-  useReactTable,
-  getCoreRowModel,
-  ColumnDef,
-} from "@tanstack/react-table";
+import { ColumnDef } from "@tanstack/react-table";
 import {
   Accordion,
   AccordionContent,
@@ -197,12 +193,6 @@ export default function SnippetTable() {
     [deleteSnippetMutation],
   );
 
-  const table = useReactTable({
-    data: finalData,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-  });
-
   if (snippetsQuery.isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -211,6 +201,60 @@ export default function SnippetTable() {
           aria-label="Loading Snippets"
           className="h-6 w-6 animate-spin text-muted-foreground"
         />
+      </div>
+    );
+  }
+
+  // ---- Empty state (no snippets, or nothing matching filters) ----
+  if (finalData.length === 0) {
+    const isFiltered = Boolean(activeTag) || showRecent;
+    const title = isFiltered ? "No snippets found" : "You have no snippets";
+    const subtitle = isFiltered
+      ? "Try clearing your filters, or capture a new snippet."
+      : "Capture something interesting to start building your knowledge base.";
+
+    return (
+      <div className="p-4">
+        <div className="rounded-lg border bg-background p-6 shadow-sm">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <h2 className="text-xl font-medium">{title}</h2>
+              <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
+
+              {activeTag && (
+                <div className="mt-3 flex items-center gap-2 text-sm">
+                  <span className="rounded border px-2 py-1 font-mono">
+                    #{activeTag}
+                  </span>
+                  <Link
+                    href="/snippet/show"
+                    className="text-muted-foreground hover:underline"
+                  >
+                    clear
+                  </Link>
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              {isFiltered && (
+                <Link
+                  href="/snippet/show"
+                  className="inline-flex min-h-9 items-center justify-center whitespace-nowrap rounded-md border bg-background px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground"
+                >
+                  Clear filters
+                </Link>
+              )}
+
+              <Link
+                href="/snippet/create"
+                className="inline-flex min-h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+              >
+                Create snippet
+              </Link>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
