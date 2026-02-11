@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, uuid } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -15,6 +15,8 @@ export const users = pgTable("users", {
   .notNull()
   .default("analyst"),
 
-  createdAt: text("created_at").notNull().default(sql`now()::text`),
+  createdAt: timestamp("created_at", { withTimezone: true })
+  .defaultNow()
+  .notNull(),
 });
 export type UserRow = typeof users.$inferSelect;
