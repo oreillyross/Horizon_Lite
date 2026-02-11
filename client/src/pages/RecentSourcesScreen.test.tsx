@@ -3,22 +3,25 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import "@testing-library/jest-dom";
 
 import RecentSourcesScreen from "./RecentSourcesScreen";
-import { trpc } from "@/lib/trpc";
 
+// ---- hoisted mocks ----
 const mockGetRecentSourceItemsQuery = vi.hoisted(() => vi.fn());
-const mockCaptureMutation = vi.hoisted(() => vi.fn());
-const mockRefreshMutation = vi.hoisted(() => vi.fn());
+const mockCaptureSourceItemMutation = vi.hoisted(() => vi.fn());
+const mockRefreshSourcesMutation = vi.hoisted(() => vi.fn());
+const mockInvalidate = vi.hoisted(() => vi.fn());
 
 const mockTrpc = vi.hoisted(() => ({
   useUtils: vi.fn(() => ({
     sources: {
-      getRecentSourceItems: { invalidate: vi.fn() },
+      getRecentSourceItems: {
+        invalidate: mockInvalidate,
+      },
     },
   })),
   sources: {
     getRecentSourceItems: { useQuery: mockGetRecentSourceItemsQuery },
-    captureSourceItem: { useMutation: mockCaptureMutation },     // adjust names to your router
-    refreshRecentSources: { useMutation: mockRefreshMutation },   // adjust names to your router
+    refreshSources: { useMutation: mockRefreshSourcesMutation },
+    captureSourceItem: { useMutation: mockCaptureSourceItemMutation },
   },
 }));
 
@@ -32,88 +35,73 @@ vi.mock("wouter", () => ({
   ),
 }));
 
-const invalidateMock = vi.fn();
-
-const mockUseUtils = {
-  getRecentSourceItems: {
-    invalidate: invalidateMock,
-  },
-};
-
-const mockRefreshMutate = vi.fn();
-const mockCaptureMutate = vi.fn();
-
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    useUtils: vi.fn(() => mockUseUtils),
-    getRecentSourceItems: {
-      useQuery: vi.fn(),
-    },
-    refreshSources: {
-      useMutation: vi.fn(),
-    },
-    captureSourceItem: {
-      useMutation: vi.fn(),
-    },
-  },
-}));
-
-// ------------------
-// helpers
-// ------------------
-
-function mockQuery(state: Partial<any>) {
-  vi.mocked(trpc.getRecentSourceItems.useQuery).mockReturnValue({
-    data: undefined,
-    isLoading: false,
-    isError: false,
-    error: null,
-    ...state,
-  } as any);
-}
-
-function mockMutations() {
-  vi.mocked(trpc.refreshSources.useMutation).mockReturnValue({
-    mutate: mockRefreshMutate,
-    isPending: false,
-  } as any);
-
-  vi.mocked(trpc.captureSourceItem.useMutation).mockReturnValue({
-    mutate: mockCaptureMutate,
-    isPending: false,
-  } as any);
-}
-
-// ------------------
-// tests
-// ------------------
-
 describe("RecentSourcesScreen", () => {
+  const mockRefreshMutate = vi.fn();
+  const mockCaptureMutate = vi.fn();
+
   beforeEach(() => {
-    vi.resetAllMocks();
-    mockMutations();
+    vi.clearAllMocks();
+
+    mockRefreshSourcesMutation.mockReturnValue({
+      mutate: mockRefreshMutate,
+      isPending: false,
+    } as any);
+
+    mockCaptureSourceItemMutation.mockReturnValue({
+      mutate: mockCaptureMutate,
+      isPending: false,
+    } as any);
+
+    mockGetRecentSourceItemsQuery.mockReturnValue({
+      data: [],
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as any);
   });
 
   it("shows loading state", () => {
-    mockQuery({ isLoading: true });
+    mockGetRecentSourceItemsQuery.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      isError: false,
+      error: null,
+    } as any);
 
     render(<RecentSourcesScreen />);
 
     expect(screen.getByText("Loading…")).toBeInTheDocument();
   });
 
-  it("shows empty state", () => {
-    mockQuery({ data: [] });
+  it("shows error state", () => {
+    mockGetRecentSourceItemsQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: { message: "boom" },
+    } as any);
 
     render(<RecentSourcesScreen />);
 
-    expect(
-      screen.getByText("No items yet. Click “Refresh”.")
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Failed to load:/i)).toBeInTheDocument();
+    expect(screen.getByText(/boom/i)).toBeInTheDocument();
   });
 
-  it("renders items and capture button", () => {
-    mockQuery({
+  it("shows empty state", () => {
+    mockGetRecentSourceItemsQuery.mockReturnValue({
+      data: [],
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as any);
+
+    render(<RecentSourcesScreen />);
+
+    expect(screen.getByText("No items yet. Click “Refresh”.")).toBeInTheDocument();
+  });
+
+  it("renders an item and enables Capture", () => {
+    mockGetRecentSourceItemsQuery.mockReturnValue({
       data: [
         {
           id: "1",
@@ -127,17 +115,23 @@ describe("RecentSourcesScreen", () => {
           capturedSnippetId: null,
         },
       ],
-    });
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as any);
 
     render(<RecentSourcesScreen />);
 
+    expect(screen.getByText("Recent sources")).toBeInTheDocument();
     expect(screen.getByText("HN")).toBeInTheDocument();
     expect(screen.getByText("Interesting post")).toBeInTheDocument();
+    expect(screen.getByText("Short excerpt")).toBeInTheDocument();
+
     expect(screen.getByRole("button", { name: "Capture" })).toBeEnabled();
   });
 
   it("calls capture mutation when clicking Capture", () => {
-    mockQuery({
+    mockGetRecentSourceItemsQuery.mockReturnValue({
       data: [
         {
           id: "1",
@@ -151,22 +145,35 @@ describe("RecentSourcesScreen", () => {
           capturedSnippetId: null,
         },
       ],
-    });
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as any);
 
     render(<RecentSourcesScreen />);
 
     fireEvent.click(screen.getByRole("button", { name: "Capture" }));
-
     expect(mockCaptureMutate).toHaveBeenCalledWith({ id: "1" });
   });
 
-  it("calls refresh mutation when clicking Refresh", () => {
-    mockQuery({ data: [] });
+  
 
+  it("calls refresh mutation when clicking Refresh", () => {
     render(<RecentSourcesScreen />);
 
     fireEvent.click(screen.getByRole("button", { name: "Refresh" }));
+    expect(mockRefreshMutate).toHaveBeenCalledTimes(1);
+  });
 
-    expect(mockRefreshMutate).toHaveBeenCalled();
+  it("disables Refresh button while refresh is pending", () => {
+    mockRefreshSourcesMutation.mockReturnValue({
+      mutate: mockRefreshMutate,
+      isPending: true,
+    } as any);
+
+    render(<RecentSourcesScreen />);
+
+    const btn = screen.getByRole("button", { name: "Refreshing…" });
+    expect(btn).toBeDisabled();
   });
 });

@@ -17,13 +17,12 @@ const mockTrpc = vi.hoisted(() => ({
     snippets: {
       getSnippets: {
         setData: mockSetData,
-        // add invalidate if your component uses it
         invalidate: vi.fn(),
       },
-      themes: {
-        getThemes: {
-          invalidate: vi.fn(),
-        },
+    },
+    themes: {
+      getThemes: {
+        invalidate: vi.fn(),
       },
     },
   })),
@@ -40,10 +39,14 @@ const mockTrpc = vi.hoisted(() => ({
   },
 }));
 
+vi.mock("@/lib/trpc", () => ({
+  trpc: mockTrpc,
+}));
+
 const mockSnippets: SnippetRow[] = [
   {
     id: "1",
-    createdAt: new Date("2026-01-23"),
+    createdAt: new Date("2026-01-23T10:00:00.000Z"),
     content: "Test snippet 1",
     tags: ["javascript", "react"],
     sourceHost: null,
@@ -53,7 +56,7 @@ const mockSnippets: SnippetRow[] = [
   },
   {
     id: "2",
-    createdAt: new Date("2026-01-23"),
+    createdAt: new Date("2026-01-24T10:00:00.000Z"), // newer -> sorts first
     content: "Test snippet 2",
     tags: ["typescript"],
     sourceHost: null,
@@ -62,10 +65,6 @@ const mockSnippets: SnippetRow[] = [
     themeId: null,
   },
 ];
-
-vi.mock("@/lib/trpc", () => ({
-  trpc: mockTrpc,
-}));
 
 const createTestQueryClient = () =>
   new QueryClient({
@@ -81,15 +80,18 @@ const renderWithQueryClient = (ui: React.ReactElement) => {
   );
 };
 
-let mockMutation: {
-  mutate: ReturnType<typeof vi.fn>;
-  isPending: boolean;
-};
+function textSnapshot() {
+  // “snapshot-ish” but stable vs Radix random ids/attributes
+  return (document.body.textContent ?? "").replace(/\s+/g, " ").trim();
+}
 
-describe("SnippetTable", () => {
+describe("SnippetTable (Accordion view)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.spyOn(window, "confirm").mockReturnValue(true);
+
+    // avoid the component reading some old open state between tests
+    window.localStorage.clear();
 
     mockGetThemesQuery.mockReturnValue({
       data: [],
@@ -98,12 +100,10 @@ describe("SnippetTable", () => {
       error: null,
     } as any);
 
-    mockMutation = {
+    mockDeleteSnippetMutation.mockReturnValue({
       mutate: vi.fn(),
       isPending: false,
-    };
-
-    mockDeleteSnippetMutation.mockReturnValue(mockMutation as any);
+    } as any);
   });
 
   it("renders loading state while fetching snippets", () => {
@@ -116,10 +116,13 @@ describe("SnippetTable", () => {
     renderWithQueryClient(<SnippetTable />);
 
     expect(screen.getByRole("status")).toBeInTheDocument();
+    // accordion content/table should not exist while loading
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
+
+    expect(textSnapshot()).toMatchInlineSnapshot(`""`);
   });
 
-  it("renders snippet table with data", () => {
+  it("renders accordion groups (collapsed) from snippets", () => {
     mockGetSnippetsQuery.mockReturnValue({
       isLoading: false,
       data: mockSnippets,
@@ -128,50 +131,86 @@ describe("SnippetTable", () => {
 
     renderWithQueryClient(<SnippetTable />);
 
-    expect(screen.getByRole("table")).toBeInTheDocument();
+    // Collapsed: no table yet
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+
+    // The trigger contains the theme name + count somewhere inside
+    expect(screen.getByText("Unassigned")).toBeInTheDocument();
+    expect(screen.getByText("2")).toBeInTheDocument();
+    expect(screen.getByText("No theme assigned")).toBeInTheDocument();
+
+    expect(textSnapshot()).toMatchInlineSnapshot(
+      `"AllRecentUnassigned2No theme assigned"`,
+    );
+  });
+
+  it("expands a group and shows its table rows", () => {
+    mockGetSnippetsQuery.mockReturnValue({
+      isLoading: false,
+      data: mockSnippets,
+      refetch: vi.fn(),
+    } as any);
+
+    renderWithQueryClient(<SnippetTable />);
+
+    // Expand accordion
+    fireEvent.click(screen.getByText("Unassigned"));
+
+    // Now the inner table exists
+    const tables = screen.getAllByRole("table");
+    expect(tables).toHaveLength(1);
+
+    // Rows: 1 header + 2 data rows
     expect(screen.getAllByRole("row")).toHaveLength(3);
     expect(screen.getByText("Test snippet 1")).toBeInTheDocument();
+    expect(screen.getByText("Test snippet 2")).toBeInTheDocument();
   });
 
-  it("calls delete mutation when trash icon clicked", () => {
+  it("calls delete mutation when delete button clicked (after expanding)", () => {
+    const mockMutation = { mutate: vi.fn(), isPending: false };
+    mockDeleteSnippetMutation.mockReturnValue(mockMutation as any);
+
     mockGetSnippetsQuery.mockReturnValue({
-      isPending: false,
+      isLoading: false,
       data: mockSnippets,
       refetch: vi.fn(),
     } as any);
 
     renderWithQueryClient(<SnippetTable />);
 
-    const trashIcons = screen.getAllByLabelText(/delete snippet/i);
-    expect(trashIcons).toHaveLength(2);
+    fireEvent.click(screen.getByText("Unassigned"));
 
-    fireEvent.click(trashIcons[0]);
+    const deleteButtons = screen.getAllByLabelText(/delete snippet/i);
+    expect(deleteButtons).toHaveLength(2);
 
-    expect(mockMutation.mutate).toHaveBeenCalledWith({ id: "1" });
+    fireEvent.click(deleteButtons[0]);
+
+    // because of createdAt sorting desc, id "2" should be first
+    expect(mockMutation.mutate).toHaveBeenCalledWith({ id: "2" });
   });
 
-  it("disables delete button during mutation loading", () => {
-    mockGetSnippetsQuery.mockReturnValue({
-      isPending: false,
-      data: mockSnippets,
-      refetch: vi.fn(),
-    } as any);
-
-    const pendingMutation = {
-      mutate: vi.fn(),
-      isPending: true,
-    };
+  it("does not call delete mutate when mutation is pending", () => {
+    const pendingMutation = { mutate: vi.fn(), isPending: true };
     mockDeleteSnippetMutation.mockReturnValue(pendingMutation as any);
 
+    mockGetSnippetsQuery.mockReturnValue({
+      isLoading: false,
+      data: mockSnippets,
+      refetch: vi.fn(),
+    } as any);
+
     renderWithQueryClient(<SnippetTable />);
 
-    const trashIcons = screen.getAllByLabelText(/delete snippet/i);
-    fireEvent.click(trashIcons[0]);
+    fireEvent.click(screen.getByText("Unassigned"));
+
+    const deleteButtons = screen.getAllByLabelText(/delete snippet/i);
+    fireEvent.click(deleteButtons[0]);
 
     expect(pendingMutation.mutate).not.toHaveBeenCalled();
+    expect(deleteButtons[0]).toBeDisabled();
   });
 
-  it("handles empty snippet list", () => {
+  it("handles empty snippet list (no groups rendered)", () => {
     mockGetSnippetsQuery.mockReturnValue({
       isLoading: false,
       data: [],
@@ -180,10 +219,11 @@ describe("SnippetTable", () => {
 
     renderWithQueryClient(<SnippetTable />);
 
-    expect(screen.getByText(/you have no snippets/i)).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: /create snippet/i }),
-    ).toBeInTheDocument();
+    // No groups
+    expect(screen.queryByText("Unassigned")).not.toBeInTheDocument();
+    // No table because nothing to expand
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
+
+    expect(textSnapshot()).toMatchInlineSnapshot(`"You have no snippetsCapture something interesting to start building your knowledge base.Create snippet"`);
   });
 });
