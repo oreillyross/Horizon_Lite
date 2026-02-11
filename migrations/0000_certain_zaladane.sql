@@ -46,17 +46,25 @@ CREATE TABLE "themes" (
 CREATE TABLE "users" (
 	"id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"username" text,
-	"email" text,
-	"password_hash" text,
+	"email" text NOT NULL,
+	"password_hash" text NOT NULL,
 	"role" text DEFAULT 'analyst' NOT NULL,
-	"analyst_group_id" uuid,
-	"created_at" text DEFAULT now()::text NOT NULL,
+	"analyst_group_id" uuid NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "users_username_unique" UNIQUE("username"),
 	CONSTRAINT "users_email_unique" UNIQUE("email")
+);
+--> statement-breakpoint
+CREATE TABLE "analyst_groups" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"name" text NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "analyst_groups_name_unique" UNIQUE("name")
 );
 --> statement-breakpoint
 ALTER TABLE "recent_source_items" ADD CONSTRAINT "recent_source_items_source_id_recent_sources_id_fk" FOREIGN KEY ("source_id") REFERENCES "public"."recent_sources"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "recent_source_items" ADD CONSTRAINT "recent_source_items_captured_snippet_id_snippets_id_fk" FOREIGN KEY ("captured_snippet_id") REFERENCES "public"."snippets"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "snippets" ADD CONSTRAINT "snippets_theme_id_themes_id_fk" FOREIGN KEY ("theme_id") REFERENCES "public"."themes"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "users" ADD CONSTRAINT "users_analyst_group_id_analyst_groups_id_fk" FOREIGN KEY ("analyst_group_id") REFERENCES "public"."analyst_groups"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 CREATE UNIQUE INDEX "recent_source_items_url_unique" ON "recent_source_items" USING btree ("url");--> statement-breakpoint
 CREATE UNIQUE INDEX "themes_name_unique" ON "themes" USING btree ("name");
