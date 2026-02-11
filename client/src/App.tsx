@@ -14,8 +14,13 @@ import SnippetViewScreen from "@/pages/SnippetViewScreen";
 import RecentSourcesScreen from "@/pages/RecentSourcesScreen";
 import WebcutScreen from "@/pages/WebcutScreen";
 import ThemeViewScreen from "@/pages/ThemeViewScreen";
-import ThemeCreateForm from "@/pages/forms/ThemeCreateForm"
+import ThemeCreateForm from "@/pages/forms/ThemeCreateForm";
 import ThemesScreen from "@/pages/ThemesScreen";
+import { SessionGate } from "@/components/SessionGate";
+import LoginForm from "@/pages/forms/LoginForm";
+import { RequireAuth } from "@/components/RequireAuth";
+import SignupForm from "@/pages/forms/SignupForm"
+import ResetPasswordForm from "@/pages/forms/ResetPasswordForm"
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -29,18 +34,81 @@ const queryClient = new QueryClient({
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Home} />
-      <Route path="/snippet/create" component={SnippetScreen} />
-      <Route path="/snippet/show" component={SnippetTable} />
-      <Route path="/snippet/:id/edit" component={EditSnippetScreen} />
-      <Route path="/snippet/:id" component={SnippetViewScreen} />
-      <Route path="/sources/recent" component={RecentSourcesScreen} />
-      <Route path="/tags/show" component={TagsScreen} />
-      <Route path="/themes" component={ThemesScreen} />
-      <Route path="/theme/create" component={ThemeCreateForm}/>
-      <Route path="/theme/:id" component={ThemeViewScreen} />
-      <Route path="/webcut" component={WebcutScreen} />
-      <Route component={NotFound} />
+      <Route path="/">
+        <SessionGate authed={<Home />} unauthed={<LoginForm />} />
+      </Route>
+      <Route path="/reset-password">
+        <ResetPasswordForm />
+      </Route>
+
+
+      <Route path="/signup">
+        <SignupForm />
+      </Route>
+
+      <Route path="/snippet/create">
+        <RequireAuth>
+          <SnippetScreen />
+        </RequireAuth>
+      </Route>
+
+      <Route path="/snippet/show">
+        <RequireAuth>
+          <SnippetTable />
+        </RequireAuth>
+      </Route>
+
+      <Route path="/snippet/:id/edit">
+        <RequireAuth>
+          <EditSnippetScreen />
+        </RequireAuth>
+      </Route>
+
+      <Route path="/snippet/:id">
+        <RequireAuth>
+          <SnippetViewScreen />
+        </RequireAuth>
+      </Route>
+
+      <Route path="/sources/recent">
+        <RequireAuth>
+          <RecentSourcesScreen />
+        </RequireAuth>
+      </Route>
+
+      <Route path="/tags/show">
+        <RequireAuth>
+          <TagsScreen />
+        </RequireAuth>
+      </Route>
+
+      <Route path="/themes">
+        <RequireAuth>
+          <ThemesScreen />
+        </RequireAuth>
+      </Route>
+
+      <Route path="/theme/create">
+        <RequireAuth>
+          <ThemeCreateForm />
+        </RequireAuth>
+      </Route>
+
+      <Route path="/theme/:id">
+        <RequireAuth>
+          <ThemeViewScreen />
+        </RequireAuth>
+      </Route>
+
+      <Route path="/webcut">
+        <RequireAuth>
+          <WebcutScreen />
+        </RequireAuth>
+      </Route>
+
+      <Route>
+        <NotFound />
+      </Route>
     </Switch>
   );
 }
