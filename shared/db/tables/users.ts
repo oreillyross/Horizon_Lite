@@ -8,13 +8,14 @@ export const users = pgTable("users", {
   username: text("username").unique(),
 
 
-  email: text("email").unique(),
+  email: text("email").notNull().unique(),
 
 
-  passwordHash: text("password_hash"),
+  passwordHash: text("password_hash").notNull(),
 
-  role: text("role").notNull().default("analyst"), // 'analyst' | 'admin'
-  analystGroupId: uuid("analyst_group_id"), 
+  role: text("role", { enum: ["analyst", "admin"] })
+  .notNull()
+  .default("analyst"),
 
   createdAt: text("created_at").notNull().default(sql`now()::text`),
 });
