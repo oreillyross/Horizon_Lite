@@ -1,10 +1,10 @@
-// server/trpc/context.ts
 import type { Request, Response } from "express";
 
 export type AuthUser = {
   id: string;
+  email: string;
   role: "admin" | "analyst";
-  analystGroupId: string | null;
+  analystGroupId: string | null; 
 };
 
 export type TRPCContext = {

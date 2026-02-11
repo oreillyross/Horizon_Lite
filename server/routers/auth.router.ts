@@ -3,7 +3,7 @@ import { z } from "zod";
 import bcrypt from "bcrypt";
 import { router, publicProcedure } from "../trpc";
 import { db } from "../db";
-import { users } from "@shared/db";
+import { users, analystGroups } from "@shared/db";
 import { eq } from "drizzle-orm";
 
 const SALT_ROUNDS = 12;
@@ -56,23 +56,30 @@ export const authRouter = router({
 
       const passwordHash = await bcrypt.hash(input.password, SALT_ROUNDS);
 
-      // For now: analystGroupId can be null until we add the groups table + backfill.
-      // (We’ll lock this down in the next step.)
+      const [group] = await db
+        .select({ id: analystGroups.id })
+        .from(analystGroups)
+        .where(eq(analystGroups.name, "Default"))
+        .limit(1);
+
+      if (!group)
+        throw new Error("Default analyst group missing (run db:seed)");
+
       const [created] = await db
         .insert(users)
         .values({
           email,
           passwordHash,
           role: "analyst",
-          analystGroupId: null,
+          analystGroupId: group.id,
         })
         .returning();
 
-      // ✅ Set session
       ctx.req.session.user = {
         id: created.id,
         role: created.role,
         analystGroupId: created.analystGroupId,
+        email: created.email,
       };
 
       return { user: safeUser(created as any) };
@@ -106,13 +113,13 @@ export const authRouter = router({
         id: u.id,
         role: u.role,
         analystGroupId: u.analystGroupId,
+        email: u.email,
       };
 
       return { user: safeUser(u as any) };
     }),
 
   logout: publicProcedure.mutation(async ({ ctx }) => {
-    // destroy session
     await new Promise<void>((resolve, reject) => {
       ctx.req.session.destroy((err) => {
         if (err) return reject(err);

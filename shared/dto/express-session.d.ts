@@ -6,6 +6,7 @@ declare module "express-session" {
       id: string;
       role: "admin" | "analyst";
       analystGroupId: string | null;
+      email: string;
     };
   }
 }
