@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { Menu, X } from "lucide-react";
+import { trpc } from "@/lib/trpc";
+import { useSession } from "@/hooks/useSession";
 
 interface NavItem {
   linkName: string;
@@ -28,6 +30,12 @@ function getActiveThemeId(pathname: string): string | null {
 }
 
 export default function NavigationBar({ items }: NavigationBarProps) {
+  const { user, isLoading, isAuthenticated } = useSession();
+  const logoutMutation = trpc.auth.logout.useMutation({
+    onSuccess: () => {
+      window.location.reload();
+    },
+  });
   const [pathname] = useLocation();
   const [open, setOpen] = useState(false);
 
