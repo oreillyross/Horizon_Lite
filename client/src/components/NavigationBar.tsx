@@ -31,6 +31,7 @@ function getActiveThemeId(pathname: string): string | null {
 
 export default function NavigationBar({ items }: NavigationBarProps) {
   const { user, isLoading, isAuthenticated } = useSession();
+  console.log(isAuthenticated)
   const logoutMutation = trpc.auth.logout.useMutation({
     onSuccess: () => {
       window.location.reload();

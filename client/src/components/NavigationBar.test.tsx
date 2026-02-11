@@ -3,7 +3,6 @@ import { render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { Router } from "wouter";
 import { memoryLocation } from "wouter/memory-location";
-import NavigationBar from "./NavigationBar";
 
 const navItems = [
   { linkName: "Home", href: "/" },
@@ -12,10 +11,32 @@ const navItems = [
   { linkName: "Profile", href: "/profile" },
 ];
 
+vi.mock("@/lib/trpc", () => {
+  return {
+    trpc: {
+      auth: {
+        logout: {
+          useMutation: vi.fn(() => ({
+            mutate: vi.fn(),
+            mutateAsync: vi.fn(),
+            isLoading: false,
+            isPending: false,
+            error: null,
+          })),
+        },
+      },
+    },
+  };
+});
+
+
+
 vi.mock("@/components/GlobalSearch", () => ({
   GlobalSearch: () => null,
   default: () => null,
 }));
+
+import NavigationBar from "./NavigationBar";
 
 function renderWithRouter(initialPath: string) {
   const { hook } = memoryLocation({ path: initialPath });
