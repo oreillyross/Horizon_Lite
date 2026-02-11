@@ -11,7 +11,7 @@ CREATE TABLE "recent_source_items" (
 	"captured_snippet_id" varchar
 );
 --> statement-breakpoint
-CREATE TABLE "recent_sources" (
+CREATE TABLE IF NOT EXISTS "recent_sources" (
 	"id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"name" text NOT NULL,
 	"url" text NOT NULL,
