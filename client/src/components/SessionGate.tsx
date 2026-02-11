@@ -22,5 +22,13 @@ export function SessionGate({
     );
   }
 
-  return <>{isAuthenticated ? authed : unauthed}</>;
+
+  return (
+    <div
+      key={isAuthenticated ? "authed" : "unauthed"}
+      className="animate-in fade-in duration-200"
+    >
+      {isAuthenticated ? authed : unauthed}
+    </div>
+  );
 }

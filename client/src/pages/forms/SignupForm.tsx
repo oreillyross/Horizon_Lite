@@ -1,13 +1,17 @@
 import { useState } from "react";
-import { useLocation, Link } from "wouter";
+import { useLocation, Link, Redirect } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { useSession } from "@/hooks/useSession";
 
 export default function SignupForm() {
   const [, setLocation] = useLocation();
   const utils = trpc.useUtils();
-
+  const { isLoading, isAuthenticated } = useSession();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  if (isLoading) return null;
+  if (isAuthenticated) return <Redirect to="/" />;
 
   const signupMutation = trpc.auth.signup.useMutation({
     onSuccess: async () => {

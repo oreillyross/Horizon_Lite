@@ -127,7 +127,7 @@ export default function NavigationBar({ items }: NavigationBarProps) {
               </div>
             ) : (
               <div className="flex gap-4">
-                <Link href="/login">Login</Link>
+                <Link href="/">Login</Link>
                 <Link href="/signup">Sign up</Link>
               </div>
             )}
