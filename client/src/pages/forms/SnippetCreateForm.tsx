@@ -70,7 +70,7 @@ export default function SnippetCreateForm() {
     );
   };
 
-  const createSnippetMutation = trpc.createSnippet.useMutation({
+  const createSnippetMutation = trpc.snippets.createSnippet.useMutation({
     onSuccess: () => {
       form.reset();
       console.log("Snippet created");

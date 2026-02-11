@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { Menu, X } from "lucide-react";
+import { trpc } from "@/lib/trpc";
+import { useSession } from "@/hooks/useSession";
 
 interface NavItem {
   linkName: string;
@@ -28,6 +30,13 @@ function getActiveThemeId(pathname: string): string | null {
 }
 
 export default function NavigationBar({ items }: NavigationBarProps) {
+  const { user, isLoading, isAuthenticated } = useSession();
+  console.log(isAuthenticated)
+  const logoutMutation = trpc.auth.logout.useMutation({
+    onSuccess: () => {
+      window.location.reload();
+    },
+  });
   const [pathname] = useLocation();
   const [open, setOpen] = useState(false);
 
@@ -105,6 +114,23 @@ export default function NavigationBar({ items }: NavigationBarProps) {
           {/* Desktop nav */}
           <div className="hidden md:flex items-center gap-1">
             {navItems.map(renderLink)}
+            {isLoading ? null : isAuthenticated ? (
+              <div className="flex items-center gap-4">
+                {user?.role === "admin" && <Link href="/admin">Admin</Link>}
+
+                <button
+                  onClick={() => logoutMutation.mutate()}
+                  className="text-sm text-muted-foreground"
+                >
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-4">
+                <Link href="/">Login</Link>
+                <Link href="/signup">Sign up</Link>
+              </div>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -134,6 +160,23 @@ export default function NavigationBar({ items }: NavigationBarProps) {
               {navItems.map((item) => (
                 <div key={item.href}>{renderLink(item)}</div>
               ))}
+              {isLoading ? null : isAuthenticated ? (
+                <div className="flex items-center gap-4">
+                  {user?.role === "admin" && <Link href="/admin">Admin</Link>}
+
+                  <button
+                    onClick={() => logoutMutation.mutate()}
+                    className="text-sm text-muted-foreground"
+                  >
+                    Logout
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-4">
+                  <Link href="/login">Login</Link>
+                  <Link href="/signup">Sign up</Link>
+                </div>
+              )}
             </div>
           </div>
         ) : null}

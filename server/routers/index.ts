@@ -4,6 +4,8 @@ export { sourcesRouter } from "./sources.router";
 export { usersRouter } from "./users.router";
 export { webcutRouter } from "./webcut.router";
 export { healthRouter } from "./health.router";
+export {themeSynopsisRouter } from "./themeSynopsis.router"
+export {authRouter} from "./auth.router"
 
 // import { router, publicProcedure } from "../trpc";
 // import { z } from "zod";

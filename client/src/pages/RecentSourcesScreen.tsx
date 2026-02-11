@@ -5,20 +5,20 @@ import { Link } from "wouter";
 export default function RecentSourcesScreen() {
   const utils = trpc.useUtils();
 
-  const itemsQuery = trpc.getRecentSourceItems.useQuery(
+  const itemsQuery = trpc.sources.getRecentSourceItems.useQuery(
     { limit: 50 },
     { refetchOnWindowFocus: false }
   );
 
-  const refreshMutation = trpc.refreshSources.useMutation({
+  const refreshMutation = trpc.sources.refreshSources.useMutation({
     onSuccess: async () => {
-      await utils.getRecentSourceItems.invalidate();
+      await utils.sources.getRecentSourceItems.invalidate();
     },
   });
 
-  const captureMutation = trpc.captureSourceItem.useMutation({
+  const captureMutation = trpc.sources.captureSourceItem.useMutation({
     onSuccess: async () => {
-      await utils.getRecentSourceItems.invalidate();
+      await utils.sources.getRecentSourceItems.invalidate();
     },
   });
 

@@ -10,6 +10,17 @@ vi.mock('packages/db/index', () => ({
   db: { /* mock Drizzle instance */ }
 }));
 
+// Make Navbar-safe everywhere (no tRPC Provider needed)
+vi.mock("@/hooks/useSession", () => {
+  return {
+    useSession: () => ({
+      user: null,
+      isLoading: false,
+      isAuthed: false,
+    }),
+  };
+});
+
 
 // Auto cleanup
 afterEach(() => {

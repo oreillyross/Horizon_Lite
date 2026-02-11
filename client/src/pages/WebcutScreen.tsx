@@ -62,12 +62,12 @@ export default function WebCutScreen() {
   }, [popoverOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // create snippet mutation
-  const createSnippet = trpc.createSnippet.useMutation({
+  const createSnippet = trpc.snippets.createSnippet.useMutation({
     onSuccess: async () => {
       // refresh lists so "recently added" shows it
       // (adjust these to your actual query names)
-      await utils.getSnippets?.invalidate?.();
-      await utils.getTags?.invalidate?.();
+      await utils.snippets.getSnippets?.invalidate?.();
+      await utils.snippets.getTags?.invalidate?.();
 
       // close UI
       setPopoverOpen(false);
@@ -117,7 +117,7 @@ export default function WebCutScreen() {
   const normalized = useMemo(() => normalizeUrl(urlInput), [urlInput]);
   const host = useMemo(() => hostFromUrl(loadedUrl), [loadedUrl]);
 
-  const readable = trpc.webcutFetchReadable.useQuery(
+  const readable = trpc.webcut.fetchReadable.useQuery(
     { url: loadedUrl },
     { enabled: !!loadedUrl },
   );

@@ -1,6 +1,7 @@
 import { trpc } from "@/lib/trpc";
 import { Link, useRoute } from "wouter";
 import { Loader2 } from "lucide-react";
+import { RefreshSynopsisButton } from "@/components/RefreshSynopsisButton";
 
 function fmtDate(d?: Date | null) {
   if (!d) return "—";
@@ -13,7 +14,7 @@ export default function ThemeViewScreen() {
   const id = params?.id ?? "";
 
   const themeQuery = trpc.themes.getThemeById.useQuery({ id }, { enabled: !!id });
-  const snippetsQuery = trpc.getSnippets.useQuery(); // we’ll filter client-side for now
+  const snippetsQuery = trpc.snippets.getSnippets.useQuery(); // we’ll filter client-side for now
 
   // (Optional now, useful later) stub refresh button can call a future mutation
   // const refresh = trpc.themes.refreshThemeSynopsis.useMutation();
@@ -59,8 +60,10 @@ export default function ThemeViewScreen() {
             <p className="mt-2 text-sm text-muted-foreground max-w-3xl">
               {theme.description}
             </p>
+      
           ) : null}
         </div>
+        <RefreshSynopsisButton themeId={theme.id}/>
 
         <div className="text-right text-sm text-muted-foreground">
           <div>Synopsis updated: {fmtDate(theme.synopsisUpdatedAt)}</div>
@@ -72,16 +75,13 @@ export default function ThemeViewScreen() {
         <div className="lg:col-span-2 rounded-md border p-4">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-medium">Synopsis</h2>
-            {/* Wire this later */}
-            {/* <button className="text-sm underline" onClick={() => refresh.mutate({ themeId: theme.id })}>
-              Refresh
-            </button> */}
+           
           </div>
 
           <div className="mt-3 text-sm whitespace-pre-wrap">
             {theme.synopsis?.trim()
-              ? theme.synopsis
-              : "No synopsis yet. (We’ll add the refresh button once the LLM mutation is wired.)"}
+              ? JSON.parse(theme.synopsis ?? "{}").synopsis 
+              : "No synopsis yet. "}
           </div>
         </div>
 

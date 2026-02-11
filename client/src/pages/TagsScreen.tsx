@@ -5,7 +5,7 @@ import { Link } from "wouter";
 type SortKey = "count" | "alpha";
 
 export default function TagsScreen() {
-  const { data, isLoading, isError, error } = trpc.getTags.useQuery();
+  const { data, isLoading, isError, error } = trpc.snippets.getTags.useQuery();
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<SortKey>("count");
 
