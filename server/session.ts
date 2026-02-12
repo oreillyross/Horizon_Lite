@@ -24,17 +24,19 @@ export function sessionMiddleware() {
     secret,
     resave: false,
     saveUninitialized: false,
+    proxy: process.env.NODE_ENV === "production",
     store: new PgSession({
       pool,
       tableName: "user_sessions",
-      // autoCreateTable defaults to true in connect-pg-simple; keep explicit:
+      schemaName: "public",
       createTableIfMissing: false,
     }),
     cookie: {
       httpOnly: true,
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production",
-      maxAge: 1000 * 60 * 60 * 24 * 14, // 14 days
+      maxAge: 1000 * 60 * 60 * 24 * 14,
     },
   });
+
 }

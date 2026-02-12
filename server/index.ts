@@ -23,6 +23,8 @@ app.use(
 
 app.use(express.urlencoded({ extended: false }));
 
+app.set("trust proxy", 1);
+
 app.use(sessionMiddleware());
 
 export function log(message: string, source = "express") {
