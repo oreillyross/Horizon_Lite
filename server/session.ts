@@ -24,7 +24,7 @@ export function sessionMiddleware() {
       pool,
       tableName: "user_sessions",
       // autoCreateTable defaults to true in connect-pg-simple; keep explicit:
-      createTableIfMissing: true,
+      createTableIfMissing: false,
     }),
     cookie: {
       httpOnly: true,
