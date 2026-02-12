@@ -12,6 +12,13 @@ function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
+function saveSession(req: any) {
+  return new Promise<void>((resolve, reject) => {
+    req.session.save((err: any) => (err ? reject(err) : resolve()));
+  });
+}
+
+
 function safeUser(u: {
   id: string;
   email: string;
@@ -81,7 +88,7 @@ export const authRouter = router({
         analystGroupId: created.analystGroupId,
         email: created.email,
       };
-
+      await saveSession(ctx.req)
       return { user: safeUser(created as any) };
     }),
 
@@ -115,7 +122,7 @@ export const authRouter = router({
         analystGroupId: u.analystGroupId,
         email: u.email,
       };
-
+      await saveSession(ctx.req)
       return { user: safeUser(u as any) };
     }),
 
