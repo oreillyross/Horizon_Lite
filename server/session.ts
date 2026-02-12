@@ -9,6 +9,10 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
+console.log("SESSION_DB_URL_HOST", new URL(process.env.DATABASE_URL!).host);
+console.log("SESSION_DB_URL_DB", new URL(process.env.DATABASE_URL!).pathname);
+
+
 export function sessionMiddleware() {
   const secret = process.env.SESSION_SECRET;
   if (!secret) {
