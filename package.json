@@ -8,6 +8,7 @@
     "build": "tsx script/build.ts",
     "db:generate": "drizzle-kit generate",
     "db:seed": "tsx server/seed.ts",
+    "db:bootstrap": "tsx server/bootstrap.ts",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "start": "npm run db:migrate && NODE_ENV=production node dist/index.cjs",
