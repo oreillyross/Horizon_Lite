@@ -1,4 +1,7 @@
 
+Use this to generate secrets:
+node -e "console.log(require('crypto').randomBytes(48).toString('base64'))"
+
 
 ### Step‑by‑step workflow
 
