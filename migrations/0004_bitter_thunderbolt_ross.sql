@@ -7,17 +7,17 @@ CREATE TABLE "analyst_groups" (
 --> statement-breakpoint
 
 -- 1) Expand: add new columns as NULLable first
-ALTER TABLE "users" RENAME COLUMN "password" TO "password_hash";
+ALTER TABLE  "users" RENAME COLUMN "password" TO "password_hash";
 --> statement-breakpoint
-ALTER TABLE "users" ALTER COLUMN "username" DROP NOT NULL;
+ALTER TABLE  "users" ALTER COLUMN "username" DROP NOT NULL;
 --> statement-breakpoint
-ALTER TABLE "users" ADD COLUMN "email" text;
+ALTER TABLE   "users" ADD COLUMN "email" text;
 --> statement-breakpoint
-ALTER TABLE "users" ADD COLUMN "role" text DEFAULT 'analyst' NOT NULL;
+ALTER TABLE  "users" ADD COLUMN "role" text DEFAULT 'analyst' NOT NULL;
 --> statement-breakpoint
-ALTER TABLE "users" ADD COLUMN "analyst_group_id" uuid;
+ALTER TABLE  "users" ADD COLUMN "analyst_group_id" uuid;
 --> statement-breakpoint
-ALTER TABLE "users" ADD COLUMN "created_at" timestamp with time zone DEFAULT now() NOT NULL;
+ALTER TABLE  "users" ADD COLUMN "created_at" timestamp with time zone DEFAULT now() NOT NULL;
 --> statement-breakpoint
 
 -- 2) Backfill: create a default group + populate existing users

@@ -8,4 +8,6 @@ export const analystGroups = pgTable("analyst_groups", {
     .notNull(),
 });
 
+
+
 export type AnalystGroupRow = typeof analystGroups.$inferSelect;

@@ -8,6 +8,7 @@ import { webcutRouter } from "./webcut.router";
 import { healthRouter } from "./health.router";
 import {themeSynopsisRouter} from "./themeSynopsis.router"
 import {authRouter} from "./auth.router"
+import {adminRouter} from "./adminRouter"
 
 export const appRouter = router({
   themes: themesRouter,
@@ -17,6 +18,7 @@ export const appRouter = router({
   users: usersRouter,
   synopsis: themeSynopsisRouter,
   auth: authRouter,
+  admin: adminRouter,
 
   // keep health as a top-level convenience OR nest it too
   ...healthRouter._def.record,

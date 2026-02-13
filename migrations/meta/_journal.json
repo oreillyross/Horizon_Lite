@@ -43,6 +43,13 @@
       "when": 1770911112039,
       "tag": "0005_foamy_the_twelve",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1770986687587,
+      "tag": "0006_faithful_richard_fisk",
+      "breakpoints": true
     }
   ]
 }

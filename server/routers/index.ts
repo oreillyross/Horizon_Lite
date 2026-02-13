@@ -6,6 +6,7 @@ export { webcutRouter } from "./webcut.router";
 export { healthRouter } from "./health.router";
 export {themeSynopsisRouter } from "./themeSynopsis.router"
 export {authRouter} from "./auth.router"
+export {adminRouter} from "./adminRouter"
 
 // import { router, publicProcedure } from "../trpc";
 // import { z } from "zod";

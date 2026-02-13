@@ -13,6 +13,7 @@ import TagsScreen from "./pages/TagsScreen";
 import SnippetViewScreen from "@/pages/SnippetViewScreen";
 import RecentSourcesScreen from "@/pages/RecentSourcesScreen";
 import WebcutScreen from "@/pages/WebcutScreen";
+import AdminScreen from "@/pages/AdminScreen";
 import ThemeViewScreen from "@/pages/ThemeViewScreen";
 import ThemeCreateForm from "@/pages/forms/ThemeCreateForm";
 import ThemesScreen from "@/pages/ThemesScreen";
@@ -91,6 +92,12 @@ function Router() {
       <Route path="/theme/create">
         <RequireAuth>
           <ThemeCreateForm />
+        </RequireAuth>
+      </Route>
+
+      <Route path="/admin">
+        <RequireAuth>
+          <AdminScreen />
         </RequireAuth>
       </Route>
 
