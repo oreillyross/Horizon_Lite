@@ -15,7 +15,6 @@ export const users = pgTable("users", {
     .default("analyst"),
 
   analystGroupId: uuid("analyst_group_id")
-    .notNull()
     .references(() => analystGroups.id, { onDelete: "restrict" }),
 
   createdAt: timestamp("created_at", { withTimezone: true })
