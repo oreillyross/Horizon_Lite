@@ -31,12 +31,14 @@ export const appRouter = router({
   synopsis: themeSynopsisRouter,
   auth: authRouter,
   admin: adminRouter,
-  horizonDashboard: dashboardRouter,
-  horizonThemes: horizonThemesRouter,
-  scenarios: scenariosRouter,
-  signals: signalsRouter,
-  updates: updatesRouter,
-  reports: reportsRouter,
+  horizon: router({
+    dashboard: dashboardRouter,
+    themes: horizonThemesRouter,
+    scenarios: scenariosRouter,
+    signals: signalsRouter,
+    updates: updatesRouter,
+    reports: reportsRouter,
+  }),
   
 
   // keep health as a top-level convenience OR nest it too
