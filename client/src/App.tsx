@@ -20,8 +20,14 @@ import ThemesScreen from "@/pages/ThemesScreen";
 import { SessionGate } from "@/components/SessionGate";
 import LoginForm from "@/pages/forms/LoginForm";
 import { RequireAuth } from "@/components/RequireAuth";
-import SignupForm from "@/pages/forms/SignupForm"
-import ResetPasswordForm from "@/pages/forms/ResetPasswordForm"
+import SignupForm from "@/pages/forms/SignupForm";
+import ResetPasswordForm from "@/pages/forms/ResetPasswordForm";
+import HorizonOverViewScreen from "@/pages/HorizonOverviewScreen";
+import HorizonScenarioDetailScreen from "@/pages/HorizonScenarioDetailScreen";
+import HorizonSignalsScreen from "@/pages/HorizonSignalsScreen";
+import HorizonIndicatorDetailScreen from "@/pages/HorizonIndicatorDetailScreen";
+import HorizonUpdatesScreen from "@/pages/HorizonUpdatesScreen";
+import HorizonReportsScreen from "@/pages/HorizonReportsScreen"
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -41,7 +47,52 @@ function Router() {
       <Route path="/reset-password">
         <ResetPasswordForm />
       </Route>
+      <Route path="/horizon/overview">
+        <RequireAuth>
+          <HorizonOverViewScreen />
+        </RequireAuth>
+      </Route>
 
+      <Route path="/horizon/scenarios">
+        <RequireAuth>
+          <div className="mx-auto max-w-7xl px-6 lg:px-8 py-8">
+            <div className="text-3xl font-semibold">Scenarios</div>
+            <div className="mt-2 text-sm text-muted-foreground">
+              Coming next.
+            </div>
+          </div>
+        </RequireAuth>
+      </Route>
+
+      <Route path="/horizon/scenarios/:id">
+        <RequireAuth>
+          <HorizonScenarioDetailScreen />
+        </RequireAuth>
+      </Route>
+
+      <Route path="/horizon/signals">
+        <RequireAuth>
+          <HorizonSignalsScreen />
+        </RequireAuth>
+      </Route>
+
+      <Route path="/horizon/signals/:id">
+        <RequireAuth>
+          <HorizonIndicatorDetailScreen />
+        </RequireAuth>
+      </Route>
+
+      <Route path="/horizon/updates">
+        <RequireAuth>
+          <HorizonUpdatesScreen />
+        </RequireAuth>
+      </Route>
+
+      <Route path="/horizon/reports">
+        <RequireAuth>
+         <HorizonReportsScreen/>
+        </RequireAuth>
+      </Route>
 
       <Route path="/signup">
         <SignupForm />
@@ -129,6 +180,7 @@ function App() {
           <NavigationBar
             items={[
               { linkName: "Home", href: "/" },
+              { linkName: "Horizon", href: "/horizon/overview" },
               { linkName: "Webcut", href: "/webcut" },
               { linkName: "Themes", href: "/themes" },
               { linkName: "Sources", href: "/sources/recent" },
