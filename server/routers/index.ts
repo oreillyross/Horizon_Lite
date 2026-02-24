@@ -7,6 +7,7 @@ export { healthRouter } from "./health.router";
 export {themeSynopsisRouter } from "./themeSynopsis.router"
 export {authRouter} from "./auth.router"
 export {adminRouter} from "./adminRouter"
+export {dashboardRouter} from "./horizon.router"
 
 // import { router, publicProcedure } from "../trpc";
 // import { z } from "zod";
