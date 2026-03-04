@@ -1,24 +1,92 @@
-import { router, publicProcedure } from "../trpc";
+// server/src/trpc/routers/sources.ts
+import { router, protectedProcedure } from "../trpc.js";
+import { db } from "../db.js";
 import { z } from "zod";
-import { snippetStorage } from "../storage";
+import { sources } from "@shared/db";
+import { desc, eq, ilike, or, sql } from "drizzle-orm";
+import { SourceCreateInput, SourceListInput, SourceUpdateInput } from "@shared";
 
 export const sourcesRouter = router({
-  getRecentSourceItems: publicProcedure
-    .input(z.object({ limit: z.number().int().min(1).max(200).default(50) }))
+  list: protectedProcedure
+    .input(SourceListInput.optional())
     .query(async ({ input }) => {
-      return await snippetStorage.getRecentSourceItems(input.limit);
+      const q = input?.q?.trim();
+      const limit = input?.limit ?? 100;
+
+      const where = q
+        ? or(
+            ilike(sources.url, `%${q}%`),
+            ilike(sql`coalesce(${sources.title}, '')`, `%${q}%`),
+          )
+        : undefined;
+
+      return db
+        .select()
+        .from(sources)
+        .where(where)
+        .orderBy(desc(sources.createdAt))
+        .limit(limit);
     }),
 
-  refreshSources: publicProcedure.mutation(async () => {
-    return await snippetStorage.refreshSources();
-  }),
-
-  /**
-   * Takes a recent-source-item and creates a Snippet from it
-   */
-  captureSourceItem: publicProcedure
-    .input(z.object({ id: z.string() }))
+  create: protectedProcedure
+    .input(SourceCreateInput)
     .mutation(async ({ input }) => {
-      return await snippetStorage.captureSourceItem(input.id);
+      const [row] = await db
+        .insert(sources)
+        .values({
+          url: input.url,
+          title: input.title,
+          notes: input.notes,
+        })
+        .returning();
+      return row;
+    }),
+
+  update: protectedProcedure
+    .input(SourceUpdateInput)
+    .mutation(async ({ input }) => {
+      const [row] = await db
+        .update(sources)
+        .set({
+          ...(input.url !== undefined ? { url: input.url } : {}),
+          ...(input.title !== undefined ? { title: input.title } : {}),
+          ...(input.notes !== undefined ? { notes: input.notes } : {}),
+          updatedAt: new Date(),
+        })
+        .where(eq(sources.id, input.id))
+        .returning();
+      return row;
+    }),
+
+  delete: protectedProcedure
+    .input(z.object({ id: z.string().min(1) }))
+    .mutation(async ({ input }) => {
+      await db.delete(sources).where(eq(sources.id, input.id));
+      return { ok: true };
     }),
 });
+
+// import { router, publicProcedure } from "../trpc";
+// import { z } from "zod";
+// import { snippetStorage } from "../storage";
+
+// export const sourcesRouter = router({
+//   getRecentSourceItems: publicProcedure
+//     .input(z.object({ limit: z.number().int().min(1).max(200).default(50) }))
+//     .query(async ({ input }) => {
+//       return await snippetStorage.getRecentSourceItems(input.limit);
+//     }),
+
+//   refreshSources: publicProcedure.mutation(async () => {
+//     return await snippetStorage.refreshSources();
+//   }),
+
+//   /**
+//    * Takes a recent-source-item and creates a Snippet from it
+//    */
+//   captureSourceItem: publicProcedure
+//     .input(z.object({ id: z.string() }))
+//     .mutation(async ({ input }) => {
+//       return await snippetStorage.captureSourceItem(input.id);
+//     }),
+// });
