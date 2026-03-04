@@ -3,6 +3,7 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { sessionMiddleware } from "./session";
+// import "./bootstrap"
 
 const app = express();
 const httpServer = createServer(app);

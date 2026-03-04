@@ -28,6 +28,7 @@ import HorizonSignalsScreen from "@/pages/HorizonSignalsScreen";
 import HorizonIndicatorDetailScreen from "@/pages/HorizonIndicatorDetailScreen";
 import HorizonUpdatesScreen from "@/pages/HorizonUpdatesScreen";
 import HorizonReportsScreen from "@/pages/HorizonReportsScreen"
+import SourcesScreen from "@/pages/SourcesScreen"
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -91,6 +92,11 @@ function Router() {
       <Route path="/horizon/reports">
         <RequireAuth>
          <HorizonReportsScreen/>
+        </RequireAuth>
+      </Route>
+      <Route path="/sources">
+        <RequireAuth>
+         <SourcesScreen/>
         </RequireAuth>
       </Route>
 
