@@ -57,6 +57,13 @@
       "when": 1771331771910,
       "tag": "0007_petite_scarlet_spider",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1772619319752,
+      "tag": "0008_modern_wither",
+      "breakpoints": true
     }
   ]
 }
