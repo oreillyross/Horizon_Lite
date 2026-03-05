@@ -64,6 +64,20 @@
       "when": 1772619319752,
       "tag": "0008_modern_wither",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1772701946449,
+      "tag": "0009_smart_firebird",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1772701979732,
+      "tag": "0010_happy_tempest",
+      "breakpoints": true
     }
   ]
 }

@@ -7,7 +7,7 @@ export default function RecentSourcesScreen() {
 
   const itemsQuery = trpc.sources.getRecentSourceItems.useQuery(
     { limit: 50 },
-    { refetchOnWindowFocus: false }
+    { refetchOnWindowFocus: false },
   );
 
   const refreshMutation = trpc.sources.refreshSources.useMutation({
@@ -30,10 +30,13 @@ export default function RecentSourcesScreen() {
         <div>
           <h1 className="text-2xl font-semibold">Recent sources</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Latest items from your tracked sources. Capture any item into a snippet.
+            Latest items from your tracked sources. Capture any item into a
+            snippet.
           </p>
         </div>
-
+        <button className="h-10 rounded-md border bg-background px-3 text-sm hover:bg-muted disabled:opacity-50">
+          <Link to="/sources">Manage Sources</Link>
+        </button>
         <button
           className="h-10 rounded-md border bg-background px-3 text-sm hover:bg-muted disabled:opacity-50"
           onClick={() => refreshMutation.mutate()}
@@ -51,9 +54,11 @@ export default function RecentSourcesScreen() {
             Failed to load: {itemsQuery.error?.message ?? "Unknown error"}
           </div>
         ) : rows.length === 0 ? (
-          <div className="p-6 text-sm text-muted-foreground">
-            No items yet. Click “Refresh”.
-          </div>
+          <>
+            <div className="p-6 text-sm text-muted-foreground">
+              No items yet. Click “Refresh”.
+            </div>
+          </>
         ) : (
           <ul className="divide-y">
             {rows.map((it) => {
@@ -115,8 +120,8 @@ export default function RecentSourcesScreen() {
                         {captured
                           ? "Captured"
                           : captureMutation.isPending
-                          ? "Capturing…"
-                          : "Capture"}
+                            ? "Capturing…"
+                            : "Capture"}
                       </button>
                     </div>
                   </div>

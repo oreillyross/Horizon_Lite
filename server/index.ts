@@ -4,6 +4,13 @@ import { serveStatic } from "./static";
 import { createServer } from "http";
 import { sessionMiddleware } from "./session";
 // import "./bootstrap"
+import { ingestGdelt } from "./jobs/gdeltIngest";
+
+ingestGdelt()
+
+setInterval(() => {
+  ingestGdelt();
+}, 1000 * 60 * 15);
 
 const app = express();
 const httpServer = createServer(app);
