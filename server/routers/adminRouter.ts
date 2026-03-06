@@ -1,11 +1,13 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
+import { db } from "../db";
 import { protectedProcedure, router } from "../trpc";
 import { users, analystGroups, themes, themeGroupLinks } from "@shared/db";
+import { ingestGdelt } from "../jobs/gdeltIngest";
+import { generateSignals } from "../jobs/generateSignals";
 
 const isAdminEmail = (email?: string | null) => {
-  
   const allow = (process.env.ADMIN_EMAILS ?? "")
     .split(",")
     .map((s) => s.trim().toLowerCase())
@@ -20,7 +22,81 @@ export const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   return next();
 });
 
+export function log(message: string, source = "express") {
+  const formattedTime = new Date().toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  });
+
+  console.log(`${formattedTime} [${source}] ${message}`);
+}
+
+const GDELT_JOB_LOCK_ID = 987654321;
+
 export const adminRouter = router({
+  runGdelt: adminProcedure.mutation(async ({}) => {
+    let lockAcquired = false;
+
+    try {
+      const lockResult = await db.execute(
+        sql`SELECT pg_try_advisory_lock(${GDELT_JOB_LOCK_ID}) as locked`,
+      );
+
+      const locked = Boolean(lockResult.rows[0]?.locked);
+
+      if (!locked) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Job already Running",
+        });
+      }
+
+      lockAcquired = true;
+
+      const startedAt = Date.now();
+      log("GDELT job started", "gdelt-job");
+
+      const ingestResult = await ingestGdelt();
+      const signalResult = await generateSignals();
+
+      const durationMs = Date.now() - startedAt;
+
+      log(
+        `GDELT job finished in ${durationMs}ms :: ${JSON.stringify({
+          ingestResult,
+          signalResult,
+        })}`,
+        "gdelt-job",
+      );
+
+      return {
+        ok: true,
+        job: "gdelt",
+        durationMs,
+        ingestResult,
+        signalResult,
+      };
+    } catch (error) {
+      console.error("GDELT job failed:", error);
+
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: error instanceof Error ? error.message : "unknown error",
+      });
+    } finally {
+      if (lockAcquired) {
+        try {
+          await db.execute(
+            sql`SELECT pg_advisory_unlock(${GDELT_JOB_LOCK_ID})`,
+          );
+        } catch (unlockError) {
+          console.error("Failed to release GDELT advisory lock:", unlockError);
+        }
+      }
+    }
+  }),
   // USERS
   listUsers: adminProcedure.query(async ({ ctx }) => {
     return ctx.db.select().from(users).orderBy(users.createdAt);
