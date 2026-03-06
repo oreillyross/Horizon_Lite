@@ -4,9 +4,10 @@ import {
   integer,
   doublePrecision,
   timestamp,
-  uniqueIndex,
+  varchar,
   index,
 } from "drizzle-orm/pg-core";
+import { eventCodes } from "@shared/db";
 
 export const gdeltEvents = pgTable(
   "gdelt_events",
@@ -20,7 +21,9 @@ export const gdeltEvents = pgTable(
     actor1Name: text("actor1_name"),
     actor2Name: text("actor2_name"),
 
-    eventCode: text("event_code"),
+    eventCode: varchar("event_code", { length: 4 }),
+    
+     
     quadClass: integer("quad_class"),
 
     goldstein: doublePrecision("goldstein"),
@@ -37,8 +40,12 @@ export const gdeltEvents = pgTable(
 
     sourceUrl: text("source_url"),
 
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
   },
   (t) => ({
     eventTimeIdx: index("gdelt_events_event_time_idx").on(t.eventTime),
