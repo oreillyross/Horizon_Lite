@@ -3,20 +3,69 @@ import { sql } from "drizzle-orm";
 import { signalEvents } from "@shared/db";
 import { mapIndicator } from "../intel/indicatorScoring";
 
+type SignalGenerationResult = {
+  themeSpikes: number;
+  toneCollapses: number;
+  amplifications: number;
+  hotspots: number;
+};
+
+type ThemeSpikeRow = {
+  theme: string;
+  last_hour: number | string;
+  prev_5h: number | string;
+  velocity: number | string | null;
+};
+
+type EvidenceRow = {
+  url: string | null;
+  domain: string | null;
+  title: string | null;
+};
+
+type ToneCollapseRow = {
+  theme: string;
+  n: number | string;
+  tone_now: number | string | null;
+  tone_prev: number | string | null;
+  delta: number | string | null;
+};
+
+type AmplificationRow = {
+  global_event_id: string;
+  num_mentions: number | string | null;
+  num_sources: number | string | null;
+  num_articles: number | string | null;
+  mps: number | string | null;
+  source_url: string | null;
+};
+
+type HotspotRow = {
+  cc: string;
+  events_last_hour: number | string;
+  events_prev_5h: number | string | null;
+  velocity: number | string | null;
+  tone_now: number | string | null;
+  delta: number | string | null;
+};
+
 function hourBucket(d = new Date()) {
   const x = new Date(d);
   x.setUTCMinutes(0, 0, 0);
-  return x.toISOString(); // stable for dedupe keys
+  return x.toISOString();
 }
 
-export async function generateSignals() {
+export async function generateSignals(): Promise<SignalGenerationResult> {
   console.log("Signal generator running...");
 
   const bucket = hourBucket();
 
-  // ---------- 1) THEME SPIKES (last 60m vs prior 5h avg per hour)
-  // We emit top 1-3 docs as evidence URLs.
-  const themeSpikes = await db.execute(sql`
+  let themeSpikes = 0;
+  let toneCollapses = 0;
+  let amplifications = 0;
+  let hotspots = 0;
+
+  const themeSpikeResult = await db.execute(sql`
     WITH curr AS (
       SELECT unnest(themes) AS theme, COUNT(*)::int AS c
       FROM gdelt_documents
@@ -27,7 +76,7 @@ export async function generateSignals() {
       SELECT unnest(themes) AS theme, COUNT(*)::int AS p
       FROM gdelt_documents
       WHERE published_at >= now() - interval '6 hours'
-        AND published_at <  now() - interval '60 minutes'
+        AND published_at < now() - interval '60 minutes'
       GROUP BY 1
     )
     SELECT
@@ -42,12 +91,12 @@ export async function generateSignals() {
     LIMIT 30;
   `);
 
-  for (const row of themeSpikes.rows as any[]) {
-    const theme = row.theme as string;
+  for (const row of themeSpikeResult.rows as ThemeSpikeRow[]) {
+    const theme = row.theme;
     const velocity = Number(row.velocity ?? 0);
+
     if (!Number.isFinite(velocity) || velocity < 3) continue;
 
-    // pick a representative doc for evidence
     const evidence = await db.execute(sql`
       SELECT url, domain, title
       FROM gdelt_documents
@@ -57,7 +106,7 @@ export async function generateSignals() {
       LIMIT 1;
     `);
 
-    const ev = evidence.rows[0] as any | undefined;
+    const ev = evidence.rows[0] as EvidenceRow | undefined;
     if (!ev?.url) continue;
 
     const dedupeKey = `theme_spike|${theme}|${bucket}`;
@@ -67,19 +116,17 @@ export async function generateSignals() {
       .values({
         indicatorId: mapIndicator(`THEME_SPIKE ${theme}`),
         sourceUrl: ev.url,
-        sourceHost: ev.domain ?? null,
+        sourceHost: ev.domain,
         title: ev.title ?? `Theme spike: ${theme}`,
         score: velocity,
-        // @ts-expect-error add this column if you implement dedupeKey
         dedupeKey,
       })
-      // if you add a unique index on dedupeKey:
-      // @ts-expect-error
-      .onConflictDoNothing?.();
+      .onConflictDoNothing();
+
+    themeSpikes++;
   }
 
-  // ---------- 2) TONE COLLAPSE (themes with sharply negative tone)
-  const toneCollapse = await db.execute(sql`
+  const toneCollapseResult = await db.execute(sql`
     WITH curr AS (
       SELECT unnest(themes) AS theme, AVG(tone) AS tone, COUNT(*)::int AS n
       FROM gdelt_documents
@@ -91,7 +138,7 @@ export async function generateSignals() {
       SELECT unnest(themes) AS theme, AVG(tone) AS tone
       FROM gdelt_documents
       WHERE published_at >= now() - interval '6 hours'
-        AND published_at <  now() - interval '60 minutes'
+        AND published_at < now() - interval '60 minutes'
         AND tone IS NOT NULL
       GROUP BY 1
     )
@@ -108,12 +155,11 @@ export async function generateSignals() {
     LIMIT 30;
   `);
 
-  for (const row of toneCollapse.rows as any[]) {
-    const theme = row.theme as string;
-    const toneNow = Number(row.tone_now);
-    const delta = Number(row.delta);
+  for (const row of toneCollapseResult.rows as ToneCollapseRow[]) {
+    const theme = row.theme;
+    const toneNow = Number(row.tone_now ?? 0);
+    const delta = Number(row.delta ?? 0);
 
-    // “shock” rule-of-thumb
     if (!(toneNow <= -2.0 && delta <= -1.0)) continue;
 
     const evidence = await db.execute(sql`
@@ -125,7 +171,7 @@ export async function generateSignals() {
       LIMIT 1;
     `);
 
-    const ev = evidence.rows[0] as any | undefined;
+    const ev = evidence.rows[0] as EvidenceRow | undefined;
     if (!ev?.url) continue;
 
     const dedupeKey = `tone_collapse|${theme}|${bucket}`;
@@ -135,18 +181,17 @@ export async function generateSignals() {
       .values({
         indicatorId: mapIndicator(`TONE_COLLAPSE ${theme}`),
         sourceUrl: ev.url,
-        sourceHost: ev.domain ?? null,
+        sourceHost: ev.domain,
         title: ev.title ?? `Tone collapse: ${theme}`,
-        score: Math.abs(delta), // magnitude
-        // @ts-expect-error
+        score: Math.abs(delta),
         dedupeKey,
       })
-      // @ts-expect-error
-      .onConflictDoNothing?.();
+      .onConflictDoNothing();
+
+    toneCollapses++;
   }
 
-  // ---------- 3) AMPLIFICATION ANOMALIES (export ratios)
-  const amplification = await db.execute(sql`
+  const amplificationResult = await db.execute(sql`
     SELECT
       global_event_id,
       num_mentions,
@@ -163,12 +208,11 @@ export async function generateSignals() {
     LIMIT 25;
   `);
 
-  for (const row of amplification.rows as any[]) {
+  for (const row of amplificationResult.rows as AmplificationRow[]) {
     const mps = Number(row.mps ?? 0);
-    if (!Number.isFinite(mps) || mps < 20) continue;
 
-    const url = (row.source_url as string | null) ?? null;
-    if (!url) continue;
+    if (!Number.isFinite(mps) || mps < 20) continue;
+    if (!row.source_url) continue;
 
     const dedupeKey = `amplification|${row.global_event_id}|${bucket}`;
 
@@ -176,19 +220,18 @@ export async function generateSignals() {
       .insert(signalEvents)
       .values({
         indicatorId: mapIndicator(`AMPLIFICATION ${row.global_event_id}`),
-        sourceUrl: url,
+        sourceUrl: row.source_url,
         sourceHost: null,
         title: `Amplification anomaly (MPS=${mps.toFixed(1)})`,
         score: mps,
-        // @ts-expect-error
         dedupeKey,
       })
-      // @ts-expect-error
-      .onConflictDoNothing?.();
+      .onConflictDoNothing();
+
+    amplifications++;
   }
 
-  // ---------- 4) HOTSPOTS (geo acceleration + tone delta)
-  const hotspots = await db.execute(sql`
+  const hotspotResult = await db.execute(sql`
     WITH curr AS (
       SELECT
         action_geo_country_code AS cc,
@@ -206,7 +249,7 @@ export async function generateSignals() {
         AVG(avg_tone) AS tone
       FROM gdelt_events
       WHERE event_time >= now() - interval '6 hours'
-        AND event_time <  now() - interval '60 minutes'
+        AND event_time < now() - interval '60 minutes'
         AND action_geo_country_code IS NOT NULL
       GROUP BY 1
     )
@@ -224,12 +267,11 @@ export async function generateSignals() {
     LIMIT 25;
   `);
 
-  for (const row of hotspots.rows as any[]) {
-    const cc = row.cc as string;
+  for (const row of hotspotResult.rows as HotspotRow[]) {
+    const cc = row.cc;
     const velocity = Number(row.velocity ?? 0);
     const delta = Number(row.delta ?? 0);
 
-    // “escalation-ish”
     if (!(velocity >= 3 && delta <= -1)) continue;
 
     const dedupeKey = `hotspot|${cc}|${bucket}`;
@@ -242,12 +284,19 @@ export async function generateSignals() {
         sourceHost: null,
         title: `Hotspot ${cc} (velocity=${velocity.toFixed(1)} toneΔ=${delta.toFixed(2)})`,
         score: velocity,
-        // @ts-expect-error
         dedupeKey,
       })
-      // @ts-expect-error
-      .onConflictDoNothing?.();
+      .onConflictDoNothing();
+
+    hotspots++;
   }
 
   console.log("Signal generator complete ✅");
+
+  return {
+    themeSpikes,
+    toneCollapses,
+    amplifications,
+    hotspots,
+  };
 }

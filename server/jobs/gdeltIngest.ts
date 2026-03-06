@@ -23,7 +23,7 @@ function toFloat(x: string | undefined): number | null {
 }
 
 function pickUrl(lastupdate: string, suffix: string): string | null {
-const line = lastupdate
+  const line = lastupdate
     .trim()
     .split("\n")
     .find((l) => l.includes(suffix));
@@ -242,11 +242,18 @@ function parseGkgRow(cols: string[]) {
   };
 }
 
+let exportUpserted = 0;
+let mentionsInserted = 0;
+let mentionsSkippedMissingEvent = 0;
+let gkgUpserted = 0;
+let gkgSkipped = 0;
+
 export async function ingestGdelt() {
   console.log("Running GDELT ingestion...");
 
   const lastRes = await fetch(LASTUPDATE);
-  if (!lastRes.ok) throw new Error(`lastupdate fetch failed: ${lastRes.status}`);
+  if (!lastRes.ok)
+    throw new Error(`lastupdate fetch failed: ${lastRes.status}`);
   const lastupdate = await lastRes.text();
 
   const exportUrl = pickUrl(lastupdate, ".export.CSV.zip");
@@ -297,7 +304,8 @@ export async function ingestGdelt() {
             actionGeoFullname:
               parsed.actionGeoFullname ?? sql`excluded.action_geo_fullname`,
             actionGeoCountryCode:
-              parsed.actionGeoCountryCode ?? sql`excluded.action_geo_country_code`,
+              parsed.actionGeoCountryCode ??
+              sql`excluded.action_geo_country_code`,
             actionGeoLat: parsed.actionGeoLat ?? sql`excluded.action_geo_lat`,
             actionGeoLon: parsed.actionGeoLon ?? sql`excluded.action_geo_lon`,
             sourceUrl: parsed.sourceUrl ?? sql`excluded.source_url`,
@@ -305,8 +313,10 @@ export async function ingestGdelt() {
           },
         });
 
+      exportUpserted++;
       upserted++;
-      if (upserted <= 2) console.log("export sample:", parsed.globalEventId, parsed.eventCode);
+      if (upserted <= 2)
+        console.log("export sample:", parsed.globalEventId, parsed.eventCode);
     }
 
     console.log(`EXPORT done. upserted=${upserted}`);
@@ -328,13 +338,12 @@ export async function ingestGdelt() {
       const parsed = parseMentionsRow(cols);
       if (!parsed) continue;
 
-      await db
-        .insert(gdeltEventMentions)
-        .values(parsed)
-        .onConflictDoNothing();
+      await db.insert(gdeltEventMentions).values(parsed).onConflictDoNothing();
 
       inserted++;
-      if (inserted <= 2) console.log("mentions sample:", parsed.globalEventId, parsed.url);
+      mentionsInserted++;
+      if (inserted <= 2)
+        console.log("mentions sample:", parsed.globalEventId, parsed.url);
     }
 
     console.log(`MENTIONS done. inserted=${inserted}`);
@@ -388,12 +397,28 @@ export async function ingestGdelt() {
           },
         });
 
+      gkgUpserted++;
       upserted++;
-      if (upserted <= 2) console.log("gkg sample:", parsed.domain, parsed.title);
+      if (upserted <= 2)
+        console.log("gkg sample:", parsed.domain, parsed.title);
     }
 
     console.log(`GKG done. upserted=${upserted} skipped=${skipped}`);
   }
 
   console.log("GDELT ingestion complete ✅");
+
+  return {
+    export: {
+      upserted: exportUpserted,
+    },
+    mentions: {
+      inserted: mentionsInserted,
+      skippedMissingEvent: mentionsSkippedMissingEvent,
+    },
+    gkg: {
+      upserted: gkgUpserted,
+      skipped: gkgSkipped,
+    },
+  };
 }
