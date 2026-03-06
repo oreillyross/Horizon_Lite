@@ -1,0 +1,1 @@
+ALTER TABLE "gdelt_event_mentions" DROP CONSTRAINT "gdelt_event_mentions_global_event_id_gdelt_events_global_event_id_fk";

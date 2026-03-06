@@ -64,6 +64,48 @@
       "when": 1772619319752,
       "tag": "0008_modern_wither",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1772701946449,
+      "tag": "0009_smart_firebird",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1772701979732,
+      "tag": "0010_happy_tempest",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1772720538045,
+      "tag": "0011_gorgeous_cargill",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1772722893527,
+      "tag": "0012_silent_norman_osborn",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1772785896539,
+      "tag": "0013_acoustic_captain_flint",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1772793514870,
+      "tag": "0014_minor_dakota_north",
+      "breakpoints": true
     }
   ]
 }
