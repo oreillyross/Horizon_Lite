@@ -7,6 +7,7 @@ import { ingestGdelt } from "./jobs/gdeltIngest";
 import { generateSignals } from "./jobs/generateSignals";
 import { db } from "./db";
 import { sql } from "drizzle-orm";
+// import "./bootstrap"
 
 const app = express();
 const httpServer = createServer(app);
