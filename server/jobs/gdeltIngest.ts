@@ -1,4 +1,3 @@
-import fetch from "node-fetch";
 import AdmZip from "adm-zip";
 import { createHash } from "node:crypto";
 import { db } from "../db";
