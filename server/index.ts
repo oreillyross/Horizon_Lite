@@ -46,12 +46,20 @@ export function log(message: string, source = "express") {
 }
 
 app.post("/internal/jobs/gdelt", async (req, res) => {
-  const authHeader = req.headers["x-job-secret"];
-  const expected = process.env.JOB_SECRET;
+  const jobSecretHeader = req.headers["x-job-secret"];
+  const expectedSecret = process.env.JOB_SECRET;
 
-  if (!expected || authHeader !== expected) {
-    return res.status(401).json({ ok: false, error: "unauthorized" });
+  const isCronAuthorized =
+    expectedSecret && jobSecretHeader === expectedSecret;
+
+  
+  if (!isCronAuthorized ) {
+    return res.status(401).json({
+      ok: false,
+      error: "unauthorized",
+    });
   }
+
 
   let lockAcquired = false;
 

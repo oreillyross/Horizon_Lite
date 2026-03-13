@@ -7,8 +7,14 @@ import { Input } from "@/components/ui/input";
 type Tab = "users" | "groups" | "links";
 
 export default function AdminScreen() {
+  const [result, setResult] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState<Tab>("users");
-
+  
+  const runGdeltJob = trpc.admin.runGdelt.useMutation();
+  
+ 
+  
   return (
     <main className="mx-auto w-full max-w-7xl px-6 lg:px-8 py-6 space-y-6">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -29,6 +35,27 @@ export default function AdminScreen() {
       {tab === "users" && <UsersPanel />}
       {tab === "groups" && <GroupsPanel />}
       {tab === "links" && <LinksPanel />}
+      <div className="space-y-6">
+
+        <h1 className="text-2xl font-semibold">
+          Admin Jobs
+        </h1>
+
+        <button
+          onClick={() => runGdeltJob.mutate()}
+          className="px-4 py-2 bg-black text-white rounded-md"
+          disabled={loading}
+        >
+          {loading ? "Running..." : "Run GDELT Ingest"}
+        </button>
+
+        {result && (
+          <div className="bg-gray-100 p-4 rounded-md font-mono text-sm">
+            <pre>{JSON.stringify(result, null, 2)}</pre>
+          </div>
+        )}
+
+      </div>
     </main>
   );
 }

@@ -33,6 +33,7 @@ export default function RecentSourcesScreen() {
             Latest items from your tracked sources. Capture any item into a
             snippet.
           </p>
+          <button><Link to="/intel/feed">Recent Documents</Link></button>
         </div>
         <button className="h-10 rounded-md border bg-background px-3 text-sm hover:bg-muted disabled:opacity-50">
           <Link to="/sources">Manage Sources</Link>

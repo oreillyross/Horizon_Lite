@@ -16,10 +16,10 @@ import { signalsRouter } from "./signals.router";
 import { updatesRouter } from "./updates.router";
 import { reportsRouter } from "./reports.router";
 export { scenariosRouter } from "./scenarios.router";
-export {signalsRouter} from "./signals.router"
-export {updatesRouter} from "./updates.router"
-export {reportsRouter} from "./reports.router"
-
+import { intelRouter } from "./intelRouter";
+export { signalsRouter } from "./signals.router";
+export { updatesRouter } from "./updates.router";
+export { reportsRouter } from "./reports.router";
 
 export const appRouter = router({
   themes: themesRouter,
@@ -30,6 +30,7 @@ export const appRouter = router({
   synopsis: themeSynopsisRouter,
   auth: authRouter,
   admin: adminRouter,
+  intel: intelRouter,
   horizon: router({
     dashboard: dashboardRouter,
     themes: horizonThemesRouter,
@@ -38,7 +39,6 @@ export const appRouter = router({
     updates: updatesRouter,
     reports: reportsRouter,
   }),
-  
 
   // keep health as a top-level convenience OR nest it too
   ...healthRouter._def.record,

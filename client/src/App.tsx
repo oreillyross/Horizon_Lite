@@ -29,6 +29,7 @@ import HorizonIndicatorDetailScreen from "@/pages/HorizonIndicatorDetailScreen";
 import HorizonUpdatesScreen from "@/pages/HorizonUpdatesScreen";
 import HorizonReportsScreen from "@/pages/HorizonReportsScreen"
 import SourcesScreen from "@/pages/SourcesScreen"
+import IntelFeed from "@/pages/IntelFeed"
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -92,6 +93,11 @@ function Router() {
       <Route path="/horizon/reports">
         <RequireAuth>
          <HorizonReportsScreen/>
+        </RequireAuth>
+      </Route>
+      <Route path="/intel/feed">
+        <RequireAuth>
+        <IntelFeed />
         </RequireAuth>
       </Route>
       <Route path="/sources">
