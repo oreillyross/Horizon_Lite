@@ -7,7 +7,7 @@ import {
   varchar,
   index,
 } from "drizzle-orm/pg-core";
-
+import { eventCodes } from "@shared/db";
 
 export const gdeltEvents = pgTable(
   "gdelt_events",
