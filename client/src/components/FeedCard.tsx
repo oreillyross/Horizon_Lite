@@ -24,7 +24,7 @@ export function FeedCard({ doc }: Props) {
       <div className="flex justify-between text-sm text-gray-500">
         <span>{doc.domain}</span>
         <span>
-          {new Date(doc.published_at).toLocaleTimeString()}
+          {new Date(doc.published_at).toLocaleString()}
         </span>
       </div>
 
