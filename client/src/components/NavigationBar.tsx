@@ -52,11 +52,11 @@ export default function NavigationBar() {
           </Link>
 
           {/* Search — hidden on xs, shown on sm+ */}
-          <div className="hidden sm:flex flex-1 justify-center">
+         {isAuthenticated && <div className="hidden sm:flex flex-1 justify-center">
             <div className="w-full max-w-xl">
               <GlobalSearch />
             </div>
-          </div>
+          </div>}
 
           {/* Auth controls */}
           <div className="flex items-center gap-2 shrink-0">
@@ -109,7 +109,7 @@ export default function NavigationBar() {
 
         {/* Mobile search */}
         <div className="sm:hidden pb-3">
-          <GlobalSearch />
+          {isAuthenticated && <GlobalSearch />}
         </div>
       </nav>
     </header>
