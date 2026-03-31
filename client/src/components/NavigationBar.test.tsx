@@ -90,6 +90,16 @@ describe("NavigationBar", () => {
 // ─── SubNavigationBar ─────────────────────────────────────────────────────────
 
 describe("SubNavigationBar", () => {
+  it("is hidden when user is not authenticated", () => {
+    vi.mocked(useSession).mockReturnValueOnce({
+      user: null,
+      isLoading: false,
+      isAuthenticated: false,
+    });
+    const { container } = renderSubNavWithRouter("/");
+    expect(container).toBeEmptyDOMElement();
+  });
+
   it("renders all navigation items", () => {
     renderSubNavWithRouter("/");
     expect(screen.getByText("Snippets")).toBeInTheDocument();

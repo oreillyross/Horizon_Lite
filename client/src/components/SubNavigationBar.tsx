@@ -1,5 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
+import { useSession } from "@/hooks/useSession";
 
 interface SubNavItem {
   linkName: string;
@@ -21,7 +22,10 @@ function isActiveRoute(pathname: string, href: string): boolean {
 }
 
 export default function SubNavigationBar() {
+  const { isAuthenticated } = useSession();
   const [pathname] = useLocation();
+
+  if (!isAuthenticated) return null;
 
   return (
     <div className="sticky top-14 z-30 w-full border-b bg-background/80 backdrop-blur">
