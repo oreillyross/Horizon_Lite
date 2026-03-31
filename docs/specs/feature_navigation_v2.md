@@ -7,6 +7,12 @@ The original NavigationBar combined page links, auth controls, and search into a
 - **TopBar** — branding, global search, and user account controls
 - **SubNavigationBar** — all page navigation links
 
+## Visibility Rules
+
+- Subnavigation bar: Hidden when user is not authenticated
+- Search bar: Hidden when user is not authenticated
+- Main nav items (home, login / signup.): Always visible
+
 This also removes `Profile` and `Webcut` as standalone nav links. Profile moves into the user avatar dropdown. Webcut functionality will be embedded directly into the Intel Feed and Sources pages (separate tasks).
 
 ---
