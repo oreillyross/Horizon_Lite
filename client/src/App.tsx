@@ -7,6 +7,7 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import SnippetScreen from "./pages/SnippetScreen";
 import NavigationBar from "@/components/NavigationBar";
+import SubNavigationBar from "@/components/SubNavigationBar";
 import SnippetTable from "./pages/SnippetTable";
 import EditSnippetScreen from "./pages/EditSnippetScreen";
 import TagsScreen from "./pages/TagsScreen";
@@ -189,19 +190,8 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <Toaster />
-          <NavigationBar
-            items={[
-              { linkName: "Home", href: "/" },
-              { linkName: "Horizon", href: "/horizon/overview" },
-              { linkName: "Webcut", href: "/webcut" },
-              { linkName: "Themes", href: "/themes" },
-              { linkName: "Sources", href: "/sources/recent" },
-              { linkName: "Snippets", href: "/snippet/show" },
-              { linkName: "Tags", href: "/tags/show" },
-              { linkName: "Create", href: "/snippet/create" },
-              { linkName: "Profile", href: "/profile" },
-            ]}
-          />
+          <NavigationBar />
+          <SubNavigationBar />
           <Router />
         </TooltipProvider>
       </QueryClientProvider>
