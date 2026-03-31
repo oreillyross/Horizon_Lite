@@ -4,135 +4,187 @@ import "@testing-library/jest-dom";
 import { Router } from "wouter";
 import { memoryLocation } from "wouter/memory-location";
 
-const navItems = [
-  { linkName: "Home", href: "/" },
-  { linkName: "Snippets", href: "/snippet/show" },
-  { linkName: "Create", href: "/snippet/create" },
-  { linkName: "Profile", href: "/profile" },
-];
-
-vi.mock("@/lib/trpc", () => {
-  return {
-    trpc: {
-      auth: {
-        logout: {
-          useMutation: vi.fn(() => ({
-            mutate: vi.fn(),
-            mutateAsync: vi.fn(),
-            isLoading: false,
-            isPending: false,
-            error: null,
-          })),
-        },
+vi.mock("@/lib/trpc", () => ({
+  trpc: {
+    auth: {
+      logout: {
+        useMutation: vi.fn(() => ({
+          mutate: vi.fn(),
+          mutateAsync: vi.fn(),
+          isLoading: false,
+          isPending: false,
+          error: null,
+        })),
       },
     },
-  };
-});
-
-
+  },
+}));
 
 vi.mock("@/components/GlobalSearch", () => ({
   GlobalSearch: () => null,
   default: () => null,
 }));
 
-import NavigationBar from "./NavigationBar";
+vi.mock("@/hooks/useSession", () => ({
+  useSession: vi.fn(() => ({
+    user: { username: "Jo", role: "user" },
+    isLoading: false,
+    isAuthenticated: true,
+  })),
+}));
 
-function renderWithRouter(initialPath: string) {
+import NavigationBar from "./NavigationBar";
+import SubNavigationBar from "./SubNavigationBar";
+import { useSession } from "@/hooks/useSession";
+
+function renderNavWithRouter(initialPath = "/") {
   const { hook } = memoryLocation({ path: initialPath });
   return render(
     <Router hook={hook}>
-      <NavigationBar items={navItems} />
+      <NavigationBar />
     </Router>,
   );
 }
 
+function renderSubNavWithRouter(initialPath = "/") {
+  const { hook } = memoryLocation({ path: initialPath });
+  return render(
+    <Router hook={hook}>
+      <SubNavigationBar />
+    </Router>,
+  );
+}
+
+// ─── NavigationBar (TopBar) ───────────────────────────────────────────────────
+
 describe("NavigationBar", () => {
-  it("highlights Home link when on / route", () => {
-    renderWithRouter("/");
-
-    const homeLink = screen.getByTestId("nav-link-");
-    expect(homeLink).toHaveClass("bg-muted");
-    expect(homeLink).toHaveClass("text-foreground");
-
-    const snippetsLink = screen.getByTestId("nav-link-snippet-show");
-    expect(snippetsLink).not.toHaveClass("bg-muted");
-    expect(snippetsLink).toHaveClass("text-muted-foreground");
+  it("renders the brand name", () => {
+    renderNavWithRouter("/");
+    expect(screen.getByText("Horizon Lite")).toBeInTheDocument();
   });
 
-  it("highlights Snippets link when on /snippet/show route", () => {
-    renderWithRouter("/snippet/show");
-
-    const snippetsLink = screen.getByTestId("nav-link-snippet-show");
-    expect(snippetsLink).toHaveClass("bg-muted");
-    expect(snippetsLink).toHaveClass("text-foreground");
-
-    const homeLink = screen.getByTestId("nav-link-");
-    expect(homeLink).not.toHaveClass("bg-muted");
+  it("shows user initials avatar when authenticated", () => {
+    renderNavWithRouter("/");
+    expect(screen.getByText("JO")).toBeInTheDocument();
   });
 
-  it("highlights Create link when on /snippet/create route", () => {
-    renderWithRouter("/snippet/create");
-
-    const createLink = screen.getByTestId("nav-link-snippet-create");
-    expect(createLink).toHaveClass("bg-muted");
-    expect(createLink).toHaveClass("text-foreground");
-
-    const snippetsLink = screen.getByTestId("nav-link-snippet-show");
-    expect(snippetsLink).not.toHaveClass("bg-muted");
+  it("shows Sign In and Sign Up links when not authenticated", () => {
+    vi.mocked(useSession).mockReturnValueOnce({
+      user: null,
+      isLoading: false,
+      isAuthenticated: false,
+    });
+    renderNavWithRouter("/");
+    expect(screen.getByText("Sign In")).toBeInTheDocument();
+    expect(screen.getByText("Sign Up")).toBeInTheDocument();
   });
 
-  it("shows no highlight on unknown routes", () => {
-    renderWithRouter("/unknown");
+  it("does not render page nav links in the top bar", () => {
+    renderNavWithRouter("/");
+    expect(screen.queryByText("Snippets")).not.toBeInTheDocument();
+    expect(screen.queryByText("Themes")).not.toBeInTheDocument();
+    expect(screen.queryByText("Trends")).not.toBeInTheDocument();
+  });
+});
 
-    const homeLink = screen.getByTestId("nav-link-");
-    const snippetsLink = screen.getByTestId("nav-link-snippet-show");
-    const createLink = screen.getByTestId("nav-link-snippet-create");
-    const profileLink = screen.getByTestId("nav-link-profile");
+// ─── SubNavigationBar ─────────────────────────────────────────────────────────
 
-    expect(homeLink).not.toHaveClass("bg-muted");
-    expect(snippetsLink).not.toHaveClass("bg-muted");
-    expect(createLink).not.toHaveClass("bg-muted");
-    expect(profileLink).not.toHaveClass("bg-muted");
+describe("SubNavigationBar", () => {
+  it("is hidden when user is not authenticated", () => {
+    vi.mocked(useSession).mockReturnValueOnce({
+      user: null,
+      isLoading: false,
+      isAuthenticated: false,
+    });
+    const { container } = renderSubNavWithRouter("/");
+    expect(container).toBeEmptyDOMElement();
   });
 
   it("renders all navigation items", () => {
-    renderWithRouter("/");
-
-    expect(screen.getByText("Home")).toBeInTheDocument();
+    renderSubNavWithRouter("/");
     expect(screen.getByText("Snippets")).toBeInTheDocument();
-    expect(screen.getByText("Create")).toBeInTheDocument();
-    expect(screen.getByText("Profile")).toBeInTheDocument();
+    expect(screen.getByText("Themes")).toBeInTheDocument();
+    expect(screen.getByText("Tags")).toBeInTheDocument();
+    expect(screen.getByText("Trends")).toBeInTheDocument();
+    expect(screen.getByText("Intel Feed")).toBeInTheDocument();
+    expect(screen.getByText("Sources")).toBeInTheDocument();
   });
 
-  it("highlights Snippets link for nested routes under /snippet/show", () => {
-    renderWithRouter("/snippet/show/123");
+  it("highlights Snippets link when on /snippet/show", () => {
+    renderSubNavWithRouter("/snippet/show");
 
-    const snippetsLink = screen.getByTestId("nav-link-snippet-show");
+    const snippetsLink = screen.getByTestId("subnav-link-snippet-show");
+    expect(snippetsLink).toHaveClass("bg-muted");
+    expect(snippetsLink).toHaveClass("text-foreground");
+
+    const themesLink = screen.getByTestId("subnav-link-themes");
+    expect(themesLink).not.toHaveClass("bg-muted");
+    expect(themesLink).toHaveClass("text-muted-foreground");
+  });
+
+  it("highlights Themes link when on /themes", () => {
+    renderSubNavWithRouter("/themes");
+
+    const themesLink = screen.getByTestId("subnav-link-themes");
+    expect(themesLink).toHaveClass("bg-muted");
+    expect(themesLink).toHaveClass("text-foreground");
+  });
+
+  it("highlights Tags link when on /tags/show", () => {
+    renderSubNavWithRouter("/tags/show");
+
+    const tagsLink = screen.getByTestId("subnav-link-tags-show");
+    expect(tagsLink).toHaveClass("bg-muted");
+    expect(tagsLink).toHaveClass("text-foreground");
+  });
+
+  it("highlights Trends link when on /horizon/overview", () => {
+    renderSubNavWithRouter("/horizon/overview");
+
+    const trendsLink = screen.getByTestId("subnav-link-horizon-overview");
+    expect(trendsLink).toHaveClass("bg-muted");
+    expect(trendsLink).toHaveClass("text-foreground");
+  });
+
+  it("highlights Intel Feed link when on /intel/feed", () => {
+    renderSubNavWithRouter("/intel/feed");
+
+    const intelLink = screen.getByTestId("subnav-link-intel-feed");
+    expect(intelLink).toHaveClass("bg-muted");
+    expect(intelLink).toHaveClass("text-foreground");
+  });
+
+  it("highlights Sources link when on /sources/recent", () => {
+    renderSubNavWithRouter("/sources/recent");
+
+    const sourcesLink = screen.getByTestId("subnav-link-sources-recent");
+    expect(sourcesLink).toHaveClass("bg-muted");
+    expect(sourcesLink).toHaveClass("text-foreground");
+  });
+
+  it("highlights Snippets for nested routes under /snippet/show", () => {
+    renderSubNavWithRouter("/snippet/show/123");
+
+    const snippetsLink = screen.getByTestId("subnav-link-snippet-show");
     expect(snippetsLink).toHaveClass("bg-muted");
     expect(snippetsLink).toHaveClass("text-foreground");
   });
 
-  it("highlights Create link for nested routes under /snippet/create", () => {
-    renderWithRouter("/snippet/create/new");
+  it("shows no highlight on unknown routes", () => {
+    renderSubNavWithRouter("/unknown");
 
-    const createLink = screen.getByTestId("nav-link-snippet-create");
-    expect(createLink).toHaveClass("bg-muted");
-    expect(createLink).toHaveClass("text-foreground");
-  });
-
-  it("does not highlight Home for other root-level paths", () => {
-    renderWithRouter("/other");
-
-    const homeLink = screen.getByTestId("nav-link-");
-    expect(homeLink).not.toHaveClass("bg-muted");
+    expect(screen.getByTestId("subnav-link-snippet-show")).not.toHaveClass("bg-muted");
+    expect(screen.getByTestId("subnav-link-themes")).not.toHaveClass("bg-muted");
+    expect(screen.getByTestId("subnav-link-tags-show")).not.toHaveClass("bg-muted");
+    expect(screen.getByTestId("subnav-link-horizon-overview")).not.toHaveClass("bg-muted");
+    expect(screen.getByTestId("subnav-link-intel-feed")).not.toHaveClass("bg-muted");
+    expect(screen.getByTestId("subnav-link-sources-recent")).not.toHaveClass("bg-muted");
   });
 
   it("has CSS transition classes for smooth highlighting", () => {
-    renderWithRouter("/");
+    renderSubNavWithRouter("/snippet/show");
 
-    const homeLink = screen.getByTestId("nav-link-");
-    expect(homeLink).toHaveClass("transition-colors");
-    // duration class isn't set explicitly; we only assert the base transition is present.
+    const snippetsLink = screen.getByTestId("subnav-link-snippet-show");
+    expect(snippetsLink).toHaveClass("transition-colors");
   });
 });
