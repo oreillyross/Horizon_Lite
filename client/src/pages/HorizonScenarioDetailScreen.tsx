@@ -1,384 +1,272 @@
-import React, { useMemo } from "react";
-import { useParams, Link } from "wouter";
+import { useState } from "react";
+import { useParams, useLocation } from "wouter";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { trpc } from "@/lib/trpc";
-import { Loader2 } from "lucide-react";
-
-function Pill({
-  children,
-  tone = "default",
-}: {
-  children: React.ReactNode;
-  tone?: "default" | "low" | "medium" | "high";
-}) {
-  const cls =
-    tone === "high"
-      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-      : tone === "medium"
-      ? "bg-amber-50 text-amber-700 border-amber-200"
-      : tone === "low"
-      ? "bg-slate-50 text-slate-600 border-slate-200"
-      : "bg-muted text-foreground border-border";
-
-  return (
-    <span
-      className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs ${cls}`}
-    >
-      {children}
-    </span>
-  );
-}
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Loader2, Trash2 } from "lucide-react";
+import { updateScenarioInputSchema, type UpdateScenarioInput } from "@shared";
 
 function Skeleton({ className }: { className?: string }) {
   return <div className={`animate-pulse rounded-md bg-muted ${className ?? ""}`} />;
 }
 
-function SectionCard({
-  title,
-  children,
-  right,
-}: {
-  title: string;
-  children: React.ReactNode;
-  right?: React.ReactNode;
-}) {
-  return (
-    <section className="rounded-lg border bg-background p-4 shadow-sm">
-      <div className="flex items-center justify-between gap-3">
-        <div className="text-sm font-medium">{title}</div>
-        {right}
-      </div>
-      <div className="mt-4">{children}</div>
-    </section>
-  );
-}
-
-function EmptyBox({
-  title,
-  body,
-}: {
-  title: string;
-  body: string;
-}) {
-  return (
-    <div className="rounded-md border bg-muted p-4">
-      <div className="text-sm font-medium">{title}</div>
-      <div className="mt-1 text-sm text-muted-foreground">{body}</div>
-    </div>
-  );
+function fmtDate(d: Date | string | null | undefined): string {
+  if (!d) return "—";
+  return new Date(d).toLocaleString();
 }
 
 export default function HorizonScenarioDetailScreen() {
   const params = useParams<{ id: string }>();
-  const scenarioId = params?.id ?? "";
+  const id = params?.id ?? "";
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const [isEditing, setIsEditing] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
 
-  const q = trpc.horizon.scenarios.getScenario.useQuery(
-    { scenarioId },
-    { enabled: Boolean(scenarioId) }
-  );
+  const utils = trpc.useUtils();
 
-  const scenario = q.data?.scenario;
+  const query = trpc.horizon.scenarios.getById.useQuery({ id }, { enabled: !!id });
 
-  const pct = useMemo(() => {
-    if (!scenario) return null;
-    return Math.round(scenario.probability * 100);
-  }, [scenario]);
+  const form = useForm<UpdateScenarioInput>({
+    resolver: zodResolver(updateScenarioInputSchema),
+    mode: "onBlur",
+  });
 
-  const deltaPct = useMemo(() => {
-    if (!scenario) return null;
-    return Math.round(scenario.delta7d * 100);
-  }, [scenario]);
+  function startEdit() {
+    if (!query.data) return;
+    form.reset({ id: query.data.id, name: query.data.name, description: query.data.description });
+    setIsEditing(true);
+  }
 
-  const deltaSign = (deltaPct ?? 0) > 0 ? "+" : "";
+  function cancelEdit() {
+    setIsEditing(false);
+    form.reset();
+  }
 
-  return (
-    <div className="mx-auto max-w-7xl px-6 lg:px-8 py-8">
-      {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0">
-          <div className="text-sm text-muted-foreground">
-            <Link href="/horizon/overview" className="hover:underline">
-              Horizon
-            </Link>
-            <span className="mx-2">/</span>
-            <Link href="/horizon/scenarios" className="hover:underline">
-              Scenarios
-            </Link>
+  const updateMutation = trpc.horizon.scenarios.update.useMutation({
+    onSuccess: (updated) => {
+      utils.horizon.scenarios.list.invalidate();
+      utils.horizon.scenarios.getById.invalidate({ id: updated.id });
+      setIsEditing(false);
+      toast({ title: "Scenario saved" });
+    },
+    onError: (err) => {
+      toast({ title: "Save failed", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const deleteMutation = trpc.horizon.scenarios.delete.useMutation({
+    onSuccess: () => {
+      utils.horizon.scenarios.list.invalidate();
+      toast({ title: "Scenario deleted" });
+      setLocation("/horizon/scenarios");
+    },
+    onError: (err) => {
+      toast({ title: "Delete failed", description: err.message, variant: "destructive" });
+    },
+  });
+
+  function onSubmit(values: UpdateScenarioInput) {
+    updateMutation.mutate(values);
+  }
+
+  // 404
+  if (!query.isLoading && (query.isError || !query.data)) {
+    return (
+      <div className="mx-auto max-w-7xl px-6 lg:px-8 py-8">
+        <button
+          type="button"
+          onClick={() => setLocation("/horizon/scenarios")}
+          className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          ← Scenarios
+        </button>
+        <div className="mt-8 rounded-lg border bg-background p-8 text-center">
+          <div className="text-lg font-medium">Scenario not found</div>
+          <div className="mt-2 text-sm text-muted-foreground">
+            This scenario may have been deleted or you don't have access.
           </div>
-
-          {q.isLoading ? (
-            <>
-              <Skeleton className="mt-3 h-8 w-[520px]" />
-              <Skeleton className="mt-3 h-4 w-[620px]" />
-            </>
-          ) : scenario ? (
-            <>
-              <div className="mt-2 text-3xl font-semibold truncate">{scenario.name}</div>
-              <div className="mt-2 text-sm text-muted-foreground">
-                {scenario.description ?? "—"}
-              </div>
-            </>
-          ) : null}
-        </div>
-
-        <div className="flex items-center gap-3">
-          {q.isLoading ? (
-            <>
-              <Skeleton className="h-10 w-28" />
-              <Skeleton className="h-10 w-24" />
-              <Skeleton className="h-10 w-28" />
-            </>
-          ) : scenario ? (
-            <>
-              <div className="rounded-lg border bg-background px-4 py-2 shadow-sm">
-                <div className="text-xs text-muted-foreground">Probability</div>
-                <div className="text-xl font-semibold tabular-nums">{pct}%</div>
-              </div>
-
-              <div className="rounded-lg border bg-background px-4 py-2 shadow-sm">
-                <div className="text-xs text-muted-foreground">7d</div>
-                <div className="text-xl font-semibold tabular-nums">
-                  {deltaSign}
-                  {deltaPct}%
-                </div>
-              </div>
-
-              <div className="flex flex-col items-end gap-2">
-                <Pill tone={scenario.confidence}>
-                  {scenario.confidence.toUpperCase()}
-                </Pill>
-                <Pill>{scenario.momentum}</Pill>
-              </div>
-            </>
-          ) : null}
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-4"
+            onClick={() => setLocation("/horizon/scenarios")}
+          >
+            Back to Scenarios
+          </Button>
         </div>
       </div>
+    );
+  }
 
-      {/* Error */}
-      {q.isError ? (
-        <div className="mt-6 rounded-lg border bg-background p-6 shadow-sm">
-          <div className="text-sm font-medium">Unable to load scenario</div>
-          <div className="mt-2 text-sm text-muted-foreground">{q.error.message}</div>
+  const scenario = query.data;
+
+  return (
+    <div className="mx-auto max-w-3xl px-6 lg:px-8 py-8">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
           <button
-            onClick={() => q.refetch()}
-            className="mt-4 inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted"
+            type="button"
+            onClick={() => setLocation("/horizon/scenarios")}
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
-            <Loader2 className="h-4 w-4" />
-            Retry
+            ← Scenarios
           </button>
+          {query.isLoading ? (
+            <Skeleton className="mt-2 h-8 w-72" />
+          ) : (
+            <h1 className="mt-2 text-3xl font-semibold truncate">{scenario?.name}</h1>
+          )}
+        </div>
+
+        {!query.isLoading && scenario && !isEditing && (
+          <div className="flex items-center gap-2 shrink-0 mt-1">
+            <Button variant="outline" size="sm" onClick={startEdit}>
+              Edit
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-destructive hover:text-destructive h-8 w-8"
+              onClick={() => setShowDelete(true)}
+            >
+              <Trash2 className="h-4 w-4" />
+              <span className="sr-only">Delete</span>
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {/* Timestamps */}
+      {query.isLoading ? (
+        <Skeleton className="mt-3 h-4 w-64" />
+      ) : scenario ? (
+        <div className="mt-3 text-xs text-muted-foreground">
+          Created {fmtDate(scenario.createdAt)} · Updated {fmtDate(scenario.updatedAt)}
         </div>
       ) : null}
 
-      {/* Top narrative cards */}
-      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <SectionCard title="What would we expect to see next?">
-          {q.isLoading ? (
+      {/* Body */}
+      <div className="mt-6 rounded-lg border bg-background p-6 shadow-sm">
+        {query.isLoading ? (
+          <div className="space-y-4">
             <div className="space-y-2">
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-5/6" />
-              <Skeleton className="h-4 w-2/3" />
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-9 w-full" />
             </div>
-          ) : q.data?.expectedNext?.length ? (
-            <ul className="list-disc pl-5 space-y-2 text-sm">
-              {q.data.expectedNext.map((x, idx) => (
-                <li key={idx} className="text-muted-foreground">
-                  <span className="text-foreground">{x}</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <EmptyBox
-              title="No expectations configured"
-              body="Add 3–5 expectation bullets to make this scenario executive-readable."
-            />
-          )}
-        </SectionCard>
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-28 w-full" />
+            </div>
+          </div>
+        ) : isEditing ? (
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+            <div className="space-y-1.5">
+              <Label htmlFor="name">
+                Name <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="name"
+                maxLength={100}
+                {...form.register("name")}
+              />
+              {form.formState.errors.name?.message && (
+                <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>
+              )}
+            </div>
 
-        <SectionCard title="What would falsify this?">
-          {q.isLoading ? (
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-4/6" />
-              <Skeleton className="h-4 w-3/5" />
+            <div className="space-y-1.5">
+              <Label htmlFor="description">
+                Description <span className="text-destructive">*</span>
+              </Label>
+              <Textarea
+                id="description"
+                rows={6}
+                maxLength={2000}
+                className="resize-none"
+                {...form.register("description")}
+              />
+              {form.formState.errors.description?.message && (
+                <p className="text-sm text-destructive">
+                  {form.formState.errors.description.message}
+                </p>
+              )}
             </div>
-          ) : q.data?.falsifiers?.length ? (
-            <ul className="list-disc pl-5 space-y-2 text-sm">
-              {q.data.falsifiers.map((x, idx) => (
-                <li key={idx} className="text-muted-foreground">
-                  <span className="text-foreground">{x}</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <EmptyBox
-              title="No falsifiers configured"
-              body="Add 3–5 falsifier bullets so leadership sees how beliefs can change."
-            />
-          )}
-        </SectionCard>
+
+            <div className="flex justify-end gap-2 pt-1">
+              <Button type="button" variant="outline" onClick={cancelEdit}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={updateMutation.isPending}>
+                {updateMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                Save Changes
+              </Button>
+            </div>
+          </form>
+        ) : scenario ? (
+          <div className="space-y-4">
+            <div>
+              <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                Name
+              </div>
+              <div className="text-sm font-medium">{scenario.name}</div>
+            </div>
+            <div>
+              <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                Description
+              </div>
+              <div className="text-sm whitespace-pre-wrap">{scenario.description}</div>
+            </div>
+          </div>
+        ) : null}
       </div>
 
-      {/* Mid row: contributions + evidence */}
-      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <SectionCard title="Indicator contributions" right={<Link href="/horizon/signals" className="text-sm text-muted-foreground hover:underline">Signals</Link>}>
-          {q.isLoading ? (
-            <div className="space-y-3">
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-            </div>
-          ) : q.data?.contributions?.length ? (
-            <div className="space-y-2">
-              {q.data.contributions
-                .slice()
-                .sort((a, b) => b.contributionScore - a.contributionScore)
-                .map((c) => (
-                  <a
-                    key={c.indicatorId}
-                    href={`/horizon/signals/${c.indicatorId}`}
-                    className="block rounded-md border px-3 py-2 hover:bg-muted"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="truncate text-sm font-medium">{c.name}</div>
-                        <div className="mt-1 text-xs text-muted-foreground">
-                          status: {c.status} • weight:{" "}
-                          <span className="font-mono tabular-nums">{c.weight.toFixed(2)}</span>
-                        </div>
-                      </div>
-                      <div className="shrink-0 text-sm font-medium font-mono tabular-nums">
-                        {c.contributionScore.toFixed(2)}
-                      </div>
-                    </div>
-                  </a>
-                ))}
-            </div>
-          ) : (
-            <EmptyBox
-              title="No contributions yet"
-              body="Once indicators are mapped and thresholds trigger, contributions will appear here."
-            />
-          )}
-        </SectionCard>
-
-        <div className="lg:col-span-2">
-          <SectionCard title="Evidence (curated)">
-            {q.isLoading ? (
-              <div className="space-y-3">
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-            ) : q.data?.evidence?.length ? (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="text-left text-xs text-muted-foreground">
-                    <tr className="border-b">
-                      <th className="py-2 pr-4">Title</th>
-                      <th className="py-2 pr-4">Source</th>
-                      <th className="py-2 pr-4">Geo</th>
-                      <th className="py-2 pr-4">Published</th>
-                      <th className="py-2">Relevance</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {q.data.evidence.map((e) => (
-                      <tr key={e.id} className="border-b last:border-b-0">
-                        <td className="py-3 pr-4">
-                          {e.url ? (
-                            <a
-                              href={e.url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="hover:underline"
-                            >
-                              {e.title}
-                            </a>
-                          ) : (
-                            e.title
-                          )}
-                          <div className="mt-1 text-xs text-muted-foreground line-clamp-2">
-                            {e.summary}
-                          </div>
-                        </td>
-                        <td className="py-3 pr-4 text-muted-foreground">{e.sourceHost}</td>
-                        <td className="py-3 pr-4 text-muted-foreground">
-                          {e.geo?.countryCode ?? e.geo?.regionLabel ?? "—"}
-                        </td>
-                        <td className="py-3 pr-4 text-muted-foreground tabular-nums">
-                          {new Date(e.publishedAt).toLocaleString()}
-                        </td>
-                        <td className="py-3 font-mono tabular-nums">
-                          {e.relevanceScore.toFixed(2)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <EmptyBox
-                title="No evidence captured"
-                body="As GDELT ingestion runs, we’ll dedupe and surface the highest-relevance evidence here."
-              />
-            )}
-          </SectionCard>
+      {/* Indicators stub */}
+      <div className="mt-6 rounded-lg border bg-background p-6 shadow-sm">
+        <div className="text-sm font-medium">Indicators</div>
+        <div className="mt-2 text-sm text-muted-foreground">
+          0 indicators linked — indicator linking coming in the next slice.
         </div>
       </div>
 
-      {/* Bottom: belief updates */}
-      <div className="mt-6">
-        <SectionCard title="Belief update log">
-          {q.isLoading ? (
-            <div className="space-y-3">
-              <Skeleton className="h-16 w-full" />
-              <Skeleton className="h-16 w-full" />
-              <Skeleton className="h-16 w-full" />
-            </div>
-          ) : q.data?.beliefUpdates?.length ? (
-            <div className="space-y-3">
-              {q.data.beliefUpdates
-                .slice()
-                .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-                .map((u) => {
-                  const prior = Math.round(u.prior * 100);
-                  const post = Math.round(u.posterior * 100);
-                  return (
-                    <div key={u.id} className="rounded-md border p-4">
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div className="text-sm text-muted-foreground tabular-nums">
-                          {new Date(u.createdAt).toLocaleString()}
-                        </div>
-                        <div className="text-sm font-medium font-mono tabular-nums">
-                          {prior}% → {post}%
-                        </div>
-                      </div>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {u.drivers.map((d) => (
-                          <a
-                            key={d.indicatorId}
-                            href={`/horizon/signals/${d.indicatorId}`}
-                            className="rounded-md border bg-muted px-2 py-1 text-xs hover:underline"
-                          >
-                            {d.name}
-                          </a>
-                        ))}
-                      </div>
-                      {u.note ? (
-                        <div className="mt-3 text-sm text-muted-foreground">{u.note}</div>
-                      ) : null}
-                    </div>
-                  );
-                })}
-            </div>
-          ) : (
-            <EmptyBox
-              title="No updates logged yet"
-              body="Once thresholds trigger and the model updates, entries will appear here with prior → posterior changes."
-            />
-          )}
-        </SectionCard>
-      </div>
+      {/* Delete dialog */}
+      <Dialog open={showDelete} onOpenChange={setShowDelete}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete scenario?</DialogTitle>
+            <DialogDescription>
+              <span className="font-medium">{scenario?.name}</span> will be permanently deleted.
+              This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDelete(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={deleteMutation.isPending}
+              onClick={() => id && deleteMutation.mutate({ id })}
+            >
+              {deleteMutation.isPending ? "Deleting…" : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
