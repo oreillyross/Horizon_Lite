@@ -24,6 +24,8 @@ import { RequireAuth } from "@/components/RequireAuth";
 import SignupForm from "@/pages/forms/SignupForm";
 import ResetPasswordForm from "@/pages/forms/ResetPasswordForm";
 import HorizonOverViewScreen from "@/pages/HorizonOverviewScreen";
+import HorizonScenariosListScreen from "@/pages/HorizonScenariosListScreen";
+import HorizonScenarioNewScreen from "@/pages/HorizonScenarioNewScreen";
 import HorizonScenarioDetailScreen from "@/pages/HorizonScenarioDetailScreen";
 import HorizonSignalsScreen from "@/pages/HorizonSignalsScreen";
 import HorizonIndicatorDetailScreen from "@/pages/HorizonIndicatorDetailScreen";
@@ -56,20 +58,21 @@ function Router() {
         </RequireAuth>
       </Route>
 
-      <Route path="/horizon/scenarios">
+      <Route path="/horizon/scenarios/new">
         <RequireAuth>
-          <div className="mx-auto max-w-7xl px-6 lg:px-8 py-8">
-            <div className="text-3xl font-semibold">Scenarios</div>
-            <div className="mt-2 text-sm text-muted-foreground">
-              Coming next.
-            </div>
-          </div>
+          <HorizonScenarioNewScreen />
         </RequireAuth>
       </Route>
 
       <Route path="/horizon/scenarios/:id">
         <RequireAuth>
           <HorizonScenarioDetailScreen />
+        </RequireAuth>
+      </Route>
+
+      <Route path="/horizon/scenarios">
+        <RequireAuth>
+          <HorizonScenariosListScreen />
         </RequireAuth>
       </Route>
 

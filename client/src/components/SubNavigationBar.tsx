@@ -12,6 +12,7 @@ const SUB_NAV_ITEMS: SubNavItem[] = [
   { linkName: "Themes", href: "/themes" },
   { linkName: "Tags", href: "/tags/show" },
   { linkName: "Trends", href: "/horizon/overview" },
+  { linkName: "Scenarios", href: "/horizon/scenarios" },
   { linkName: "Intel Feed", href: "/intel/feed" },
   { linkName: "Sources", href: "/sources/recent" },
 ];
