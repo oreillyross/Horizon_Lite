@@ -1,0 +1,556 @@
+﻿Horizon
+“Investigating the future with confidence”
+Purpose
+1. The Horizon project aims at developing an efficient and effective early warning threat detection and environmental scanning system as part of a programme for detecting emerging threats and changes in any environment.
+
+
+2.  In the Horizon system the automated scanning is intended to be carried out on data streams from a variety of open sources. Different kinds of public online data streams feed into the system’s knowledge repository that provides a rich taxonomy of domain knowledge. Data processing facilitated by means of information fusion techniques carried out by the analyst, should enable the extraction of descriptive and predictive meanings used for inferring hidden states, i.e.; weak signals or indicators of new threats.
+
+
+3. Horizon is intended to operate on the strategic level of open source intelligence and takes into account security conditions, modus operandi of hostile actors, political and social trends. 
+
+
+4. Consequently, personal data are not relevant in the information context of Horizon and therefore the system does not intend to make use of or to aggregate personal data or maintain a database for storing or managing personal data or other kinds of sensitive personal information. 
+
+
+5. In practical terms Horizon is intended to be a low maintenance, highly configurable and accessible automated forecasting / warning system. A rough digital interpretation of the “broken windows” indicator theory.
+
+
+“The signal is the truth. The noise is what distracts us from the truth” - Nate Silver
+TODO: Somewhere add this information from the slides of Crisis Management Series 3: Weak Signals Reading & Scenario Modelling workshop from International SOS, and the ISO 22361 crisis management standard.
+
+
+Rationale and approach
+6. The volume of information we have available to us is increasing exponentially. But relatively little of this information is useful—the signal-to-noise ratio may be waning. We need better ways of distinguishing the two. We should be thinking less about what we know than about the difference between what we know and what we think we know. It recommends a strategy so that we might close that gap. The strategy requires one giant leap and then some small steps forward. The leap is into the Bayesian way of thinking about prediction and probability.
+
+
+7. When we are making predictions, we need a balance between curiosity and skepticism. They can be compatible. The more eagerly we commit to scrutinizing and testing our theories, the more readily we accept that our knowledge of the world is uncertain, the more willingly we acknowledge that perfect prediction is impossible, the less we will live in fear of our failures, and the more liberty we will have to let our minds flow freely. By knowing more about what we don’t know, we may get a few more predictions right.
+
+
+8. Detecting trends isn’t the same as predicting events, especially black-swan events. And even if you could, who would believe you? You’d be labeled a fantasist. And if you turned out to be wrong, you’d be ridiculed; there is much to be said for the maxim widely misattributed to John Maynard Keynes: “It’s better to be roughly right than precisely wrong.” 
+
+
+Challenges
+
+
+One of the aims of this project is to find a happy medium between the two competing phenomena. On the one hand one has to deal with this idea that every affective cause leads to an effect, and these are seemingly random. The notion of a butterfly flapping its wings in Southern Brazil leading to a hurricane across the Atlantic in Spain. And then one has the second competing phenomena of trying to analyze a problem well enough by dissecting it and isolating it in order that we can comprehend the causes and effects which make it difficult to include all the variables. 
+
+
+Data sources
+The source for the raw data that is input into Horizon would come from the Global Database of Events Language and Tone (GDELT) project[1] led by google. 
+
+
+The GDELT project monitors the world’s broadcast, print, and web news from nearly every corner of every country in over 100 languages and identifies the people, locations, organizations, themes, sources, emotions, counts, quotes, images and events driving our global society every second of every day.
+
+
+The GDELT 2.0 Event Database is a global catalog of worldwide activities (“events”) in over 300 categories from protests and military attacks to peace appeals and diplomatic exchanges. Each event record details 58 fields capturing many different attributes of the event. The GDELT 2.0 Event Database currently runs from February 2015 to present, updated every 15 minutes and is comprised of 326 million mentions of 103 million distinct events as of February 19, 2016. This dataset uses machine translation coverage of all monitored content in 65 core languages, with a sample of an additional 35 languages hand translated. It also expands upon GDELT 1.0 by providing a separate MENTIONS table that records every mention of each event, along with the offset, context and confidence of each of those mentions.
+
+
+GDELT 2.0 provides access to the world’s breaking events updated every 15 minutes. It includes real time translation of 65 languages and real time measurement of 2,300 emotions and themes. Global Content Analysis Measures (GCAM) provides an unparalleled assessment of the emotional undercurrents and reaction at a planetary scale by bringing together an incredible array of dimensions, from Linguistic Inquiry and Word Count (LIWC)’s “anxiety” to Lexicoder’s “Positivity” to WordNet Affect’s “Smugness” to RID’s “passivity”. 
+
+
+Features
+
+
+1. Realtime Measurement of 2,300 Emotions and Themes.
+2. Realtime Translation of 65 Languages
+3. Relevant Imagery, Videos, and Social Embeds
+4. Quotes, Names, and Amounts
+5. Date Mentions
+6. Proximity Context
+7. Over 100 New GKG Themes
+
+
+Other data sources include the ACLED project[2], and the ICEWS [3]Dataverse ( Integrated Crisis Early Warning System (ICEWS) Dataverse
+
+
+The other news sources regularly updated, includes the https://emm.newsbrief.eu/ service which also has RSS news feeds.
+
+
+Benefits of using GDELT
+
+
+Based on an extensive study into the problem of tracking high-volume event data, Philip Schrodt authored a research paper[4] and describes the challenges with sourcing event data. One big challenge solved with GDELT, is the issue of duplicate detection.
+
+
+The location details are captured using the Leetaru algorithm, http://www.dlib.org/dlib/september12/leetaru/09leetaru.html
+
+
+The sources which are taken every fifteen minutes can be downloaded by the python requests library and using parallel processing, using  the 
+ThreadExecutor, https://realpython.com/python-download-file-from-url/
+
+
+Then every source can be further processed in the pipeline of analysis for keywords, indicators based on the scenarios.
+
+
+Yes, GDELT is still actively updating its global event data as of June 2025. The GDELT Event Database continues to monitor news media in over 100 languages from every country, updating its event records every 15 minutes to provide near real-time coverage of global developments12. The entire event database is available for querying and analysis, with daily updates accessible through platforms like Google BigQuery15. This ensures that researchers and users have access to the latest global event data for analysis and visualization.
+
+
+Self Sourcing / Self Learning
+
+
+There is the ability to have users interact in a controlled way with the horizon system. The data they introduce can be used as feature variables by the data analyst who accesses horizon through the admin panel. 
+
+
+These feature variables can be input on a learning model, whereby new models can be trained. Once they are ready. 
+
+
+
+
+Intended benefits / outcomes
+9. Monitoring threat information should provide tangible benefits allowing decision makers to react and readjust their mid to longer term strategies but also additionally to allow operational stakeholders to adjust their operations in light of emerging threats. 
+
+
+10. The key to threat monitoring is to look for a few types of data that are particularly meaningful that will help anticipate emerging threats or provide early warning of actual attacks. 
+
+
+11. The system also aims to reduce confirmation bias, by objectively providing instances of events linked to indicators and scenarios (or hypothesis). This objective linking should pull the analyst away from preconceived ideas, about the likelihood or magnitude of events occurring, i.e. reduce confirmation bias.
+
+
+Previous research projects
+Keds / Tabari project 
+ICEWS by Darpa funding
+VRA-Reader
+Research - Analyzing International Event Data: A Handbook of Computer-Based Techniques
+Philip Schrodt
+CAMEO Conflict and Mediation Event Observations Event and Actor Codebook, Event Data Project, Penn University.
+Competing products 
+About • UN Global Pulse
+Newsblaster looks like it was an initial attempt at categorizing news, https://aclanthology.org/N04-3001.pdf
+
+
+
+
+Initiatives
+GDELT http://www.princeton.edu/~pcglobal/conferences/methods/papers/schrodt.pdf
+Lockheed Martin - ICEWS (LM-ATL) https://www.lockheedmartin.com/en-us/capabilities/research-labs/advanced-technology-labs/icews.html
+
+
+
+
+
+
+Threat Intelligence
+12. The system is designed to account for the four main types of threat intelligence. A distinction as to the general threat vector can be indicated by the described scenario and its impact. The four main types have been described below:
+
+
+* Strategic threat intelligence provides a wide view of the threat environment and business issues. It is designed to inform the decisions of strategic stakeholders. 
+
+
+* Tactical threat intelligence focuses on attackers’ tactics, techniques, and procedures (TTPs). It relates to the specific attack vectors favored by threat actors. Typically this form of intelligence is highly actionable and is used by operational staff such as incident responders to ensure incident response programmes are prepared and exercised.
+
+
+* Operational threat intelligence is related to specific, impending attacks. It helps operational stakeholders  anticipate when and where attacks are likely to come from.
+
+
+* Technical threat intelligence comprises a stream of indicators that can be used to automatically identify and block suspected malicious communications. 
+
+
+  
+
+
+
+Technical implementation
+The algorithms are run on an Apache spark instance. The Apache Spark cluster management is managed by Apache Mesos.
+The data service microservice is responsible for the routine downloading of data from GDELT, parsing the relevant needed data and saving it into a database for later analysis.
+The Docker container management is managed by Rancher, using Rancher OS with the container orchestration handled by Cattle, alternatives could include Kubernetes or Docker Swarm
+System composition 
+Model
+13. The system has been modeled on previous work done relating to an EU pilot project called ePOOLICE[5] and the Strategic Early Warning System[6] (SEWS) developed by the Criminal Intelligence Service Canada (CISC).  
+
+
+14. Threat intelligence should provide senior managers with a real-time picture of the latest threats, trends, and events. A threat intelligence dashboard or some other type of “at-a-glance” format would help security leaders respond to a threat or communicate the potential impact of a new threat type to senior management.
+
+
+15. The system has been designed in a way to maximize input of evidence to support indicators. The indicators are pre-configured to link with scenarios.
+
+
+16. The output is intended to be a report issued on demand called a Sentinel Assessment (SA). The SA provides senior management with a horizon scan of the possibility of a certain scenario from playing out, backed by tangible evidence linking the scenarios with the indicators.
+Composed of the following main components
+* Themes
+* Scenarios
+* Indicators (also known as weak signals)
+* Events
+* Keywords
+* Contextual Tags
+Structural types
+Themes
+* id
+* name
+* description
+* scenarios
+
+
+Scenario
+* id
+* name
+* description
+* indicators
+Indicator
+* id
+* name
+* events
+* scenarios
+
+
+Event
+* id
+* date
+* title
+* description
+* indicators
+* Contextual Tag
+* id
+* title
+* tagData
+   * id
+   * date/time
+   * name
+   * attached data (image, url, text, video)
+
+
+Themes
+17. Think of themes as a general description of broader events. Examples might be US – Iran Tensions, Lebanon government formation etc. Themes should act as natural groupings for a number of scenarios. This should enable the analyst to see using a compare and contrast type view of competing scenarios.  
+Scenarios
+18. The scenarios describe a general threat scenario which could eventuate, the risk and impact of this scenario playing out is not included in the system. The starting point for scenarios could be risks the STL may face, alternatively the scenarios could also be more strategic, to include horizon scanning events. A scenario would typically be a succinct one paragraph.
+
+
+19. A scenario is a story; by capturing its essence in a title, you make the story easy to follow and remember. At this stage, you have constructed learning scenarios, which are tools for research and study, rather than for decision making. The titles and themes are focal points around which to develop and test the scenarios.
+
+
+20. Scenario planning can help overcome these obstacles. Scenario planning helps the organization embrace uncertainty by developing data-driven stories about the future that can generate more informed decisions. Scenarios incorporate management’s assumptions about the external environment in which the STL operates.
+
+
+Notable points on Scenario development:
+
+
+* To retain some relevance, a scenario must be a living thing. Organisations don’t get a scenario “right”—they keep it useful. 
+
+
+* Scenarios get better if revised over time. It is useful to add one scenario for each that is discarded; a suite of roughly the same number of scenarios should be maintained at all times.
+
+
+* A scenario set should always contain at least four alternatives. Show three and people always pick the middle one. Four forces them to discover which way they truly lean—an important input into the discussion. Two is always too few unless there is only one big swing factor affecting the situation.
+
+
+* Unless scenarios become a living part of an organization, they are useless. And if they do not have snappy, memorable names, they will not enter the organisation’s lexicon. Use two to four words—no more. Plays on film titles and historical events are recommended.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Defence Intelligence: Probability Yardstick
+
+
+* taken from Defence Intelligence – communicating probability - GOV.UK
+
+
+  
+
+
+
+
+
+Steps to scenario planning  
+1. Identify key strategic issue
+2. Identify trends / uncertainties
+3. Construct Scenarios
+4. Identify research needs
+Indicators
+21. The indicators are short one line descriptors which link to the scenarios. The intention is that every indicator is linked to one or many scenarios and they are largely unique. Indicators are a means by which one can determine how likely a scenario is to play out. 
+
+
+22. Indicators should also be described by their strength measured on a scale of 1 – 9, and by their weight measured in time, i.e. 1 day, 1 week, 1 month, or 1 year. 
+
+
+23. The system has the ability to degrade the strength by a pre-determined factor to meet a review period after the weight time has expired.
+
+
+24. Indicator development is a fluid process that takes place concurrently with the research phase. An indicator is the product of an analytical inquiry into the conditions that could promote or permit a scenario to occur.
+
+
+Relationship between scenarios, indicators and events
+25. Once a scenario has been defined, and agreed upon, a number of indicators can be formulated that would indicate the likelihood of a certain scenario playing out. In order for the indicator to have semantic meaning there needs to be additional parameters which are recorded along with the link between a scenario and an indicator, and also between an indicator and a number of events.
+
+
+26. Scenario – Indicator Link (SIL): a weighting from 1 to 9 can be applied to the SIL where a 1 would indicate a weak-link, and a 9 a strong link. Each SIL weighting combination would also have a date stamp applied to it to allow for the realistic changing conditions on the ground.
+
+
+1
+	Suggests a weak indication of a scenario from happening
+	2
+	Suggests a moderate indication of a scenario from happening
+	3
+	Suggests a strong indication of a scenario from happening
+	4
+	Slightly contributes to indications of a scenario from happening
+	5
+	Moderately contributes to indications of a scenario from happening
+	6
+	Strongly contributes to indications of a scenario from happening
+	7
+	Slightly leads to a scenario from happening
+	8
+	Moderately leads a scenario from happening
+	9
+	Strongly leads to a scenario from happening
+	
+
+
+
+27. An example of a SIL would be on 12 March 2019 there was a strong indication (7 - 9) that a certain scenario would play out, and now in 20 April 2019 there is a weaker indication (3 - 10). These indication links need to be manually laid out by the analyst(s) concerned.
+
+
+28. Indicator – Event Link (IEL): Similar to the SIL an IEL is supposed to provide semantic meaning to certain events as they relate to a number of indicators. To keep it simple and to align it with the SIL mechanics the same scoring system along with a date stamp could be used.
+
+
+
+
+
+
+
+
+Indicator event strength table
+
+
+1
+	Suggests a weak indication of a scenario from happening
+	2
+	Suggests a moderate indication of a scenario from happening
+	3
+	Suggests a strong indication of a scenario from happening
+	4
+	Slightly contributes to indications of a scenario from happening
+	5
+	Moderately contributes to indications of a scenario from happening
+	6
+	Strongly contributes to indications of a scenario from happening
+	7
+	Slightly leads to a scenario from happening
+	8
+	Moderately leads a scenario from happening
+	9
+	Strongly leads to a scenario from happening
+	
+
+29. In addition to adding metadata as described above, the analyst also has the ability to link the portion of relevant text to an indicator. Every linked indicator has an edge which also describes the strength of that edge (link). 
+
+
+30. An example of an IEL could be on 12 March 2019 there was a strong indication (7 - 10) that a certain event indicating that a certain scenario would play out, and now in 20 April 2019 there is a weaker link of the same (or similar) event indicating that a certain scenario may play out. (3 out of 10).  The distinctions or categorizations of the events linked to indicators could be discerned whether by filtering by indicators and the by sub-filtering by certain event categories, such as hostile surveillance, carjacking, attempted robbery, armed attacks, weapons acquisitions, hostile political statements etc.
+
+
+31. Another essential score is one which deals with relevancy, this can be applied to the above two link scores to weight the relevancy.
+
+
+1
+	Not relevant at all
+	2
+	Not relevant at the moment but might re-emerge as relevant
+	3
+	Somewhat relevant, still could change the situation
+	4
+	Mostly relevant, timing of event / indicator relevant
+	5
+	Currently relevant
+	
+
+Analysis of the data
+32. The Bayesian approach toward thinking about probability is more compatible with decision making under high uncertainty. It encourages us to hold a large number of hypotheses in our head at once, to think about them probabilistically, and to update them frequently when we come across new information that might be more or less consistent with them.
+
+
+33. The system is intended to be interrogated using Bayes Theorem methodology 
+ https://www.notion.so/image/https%3A%2F%2Fs3-us-west-2.amazonaws.com%2Fsecure.notion-static.com%2Fd7592aee-a3aa-48a2-a2a8-21e3bd9981b8%2FScreenshot_2019-05-07_12.38.26.png?table=block&id=e876f856-4b58-466e-858e-c20d201acc85&width=1800&cache=v2 
+
+34. Practical example of using Bayes Theorem  
+
+
+Algorithms
+   1. Scenario likelihood indicator
+This algorithm is used to calculate values per day showing an accumulation of data points over time. It should generate a data points which can be used to plot a time series line chart.
+
+
+Using Bayesian inference, https://towardsdatascience.com/estimating-probabilities-with-bayesian-modeling-in-python-7144be007815
+
+
+Web scraping and formatting big data into usable chunks
+It is intended that a large part of the input data will be processed using Natural Language Processing (NLP) techniques. The ultimate objective of NLP is to read, decipher, understand, and make sense of the human languages in a manner that is valuable.
+Horizon enquirer
+The interface to the system for end users mostly observing and interrogating the system
+Horizon strategist
+The dashboard for creating scenarios, selecting data sources, running test queries
+Horizon admin
+The backend for populating tags, datasources, linking up web scraping sources, integrating with other information tools
+
+
+Horizon strategist
+This is a front end web application built using React, GraphQL, RX.js
+Incorporate machine learning into the project by drawing on the following sources,
+
+
+The GDELT Project
+GDELT monitors the world's news media from nearly every corner of every country
+in print, broadcast, and web formats, in over 100 languages,
+every moment of every day.
+
+
+
+
+Keywords
+   35. The idea behind the keywords is for an automated search to be conducted whereby the user of the system, usually someone from the analysis team can then select a portion of text and then add metadata to this text which defines the who (perpetrator), what (victim, or asset), where, how (what was done), why (intent), when.
+Sentinel Reports
+   36. These are intended to be on demand reports which can be generated at any time and allow for the whole dataset to be interrogated and can provide information such as:
+   1. 3 – 6 month view of sorted by top score Scenario – Indicator Link (SIL)
+   2. Drill down view per Scenario of the same 3 – 6 month view sorted by top score Event – Indicator Link (EIL)
+
+
+   37. The system can also be interrogated with an elastic search feature which allows any keyword and or theme to be searched and queried. 
+
+
+   38. A number of on demand queries, and reports can be built depending on the Senior Management teams demands.
+
+
+   39. The Analyst can refer to the scenarios (or hypothesis) which can be further verified or falsified through further open source research, or using classified sources. If the information necessary to test the hypothesis is not currently available, the Sentinel report should guide the analyst through a research agenda that will allow eventual validation of the warning.
+Configuration options
+   40. This is intended to be a dashboard which allows a number of configuration options. 
+
+
+Usage
+   * Stakeholder dashboard
+
+
+This dashboard is intended to be a read-only view of information, initially the user should be presented with a view of the scenarios, with the indicator count, and weighting indicated on the right hand side. 
+
+
+The system should allow the user to access an:
+
+
+   * Analyst console
+   * Administrator console
+   * Sentinel reporting screen
+
+
+Contextual Tags
+   41. Tags are similar to the idea of search keywords, and in many cases a keyword will normally become a tag which lives with the data of the event.
+
+
+   42. Tags also include metadata, allowing them to become query able data in of themselves.
+
+
+
+
+
+
+Automatic tagging
+   3. This is a feature which can be turned on or off. It will automatically tag keywords to articles which contain certain words. This is a keyword key value with an array of articles words when it needs to tag an article.
+
+
+
+
+Custom Tuner
+A data scientist dedicated to a specific analysis of future events.
+
+
+
+
+Screenshots of mockups of what the different apps will look like
+
+
+Analyst console main dashboard
+
+
+Analyst console indicator view by scenario
+
+
+Analyst console event view by indicator
+
+
+Analyst console event capture view
+
+
+Analyst console review indicators view
+
+
+Analyst console review events view
+
+
+Technology Stack used
+
+
+React Admin UI Library
+React-admin - My First Project Tutorial
+
+
+
+
+
+
+
+
+Learning Project
+
+
+Loading a GDELT dataset into colab using Pandas Dataframes
+https://nbviewer.org/github/JamesPHoughton/Published_Blog_Scripts/blob/master/GDELT%20Wrangler%20-%20Clean.ipynb
+
+
+The GDELT project has a dedicated download service here EVENT Record Exporter: GDELT Analysis Service
+
+
+GDELT also offers a full text search API, Announcing The GDELT Full Text Search API
+
+
+
+
+
+
+
+
+
+
+REFERENCES
+
+
+   1. Signal and the Noise by Nat Silverman
+
+
+
+
+Technical specifications
+
+
+Libraries to use
+
+
+Editor.js
+
+
+________________
+[1] https://www.gdeltproject.org/
+[2] https://acleddata.com/
+[3] Integrated Crisis Early Warning System, https://dataverse.harvard.edu/dataverse/icews
+[4] Schrodt, Philip A., Automated Production of High-Volume, Real-Time Political Event Data (2010). APSA 2010 Annual Meeting Paper, Available at SSRN: https://ssrn.com/abstract=1643761
+[5] obtained 17/05/2018, https://bulletin.cepol.europa.eu/index.php/bulletin/article/view/240/205
+[6] obtained 25/03/2019 https://publications.gc.ca/collections/collection_2013/sp-ps/PS64-107-2007-eng.pdf
