@@ -1,93 +1,82 @@
 import { TRPCError } from "@trpc/server";
-import { desc, eq, and } from "drizzle-orm";
+import { randomUUID } from "crypto";
 import { protectedProcedure, router } from "../trpc";
-import { scenarios } from "../../shared/db/tables/scenarios";
 import {
   createScenarioInputSchema,
   updateScenarioInputSchema,
   scenarioIdSchema,
 } from "../../shared";
 
+// In-memory store until the DB migration runs
+type ScenarioRecord = {
+  id: string;
+  analystGroupId: string;
+  name: string;
+  description: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+const store: ScenarioRecord[] = [];
+
+function groupScenarios(groupId: string) {
+  return store.filter((s) => s.analystGroupId === groupId);
+}
+
+function findScenario(id: string, groupId: string) {
+  return store.find((s) => s.id === id && s.analystGroupId === groupId) ?? null;
+}
+
 export const scenariosRouter = router({
-  list: protectedProcedure.query(async ({ ctx }) => {
+  list: protectedProcedure.query(({ ctx }) => {
     const groupId = ctx.user.analystGroupId;
     if (!groupId) throw new TRPCError({ code: "FORBIDDEN", message: "No analyst group" });
-
-    return ctx.db
-      .select()
-      .from(scenarios)
-      .where(eq(scenarios.analystGroupId, groupId))
-      .orderBy(desc(scenarios.updatedAt));
+    return groupScenarios(groupId).sort(
+      (a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()
+    );
   }),
 
-  getById: protectedProcedure.input(scenarioIdSchema).query(async ({ ctx, input }) => {
+  getById: protectedProcedure.input(scenarioIdSchema).query(({ ctx, input }) => {
     const groupId = ctx.user.analystGroupId;
     if (!groupId) throw new TRPCError({ code: "FORBIDDEN", message: "No analyst group" });
-
-    const [row] = await ctx.db
-      .select()
-      .from(scenarios)
-      .where(and(eq(scenarios.id, input.id), eq(scenarios.analystGroupId, groupId)))
-      .limit(1);
-
+    const row = findScenario(input.id, groupId);
     if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Scenario not found" });
     return row;
   }),
 
-  create: protectedProcedure.input(createScenarioInputSchema).mutation(async ({ ctx, input }) => {
+  create: protectedProcedure.input(createScenarioInputSchema).mutation(({ ctx, input }) => {
     const groupId = ctx.user.analystGroupId;
     if (!groupId) throw new TRPCError({ code: "FORBIDDEN", message: "No analyst group" });
-
-    const [created] = await ctx.db
-      .insert(scenarios)
-      .values({
-        analystGroupId: groupId,
-        name: input.name.trim(),
-        description: input.description.trim(),
-      })
-      .returning();
-
-    return created;
+    const now = new Date();
+    const record: ScenarioRecord = {
+      id: randomUUID(),
+      analystGroupId: groupId,
+      name: input.name.trim(),
+      description: input.description.trim(),
+      createdAt: now,
+      updatedAt: now,
+    };
+    store.push(record);
+    return record;
   }),
 
-  update: protectedProcedure.input(updateScenarioInputSchema).mutation(async ({ ctx, input }) => {
+  update: protectedProcedure.input(updateScenarioInputSchema).mutation(({ ctx, input }) => {
     const groupId = ctx.user.analystGroupId;
     if (!groupId) throw new TRPCError({ code: "FORBIDDEN", message: "No analyst group" });
-
-    const [existing] = await ctx.db
-      .select()
-      .from(scenarios)
-      .where(and(eq(scenarios.id, input.id), eq(scenarios.analystGroupId, groupId)))
-      .limit(1);
-
-    if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "Scenario not found" });
-
-    const patch: Partial<typeof existing> = { updatedAt: new Date() };
-    if (input.name !== undefined) patch.name = input.name.trim();
-    if (input.description !== undefined) patch.description = input.description.trim();
-
-    const [updated] = await ctx.db
-      .update(scenarios)
-      .set(patch)
-      .where(eq(scenarios.id, input.id))
-      .returning();
-
-    return updated;
+    const row = findScenario(input.id, groupId);
+    if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Scenario not found" });
+    if (input.name !== undefined) row.name = input.name.trim();
+    if (input.description !== undefined) row.description = input.description.trim();
+    row.updatedAt = new Date();
+    return row;
   }),
 
-  delete: protectedProcedure.input(scenarioIdSchema).mutation(async ({ ctx, input }) => {
+  delete: protectedProcedure.input(scenarioIdSchema).mutation(({ ctx, input }) => {
     const groupId = ctx.user.analystGroupId;
     if (!groupId) throw new TRPCError({ code: "FORBIDDEN", message: "No analyst group" });
-
-    const [existing] = await ctx.db
-      .select()
-      .from(scenarios)
-      .where(and(eq(scenarios.id, input.id), eq(scenarios.analystGroupId, groupId)))
-      .limit(1);
-
-    if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "Scenario not found" });
-
-    await ctx.db.delete(scenarios).where(eq(scenarios.id, input.id));
+    const idx = store.findIndex((s) => s.id === input.id && s.analystGroupId === groupId);
+    if (idx === -1) throw new TRPCError({ code: "NOT_FOUND", message: "Scenario not found" });
+    store.splice(idx, 1);
     return { success: true, id: input.id };
   }),
 });
