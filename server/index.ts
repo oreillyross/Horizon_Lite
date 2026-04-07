@@ -5,8 +5,10 @@ import { createServer } from "http";
 import { sessionMiddleware } from "./session";
 import { ingestGdelt } from "./jobs/gdeltIngest";
 import { generateSignals } from "./jobs/generateSignals";
+import { runLifecycleManager } from "./jobs/lifecycleManager";
 import { db } from "./db";
 import { sql } from "drizzle-orm";
+import cron from "node-cron";
 // import "./bootstrap"
 
 const app = express();
@@ -176,6 +178,19 @@ app.use((req, res, next) => {
     },
     () => {
       log(`serving on port ${port}`);
+
+      // Data lifecycle: HOT→WARM→COLD archival, runs daily at 02:00
+      cron.schedule("0 2 * * *", () => {
+        log("Lifecycle cron triggered", "lifecycle");
+        runLifecycleManager().catch((err) =>
+          log(
+            `Lifecycle cron error: ${err instanceof Error ? err.message : err}`,
+            "lifecycle",
+          ),
+        );
+      });
+
+      log("Lifecycle cron scheduled (daily at 02:00)", "lifecycle");
     },
   );
 })();
