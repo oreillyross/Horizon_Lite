@@ -2,8 +2,7 @@ import { z } from "zod";
 import { router, publicProcedure } from "../trpc";
 import { db } from "../db";
 import { sql } from "drizzle-orm";
-import { paginateByUrl } from "../utils/paginate";
-import { query } from "express";
+import { paginateBy, paginateByUrl } from "../utils/paginate";
 
 type FeedRow = {
   url: string;
@@ -16,16 +15,19 @@ type FeedRow = {
   organizations: string[];
 };
 
+const sortBySchema = z.enum(["added", "date"]).default("added");
+
 export const intelRouter = router({
   feed: publicProcedure
     .input(
       z.object({
         cursor: z.string().optional(),
         limit: z.number().default(30),
+        sortBy: sortBySchema,
       }),
     )
     .query(async ({ input }) => {
-      const query = sql`
+      const baseQuery = sql`
         SELECT
           url,
           domain,
@@ -34,12 +36,12 @@ export const intelRouter = router({
           published_at,
           tone,
           themes,
-          organizations
+          organizations,
+          created_at
         FROM gdelt_documents
         WHERE published_at IS NOT NULL
-        ${input.cursor ? sql`AND url < ${input.cursor}` : sql``}
       `;
-      return paginateByUrl<FeedRow>(query, input.limit);
+      return paginateBy<FeedRow>(baseQuery, input.limit, input.sortBy, input.cursor);
     }),
 
   searchDocuments: publicProcedure
@@ -48,13 +50,14 @@ export const intelRouter = router({
         q: z.string().min(3),
         limit: z.number().default(30),
         cursor: z.string().optional(),
+        sortBy: sortBySchema,
       }),
     )
     .query(async ({ input }) => {
       try {
         const q = `%${input.q}%`;
 
-        const query = sql`
+        const baseQuery = sql`
           SELECT
             url,
             domain,
@@ -63,13 +66,13 @@ export const intelRouter = router({
             published_at,
             tone,
             themes,
-            organizations
+            organizations,
+            created_at
           FROM gdelt_documents
           WHERE title ILIKE ${q}
-          ${input.cursor ? sql`AND url < ${input.cursor}` : sql``}
         `;
 
-        return paginateByUrl<FeedRow>(query, input.limit);
+        return paginateBy<FeedRow>(baseQuery, input.limit, input.sortBy, input.cursor);
       } catch (err) {
         console.error("searchDocuments error:", err);
         throw err;
