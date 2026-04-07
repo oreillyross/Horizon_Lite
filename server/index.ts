@@ -179,8 +179,8 @@ app.use((req, res, next) => {
     () => {
       log(`serving on port ${port}`);
 
-      // Data lifecycle: HOT→WARM→COLD archival, runs daily at 02:00
-      cron.schedule("0 2 * * *", () => {
+      // Data lifecycle: HOT→WARM→COLD archival, runs daily at 08:00
+      cron.schedule("0 8 * * *", () => {
         log("Lifecycle cron triggered", "lifecycle");
         runLifecycleManager().catch((err) =>
           log(
@@ -190,7 +190,7 @@ app.use((req, res, next) => {
         );
       });
 
-      log("Lifecycle cron scheduled (daily at 02:00)", "lifecycle");
+      log("Lifecycle cron scheduled (daily at 08:00 UTC)", "lifecycle");
     },
   );
 })();
