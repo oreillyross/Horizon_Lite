@@ -329,7 +329,7 @@ export function EventDetailCoverageTab({ eventId }: { eventId: string }) {
     );
   }
 
-  if (!data || data.mentionCount < 5) {
+  if (!data || data.mentionCount < 2) {
     return (
       <div className="py-4 text-sm text-muted-foreground">
         Not enough coverage data for this event (minimum 5 mentions required).

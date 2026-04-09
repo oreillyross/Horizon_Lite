@@ -243,7 +243,7 @@ export const intelRouter = router({
               global_event_id, event_time, actor1_name, actor2_name,
               event_code, num_mentions, num_sources, avg_tone, action_geo_fullname
             FROM gdelt_events
-            WHERE num_mentions >= 5
+            WHERE num_mentions >= 1
               AND (
                 actor1_name ILIKE ${like}
                 OR actor2_name ILIKE ${like}
@@ -259,7 +259,7 @@ export const intelRouter = router({
               global_event_id, event_time, actor1_name, actor2_name,
               event_code, num_mentions, num_sources, avg_tone, action_geo_fullname
             FROM gdelt_events
-            WHERE num_mentions >= 5
+            WHERE num_mentions >= 1
               AND (
                 actor1_name ILIKE ${like}
                 OR actor2_name ILIKE ${like}
@@ -279,7 +279,7 @@ export const intelRouter = router({
             global_event_id, event_time, actor1_name, actor2_name,
             event_code, num_mentions, num_sources, avg_tone, action_geo_fullname
           FROM gdelt_events
-          WHERE num_mentions >= 5
+          WHERE num_mentions >= 1
             AND (event_time, global_event_id) < (${cursorTime}::timestamptz, ${cursorId})
           ORDER BY event_time DESC NULLS LAST, global_event_id DESC
           LIMIT ${limitPlusOne}
@@ -290,7 +290,7 @@ export const intelRouter = router({
             global_event_id, event_time, actor1_name, actor2_name,
             event_code, num_mentions, num_sources, avg_tone, action_geo_fullname
           FROM gdelt_events
-          WHERE num_mentions >= 5
+          WHERE num_mentions >= 1
           ORDER BY event_time DESC NULLS LAST, global_event_id DESC
           LIMIT ${limitPlusOne}
         `);
