@@ -199,4 +199,126 @@ export const intelRouter = router({
         actionGeoFullname: r.action_geo_fullname,
       }));
     }),
+
+  /**
+   * Paginated list of GDELT events for the /intel/events page.
+   * Only returns events with ≥5 mentions (min signal threshold).
+   * Supports cursor-based pagination and an optional actor/geo search.
+   */
+  listEvents: publicProcedure
+    .input(
+      z.object({
+        cursor: z.string().optional(),
+        limit: z.number().min(1).max(100).default(30),
+        q: z.string().optional(),
+      }),
+    )
+    .query(async ({ input }) => {
+      const { limit, cursor, q } = input;
+      const limitPlusOne = limit + 1;
+
+      type EventListRow = {
+        global_event_id: string;
+        event_time: string | null;
+        actor1_name: string | null;
+        actor2_name: string | null;
+        event_code: string | null;
+        num_mentions: number | null;
+        num_sources: number | null;
+        avg_tone: number | null;
+        action_geo_fullname: string | null;
+      };
+
+      let result;
+
+      if (q && q.trim().length >= 2) {
+        const like = `%${q.trim()}%`;
+        if (cursor) {
+          const { s: cursorTime, u: cursorId } = JSON.parse(
+            Buffer.from(cursor, "base64").toString("utf8"),
+          ) as { s: string; u: string };
+
+          result = await db.execute(sql`
+            SELECT
+              global_event_id, event_time, actor1_name, actor2_name,
+              event_code, num_mentions, num_sources, avg_tone, action_geo_fullname
+            FROM gdelt_events
+            WHERE num_mentions >= 5
+              AND (
+                actor1_name ILIKE ${like}
+                OR actor2_name ILIKE ${like}
+                OR action_geo_fullname ILIKE ${like}
+              )
+              AND (event_time, global_event_id) < (${cursorTime}::timestamptz, ${cursorId})
+            ORDER BY event_time DESC NULLS LAST, global_event_id DESC
+            LIMIT ${limitPlusOne}
+          `);
+        } else {
+          result = await db.execute(sql`
+            SELECT
+              global_event_id, event_time, actor1_name, actor2_name,
+              event_code, num_mentions, num_sources, avg_tone, action_geo_fullname
+            FROM gdelt_events
+            WHERE num_mentions >= 5
+              AND (
+                actor1_name ILIKE ${like}
+                OR actor2_name ILIKE ${like}
+                OR action_geo_fullname ILIKE ${like}
+              )
+            ORDER BY event_time DESC NULLS LAST, global_event_id DESC
+            LIMIT ${limitPlusOne}
+          `);
+        }
+      } else if (cursor) {
+        const { s: cursorTime, u: cursorId } = JSON.parse(
+          Buffer.from(cursor, "base64").toString("utf8"),
+        ) as { s: string; u: string };
+
+        result = await db.execute(sql`
+          SELECT
+            global_event_id, event_time, actor1_name, actor2_name,
+            event_code, num_mentions, num_sources, avg_tone, action_geo_fullname
+          FROM gdelt_events
+          WHERE num_mentions >= 5
+            AND (event_time, global_event_id) < (${cursorTime}::timestamptz, ${cursorId})
+          ORDER BY event_time DESC NULLS LAST, global_event_id DESC
+          LIMIT ${limitPlusOne}
+        `);
+      } else {
+        result = await db.execute(sql`
+          SELECT
+            global_event_id, event_time, actor1_name, actor2_name,
+            event_code, num_mentions, num_sources, avg_tone, action_geo_fullname
+          FROM gdelt_events
+          WHERE num_mentions >= 5
+          ORDER BY event_time DESC NULLS LAST, global_event_id DESC
+          LIMIT ${limitPlusOne}
+        `);
+      }
+
+      const rows = result.rows as EventListRow[];
+      let nextCursor: string | undefined;
+
+      if (rows.length > limit) {
+        const next = rows.pop()!;
+        nextCursor = Buffer.from(
+          JSON.stringify({ s: next.event_time ?? "", u: next.global_event_id }),
+        ).toString("base64");
+      }
+
+      return {
+        items: rows.map((r) => ({
+          globalEventId: r.global_event_id,
+          eventTime: r.event_time,
+          actor1Name: r.actor1_name,
+          actor2Name: r.actor2_name,
+          eventCode: r.event_code,
+          numMentions: r.num_mentions,
+          numSources: r.num_sources,
+          avgTone: r.avg_tone,
+          actionGeoFullname: r.action_geo_fullname,
+        })),
+        nextCursor,
+      };
+    }),
 });
