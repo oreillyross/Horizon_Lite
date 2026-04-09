@@ -1,8 +1,7 @@
 import { z } from "zod";
 import { router, publicProcedure } from "../trpc";
-import { db } from "../db";
 import { sql } from "drizzle-orm";
-import { paginateBy, paginateByUrl } from "../utils/paginate";
+import { paginateBy } from "../utils/paginate";
 
 type FeedRow = {
   url: string;
