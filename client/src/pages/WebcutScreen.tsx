@@ -1,6 +1,8 @@
 import { useMemo, useState, useEffect } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 
 function normalizeUrl(input: string) {
   const s = input.trim();
@@ -19,6 +21,8 @@ function hostFromUrl(u: string) {
 }
 
 export default function WebCutScreen() {
+  const isMobile = useIsMobile();
+
   // --- selection / popover state ---
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [selectedText, setSelectedText] = useState("");
@@ -33,12 +37,12 @@ export default function WebCutScreen() {
       if (e.key === "Escape") closePopover();
     }
 
-    function onMouseDown(e: MouseEvent) {
-      // click outside closes
+    function onPointerDownOutside(e: Event) {
+      // click/tap outside closes
       const target = e.target as HTMLElement | null;
       if (!target) return;
 
-      // if click is inside the popover, ignore
+      // if click/tap is inside the popover, ignore
       const pop = document.querySelector('[aria-label="WebCut capture"]');
       if (pop && pop.contains(target)) return;
 
@@ -51,12 +55,14 @@ export default function WebCutScreen() {
     }
 
     window.addEventListener("keydown", onKeyDown);
-    window.addEventListener("mousedown", onMouseDown);
+    window.addEventListener("mousedown", onPointerDownOutside);
+    window.addEventListener("touchstart", onPointerDownOutside);
     window.addEventListener("scroll", onScroll, true);
 
     return () => {
       window.removeEventListener("keydown", onKeyDown);
-      window.removeEventListener("mousedown", onMouseDown);
+      window.removeEventListener("mousedown", onPointerDownOutside);
+      window.removeEventListener("touchstart", onPointerDownOutside);
       window.removeEventListener("scroll", onScroll, true);
     };
   }, [popoverOpen]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -111,6 +117,40 @@ export default function WebCutScreen() {
     return { text, x, y };
   }
 
+  function getPopoverStyle(pos: { x: number; y: number }) {
+    const POPOVER_HALF_WIDTH = 120;
+    const PADDING = 8;
+    const vw = window.innerWidth;
+
+    let left = Math.round(pos.x);
+    const top = Math.round(pos.y) - 10;
+
+    // Clamp horizontal to keep popover on screen
+    left = Math.max(
+      POPOVER_HALF_WIDTH + PADDING,
+      Math.min(left, vw - POPOVER_HALF_WIDTH - PADDING),
+    );
+
+    // If popover would go above viewport, show below selection instead
+    if (top < 60) {
+      return {
+        position: "fixed" as const,
+        left,
+        top: Math.round(pos.y) + 30,
+        transform: "translate(-50%, 0%)",
+        zIndex: 50,
+      };
+    }
+
+    return {
+      position: "fixed" as const,
+      left,
+      top,
+      transform: "translate(-50%, -100%)",
+      zIndex: 50,
+    };
+  }
+
   const [urlInput, setUrlInput] = useState("");
   const [loadedUrl, setLoadedUrl] = useState<string>("");
 
@@ -121,6 +161,40 @@ export default function WebCutScreen() {
     { url: loadedUrl },
     { enabled: !!loadedUrl },
   );
+
+  // Touch-based selection detection via selectionchange (fires on all platforms)
+  useEffect(() => {
+    if (!readable.data?.contentHtml) return;
+
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+    function handleSelectionChange() {
+      if (debounceTimer) clearTimeout(debounceTimer);
+
+      debounceTimer = setTimeout(() => {
+        const readerEl = document.getElementById("webcut-reader");
+        if (!readerEl) return;
+
+        const res = getSelectionTextAndAnchor(readerEl);
+        if (!res) {
+          // Don't close if popover is already open — tapping "Add snippet"
+          // can momentarily clear the selection on mobile
+          return;
+        }
+
+        setSelectedText(res.text);
+        setAnchor({ x: res.x, y: res.y });
+        setPopoverOpen(true);
+      }, 300);
+    }
+
+    document.addEventListener("selectionchange", handleSelectionChange);
+
+    return () => {
+      document.removeEventListener("selectionchange", handleSelectionChange);
+      if (debounceTimer) clearTimeout(debounceTimer);
+    };
+  }, [readable.data?.contentHtml]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function onGo() {
     const u = normalizeUrl(urlInput);
@@ -238,20 +312,17 @@ export default function WebCutScreen() {
             </div>
             {popoverOpen && anchor && (
               <div
-                style={{
-                  position: "fixed",
-                  left: Math.round(anchor.x),
-                  top: Math.round(anchor.y) - 10,
-                  transform: "translate(-50%, -100%)",
-                  zIndex: 50,
-                }}
+                style={getPopoverStyle(anchor)}
                 role="dialog"
                 aria-label="WebCut capture"
               >
                 <div className="rounded-lg border bg-background shadow-md">
                   <div className="flex items-center gap-2 px-3 py-2">
                     <button
-                      className="rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted disabled:opacity-50"
+                      className={cn(
+                        "rounded-md border text-xs font-medium hover:bg-muted disabled:opacity-50",
+                        isMobile ? "px-3 py-2 min-h-[44px]" : "px-2 py-1",
+                      )}
                       onClick={() => {
                         if (!readable.data) return;
 
@@ -276,7 +347,12 @@ export default function WebCutScreen() {
                     <div className="flex-1" />
 
                     <button
-                      className="px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
+                      className={cn(
+                        "text-xs text-muted-foreground hover:text-foreground",
+                        isMobile
+                          ? "px-3 py-2 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                          : "px-2 py-1",
+                      )}
                       onClick={closePopover}
                       aria-label="Close"
                     >
