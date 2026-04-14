@@ -52,6 +52,7 @@ export const gdeltEvents = pgTable(
     codeIdx: index("gdelt_events_event_code_idx").on(t.eventCode),
     actor1Idx: index("gdelt_events_actor1_idx").on(t.actor1Name),
     actor2Idx: index("gdelt_events_actor2_idx").on(t.actor2Name),
+    mentionsIdx: index("gdelt_events_num_mentions_idx").on(t.numMentions),
   }),
 );
 

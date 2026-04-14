@@ -70,22 +70,24 @@ function parseYmdToUtc(y: string | undefined): Date | null {
   return null;
 }
 
-// ---- EXPORT parsing (Events 2.1)
-// Indices per GDELT 2.1 Events schema (commonly used):
-// 0 GlobalEventID
-// 1 SQLDATE (yyyymmdd)
-// 24 EventCode
-// 27 QuadClass
-// 28 GoldsteinScale
-// 29 NumMentions
-// 30 NumSources
-// 31 NumArticles
-// 32 AvgTone
+// ---- EXPORT parsing (GDELT 2.0 Events)
+// Indices per GDELT 2.0 Events schema:
+// 0  GlobalEventID
+// 1  SQLDATE (yyyymmdd)
+// 6  Actor1Name
+// 16 Actor2Name
+// 26 EventCode
+// 29 QuadClass
+// 30 GoldsteinScale
+// 31 NumMentions
+// 32 NumSources
+// 33 NumArticles
+// 34 AvgTone
 // 52 ActionGeo_Fullname
 // 53 ActionGeo_CountryCode
-// 55 ActionGeo_Lat
-// 56 ActionGeo_Long
-// 57 SOURCEURL
+// 56 ActionGeo_Lat
+// 57 ActionGeo_Long
+// 60 SOURCEURL
 function parseExportRow(cols: string[]) {
   const globalEventId = cols[0]?.trim();
   if (!globalEventId) return null;
@@ -97,20 +99,20 @@ function parseExportRow(cols: string[]) {
   const actor2Name = cols[16]?.trim() || null; // Actor2Name usually col16
 
   const eventCode = cols[26]?.trim() || null;
-  const quadClass = cols[27] ? toInt(cols[27]) : null;
+  const quadClass = cols[29] ? toInt(cols[29]) : null;
 
-  const goldstein = cols[28] ? toFloat(cols[28]) : null;
-  const numMentions = cols[29] ? toInt(cols[29]) : null;
-  const numSources = cols[30] ? toInt(cols[30]) : null;
-  const numArticles = cols[31] ? toInt(cols[31]) : null;
-  const avgTone = cols[32] ? toFloat(cols[32]) : null;
+  const goldstein = cols[30] ? toFloat(cols[30]) : null;
+  const numMentions = cols[31] ? toInt(cols[31]) : null;
+  const numSources = cols[32] ? toInt(cols[32]) : null;
+  const numArticles = cols[33] ? toInt(cols[33]) : null;
+  const avgTone = cols[34] ? toFloat(cols[34]) : null;
 
   const actionGeoFullname = cols[52]?.trim() || null;
   const actionGeoCountryCode = cols[53]?.trim() || null;
-  const actionGeoLat = cols[55] ? Number(cols[55]) : null;
-  const actionGeoLon = cols[56] ? Number(cols[56]) : null;
+  const actionGeoLat = cols[56] ? Number(cols[56]) : null;
+  const actionGeoLon = cols[57] ? Number(cols[57]) : null;
 
-  const sourceUrl = cols[57]?.trim() || null;
+  const sourceUrl = cols[60]?.trim() || null;
 
   return {
     globalEventId,
@@ -276,7 +278,7 @@ export async function ingestGdelt() {
     for (const row of rows) {
       if (!row) continue;
       const cols = row.split("\t");
-      if (cols.length < 58) continue;
+      if (cols.length < 61) continue;
 
       const parsed = parseExportRow(cols);
       if (!parsed) continue;
