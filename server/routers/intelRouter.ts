@@ -234,7 +234,7 @@ export const intelRouter = router({
       if (q && q.trim().length >= 2) {
         const like = `%${q.trim()}%`;
         if (cursor) {
-          const { s: cursorTime, u: cursorId } = JSON.parse(
+          const { s: cursorMentions, u: cursorId } = JSON.parse(
             Buffer.from(cursor, "base64").toString("utf8"),
           ) as { s: string; u: string };
 
@@ -249,8 +249,8 @@ export const intelRouter = router({
                 OR actor2_name ILIKE ${like}
                 OR action_geo_fullname ILIKE ${like}
               )
-              AND (event_time, global_event_id) < (${cursorTime}::timestamptz, ${cursorId})
-            ORDER BY event_time DESC NULLS LAST, global_event_id DESC
+              AND (num_mentions, global_event_id) < (${cursorMentions}::int, ${cursorId})
+            ORDER BY num_mentions DESC NULLS LAST, global_event_id DESC
             LIMIT ${limitPlusOne}
           `);
         } else {
@@ -265,12 +265,12 @@ export const intelRouter = router({
                 OR actor2_name ILIKE ${like}
                 OR action_geo_fullname ILIKE ${like}
               )
-            ORDER BY event_time DESC NULLS LAST, global_event_id DESC
+            ORDER BY num_mentions DESC NULLS LAST, global_event_id DESC
             LIMIT ${limitPlusOne}
           `);
         }
       } else if (cursor) {
-        const { s: cursorTime, u: cursorId } = JSON.parse(
+        const { s: cursorMentions, u: cursorId } = JSON.parse(
           Buffer.from(cursor, "base64").toString("utf8"),
         ) as { s: string; u: string };
 
@@ -280,8 +280,8 @@ export const intelRouter = router({
             event_code, num_mentions, num_sources, avg_tone, action_geo_fullname
           FROM gdelt_events
           WHERE num_mentions >= 1
-            AND (event_time, global_event_id) < (${cursorTime}::timestamptz, ${cursorId})
-          ORDER BY event_time DESC NULLS LAST, global_event_id DESC
+            AND (num_mentions, global_event_id) < (${cursorMentions}::int, ${cursorId})
+          ORDER BY num_mentions DESC NULLS LAST, global_event_id DESC
           LIMIT ${limitPlusOne}
         `);
       } else {
@@ -291,7 +291,7 @@ export const intelRouter = router({
             event_code, num_mentions, num_sources, avg_tone, action_geo_fullname
           FROM gdelt_events
           WHERE num_mentions >= 1
-          ORDER BY event_time DESC NULLS LAST, global_event_id DESC
+          ORDER BY num_mentions DESC NULLS LAST, global_event_id DESC
           LIMIT ${limitPlusOne}
         `);
       }
@@ -302,7 +302,7 @@ export const intelRouter = router({
       if (rows.length > limit) {
         const next = rows.pop()!;
         nextCursor = Buffer.from(
-          JSON.stringify({ s: next.event_time ?? "", u: next.global_event_id }),
+          JSON.stringify({ s: next.num_mentions ?? 0, u: next.global_event_id }),
         ).toString("base64");
       }
 
