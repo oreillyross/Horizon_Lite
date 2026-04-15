@@ -10,7 +10,7 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 console.log("migration:SESSION_DB_URL_HOST", new URL(process.env.DATABASE_URL!).host);
 console.log("migration:SESSION_DB_URL_DB", new URL(process.env.DATABASE_URL!).pathname);
 

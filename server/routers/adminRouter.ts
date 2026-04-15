@@ -15,14 +15,14 @@ const isAdminEmail = (email?: string | null) => {
   return !!email && allow.includes(email.toLowerCase());
 };
 
-export const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
+const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (!isAdminEmail(ctx.user?.email)) {
     throw new TRPCError({ code: "FORBIDDEN" });
   }
   return next();
 });
 
-export function log(message: string, source = "express") {
+function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",

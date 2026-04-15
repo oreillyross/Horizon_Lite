@@ -9,12 +9,6 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   
-  // app.use("/api/trpc", (req, _res, next) => {
-  //   console.log("TRPC rawBody:", (req as any).rawBody?.toString?.() ?? req.body);
-  //   next();
-  // });
-
-  
   app.use(
     "/api/trpc",
     createExpressMiddleware({

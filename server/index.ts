@@ -9,7 +9,6 @@ import { runLifecycleManager } from "./jobs/lifecycleManager";
 import { db } from "./db";
 import { sql } from "drizzle-orm";
 import cron from "node-cron";
-// import "./bootstrap"
 
 const app = express();
 const httpServer = createServer(app);
@@ -179,7 +178,7 @@ app.use((req, res, next) => {
     () => {
       log(`serving on port ${port}`);
 
-      // Data lifecycle: HOT→WARM→COLD archival, runs daily at 08:00
+      // Data lifecycle: HOT→WARM→COLD archival, runs daily at 10:00 UTC
     cron.schedule("0 10 * * *", () => {
         log("Lifecycle cron triggered", "lifecycle");
         runLifecycleManager().catch((err) =>
@@ -190,7 +189,7 @@ app.use((req, res, next) => {
         );
       });
 
-      log("Lifecycle cron scheduled (daily at 08:00 UTC)", "lifecycle");
+      log("Lifecycle cron scheduled (daily at 10:00 UTC)", "lifecycle");
     },
   );
 })();

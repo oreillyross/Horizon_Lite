@@ -7,8 +7,6 @@ import { Input } from "@/components/ui/input";
 type Tab = "users" | "groups" | "links";
 
 export default function AdminScreen() {
-  const [result, setResult] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState<Tab>("users");
   
   const runGdeltJob = trpc.admin.runGdelt.useMutation();
@@ -44,16 +42,10 @@ export default function AdminScreen() {
         <button
           onClick={() => runGdeltJob.mutate()}
           className="px-4 py-2 bg-black text-white rounded-md"
-          disabled={loading}
+          disabled={runGdeltJob.isPending}
         >
-          {loading ? "Running..." : "Run GDELT Ingest"}
+          {runGdeltJob.isPending ? "Running..." : "Run GDELT Ingest"}
         </button>
-
-        {result && (
-          <div className="bg-gray-100 p-4 rounded-md font-mono text-sm">
-            <pre>{JSON.stringify(result, null, 2)}</pre>
-          </div>
-        )}
 
       </div>
     </main>

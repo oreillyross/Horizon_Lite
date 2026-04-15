@@ -501,7 +501,6 @@ export class SnippetStorage implements ISnippetStorage {
     Array<{ tag: string; slug: string; count: number }>
   > {
     const all = await this.getSnippets();
-    1;
 
     const counts = new Map<string, number>();
 
