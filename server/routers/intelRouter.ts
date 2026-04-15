@@ -227,6 +227,9 @@ export const intelRouter = router({
         num_sources: number | null;
         avg_tone: number | null;
         action_geo_fullname: string | null;
+        goldstein: number | null;
+        num_articles: number | null;
+        event_code_name: string | null;
       };
 
       let result;
@@ -240,32 +243,38 @@ export const intelRouter = router({
 
           result = await db.execute(sql`
             SELECT
-              global_event_id, event_time, actor1_name, actor2_name,
-              event_code, num_mentions, num_sources, avg_tone, action_geo_fullname
-            FROM gdelt_events
-            WHERE num_mentions >= 1
+              e.global_event_id, e.event_time, e.actor1_name, e.actor2_name,
+              e.event_code, e.num_mentions, e.num_sources, e.avg_tone,
+              e.action_geo_fullname, e.goldstein, e.num_articles,
+              ec.name AS event_code_name
+            FROM gdelt_events e
+            LEFT JOIN event_codes ec ON ec.code = e.event_code
+            WHERE e.num_mentions >= 1
               AND (
-                actor1_name ILIKE ${like}
-                OR actor2_name ILIKE ${like}
-                OR action_geo_fullname ILIKE ${like}
+                e.actor1_name ILIKE ${like}
+                OR e.actor2_name ILIKE ${like}
+                OR e.action_geo_fullname ILIKE ${like}
               )
-              AND (num_mentions, global_event_id) < (${cursorMentions}::int, ${cursorId})
-            ORDER BY num_mentions DESC NULLS LAST, global_event_id DESC
+              AND (e.num_mentions, e.global_event_id) < (${cursorMentions}::int, ${cursorId})
+            ORDER BY e.num_mentions DESC NULLS LAST, e.global_event_id DESC
             LIMIT ${limitPlusOne}
           `);
         } else {
           result = await db.execute(sql`
             SELECT
-              global_event_id, event_time, actor1_name, actor2_name,
-              event_code, num_mentions, num_sources, avg_tone, action_geo_fullname
-            FROM gdelt_events
-            WHERE num_mentions >= 1
+              e.global_event_id, e.event_time, e.actor1_name, e.actor2_name,
+              e.event_code, e.num_mentions, e.num_sources, e.avg_tone,
+              e.action_geo_fullname, e.goldstein, e.num_articles,
+              ec.name AS event_code_name
+            FROM gdelt_events e
+            LEFT JOIN event_codes ec ON ec.code = e.event_code
+            WHERE e.num_mentions >= 1
               AND (
-                actor1_name ILIKE ${like}
-                OR actor2_name ILIKE ${like}
-                OR action_geo_fullname ILIKE ${like}
+                e.actor1_name ILIKE ${like}
+                OR e.actor2_name ILIKE ${like}
+                OR e.action_geo_fullname ILIKE ${like}
               )
-            ORDER BY num_mentions DESC NULLS LAST, global_event_id DESC
+            ORDER BY e.num_mentions DESC NULLS LAST, e.global_event_id DESC
             LIMIT ${limitPlusOne}
           `);
         }
@@ -276,22 +285,28 @@ export const intelRouter = router({
 
         result = await db.execute(sql`
           SELECT
-            global_event_id, event_time, actor1_name, actor2_name,
-            event_code, num_mentions, num_sources, avg_tone, action_geo_fullname
-          FROM gdelt_events
-          WHERE num_mentions >= 1
-            AND (num_mentions, global_event_id) < (${cursorMentions}::int, ${cursorId})
-          ORDER BY num_mentions DESC NULLS LAST, global_event_id DESC
+            e.global_event_id, e.event_time, e.actor1_name, e.actor2_name,
+            e.event_code, e.num_mentions, e.num_sources, e.avg_tone,
+            e.action_geo_fullname, e.goldstein, e.num_articles,
+            ec.name AS event_code_name
+          FROM gdelt_events e
+          LEFT JOIN event_codes ec ON ec.code = e.event_code
+          WHERE e.num_mentions >= 1
+            AND (e.num_mentions, e.global_event_id) < (${cursorMentions}::int, ${cursorId})
+          ORDER BY e.num_mentions DESC NULLS LAST, e.global_event_id DESC
           LIMIT ${limitPlusOne}
         `);
       } else {
         result = await db.execute(sql`
           SELECT
-            global_event_id, event_time, actor1_name, actor2_name,
-            event_code, num_mentions, num_sources, avg_tone, action_geo_fullname
-          FROM gdelt_events
-          WHERE num_mentions >= 1
-          ORDER BY num_mentions DESC NULLS LAST, global_event_id DESC
+            e.global_event_id, e.event_time, e.actor1_name, e.actor2_name,
+            e.event_code, e.num_mentions, e.num_sources, e.avg_tone,
+            e.action_geo_fullname, e.goldstein, e.num_articles,
+            ec.name AS event_code_name
+          FROM gdelt_events e
+          LEFT JOIN event_codes ec ON ec.code = e.event_code
+          WHERE e.num_mentions >= 1
+          ORDER BY e.num_mentions DESC NULLS LAST, e.global_event_id DESC
           LIMIT ${limitPlusOne}
         `);
       }
@@ -317,6 +332,9 @@ export const intelRouter = router({
           numSources: r.num_sources,
           avgTone: r.avg_tone,
           actionGeoFullname: r.action_geo_fullname,
+          goldstein: r.goldstein,
+          numArticles: r.num_articles,
+          eventCodeName: r.event_code_name,
         })),
         nextCursor,
       };
