@@ -6,7 +6,7 @@ type PageResult<T> = {
   nextCursor?: string;
 };
 
-export type SortMode = "added" | "date";
+type SortMode = "added" | "date";
 
 // Composite cursor: encodes (sortValue, url) as a base64 JSON string
 function encodeCursor(sortValue: string, url: string): string {
@@ -85,26 +85,3 @@ export async function paginateBy<T>(
   return { items: rows as unknown as T[], nextCursor };
 }
 
-// Legacy export kept for any callers not yet migrated
-export async function paginateByUrl<T>(
-  baseQuery: ReturnType<typeof sql>,
-  limit: number
-): Promise<PageResult<T>> {
-  const limitPlusOne = limit + 1;
-
-  const result = await db.execute(sql`
-    ${baseQuery}
-    ORDER BY url DESC
-    LIMIT ${limitPlusOne}
-  `);
-
-  const rows = result.rows as T[];
-  let nextCursor: string | undefined;
-
-  if (rows.length > limit) {
-    const next = rows.pop();
-    nextCursor = (next as any)?.url;
-  }
-
-  return { items: rows, nextCursor };
-}

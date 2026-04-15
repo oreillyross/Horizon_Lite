@@ -15,11 +15,7 @@ import { scenariosRouter } from "./scenarios.router";
 import { signalsRouter } from "./signals.router";
 import { updatesRouter } from "./updates.router";
 import { reportsRouter } from "./reports.router";
-export { scenariosRouter } from "./scenarios.router";
 import { intelRouter } from "./intelRouter";
-export { signalsRouter } from "./signals.router";
-export { updatesRouter } from "./updates.router";
-export { reportsRouter } from "./reports.router";
 
 export const appRouter = router({
   themes: themesRouter,
