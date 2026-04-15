@@ -1,9 +1,18 @@
 import { useState, useEffect } from "react";
 import { useDebounce } from "use-debounce";
 import { useInView } from "react-intersection-observer";
-import { Loader2, MapPin, Users, BarChart2 } from "lucide-react";
+import { MapPin, Users, BarChart2, SlidersHorizontal } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { EventDetailModal } from "@/components/intelfeed/EventDetailModal";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 
 type EventItem = {
   globalEventId: string;
@@ -15,6 +24,30 @@ type EventItem = {
   numSources: number | null;
   avgTone: number | null;
   actionGeoFullname: string | null;
+  goldstein: number | null;
+  numArticles: number | null;
+  eventCodeName: string | null;
+};
+
+// ─── Column system ────────────────────────────────────────────────────────────
+
+type ColumnKey =
+  | "actors"
+  | "location"
+  | "mentions"
+  | "tone"
+  | "date"
+  | "coverage"
+  | "eventType"
+  | "sources"
+  | "goldstein";
+
+type ColumnDef = {
+  key: ColumnKey;
+  label: string;
+  defaultVisible: boolean;
+  renderHeader: () => React.ReactNode;
+  renderCell: (event: EventItem) => React.ReactNode;
 };
 
 function toneColor(tone: number | null): string {
@@ -26,7 +59,6 @@ function toneColor(tone: number | null): string {
 
 function MentionBar({ count }: { count: number | null }) {
   const n = count ?? 0;
-  // Cap visual bar at 200 mentions
   const pct = Math.min(100, (n / 200) * 100);
   return (
     <div className="flex items-center gap-2">
@@ -41,56 +73,64 @@ function MentionBar({ count }: { count: number | null }) {
   );
 }
 
-function EventRow({
-  event,
-  onSelect,
-}: {
-  event: EventItem;
-  onSelect: (e: EventItem) => void;
-}) {
-  const actors = [event.actor1Name, event.actor2Name].filter(Boolean);
-
-  return (
-    <tr
-      className="border-b last:border-b-0 hover:bg-muted/50 cursor-pointer transition-colors"
-      onClick={() => onSelect(event)}
-    >
-      {/* Actors */}
-      <td className="py-3 px-4">
-        {actors.length > 0 ? (
-          <div className="flex items-center gap-1.5 text-sm font-medium">
-            <Users className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-            <span className="truncate max-w-[200px]">{actors.join(" ↔ ")}</span>
-          </div>
-        ) : (
-          <span className="text-sm text-muted-foreground">(unknown actors)</span>
-        )}
-      </td>
-
-      {/* Geo */}
-      <td className="py-3 px-4 hidden sm:table-cell">
-        {event.actionGeoFullname ? (
-          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
-            <span className="truncate max-w-[180px]">{event.actionGeoFullname}</span>
-          </div>
-        ) : (
-          <span className="text-sm text-muted-foreground">—</span>
-        )}
-      </td>
-
-      {/* Mentions bar */}
-      <td className="py-3 px-4">
-        <MentionBar count={event.numMentions} />
-      </td>
-
-      {/* Tone */}
-      <td className={`py-3 px-4 text-sm tabular-nums font-medium ${toneColor(event.avgTone)}`}>
+const COLUMN_DEFS: ColumnDef[] = [
+  {
+    key: "actors",
+    label: "Actors",
+    defaultVisible: true,
+    renderHeader: () => "Actors",
+    renderCell: (event) => {
+      const actors = [event.actor1Name, event.actor2Name].filter(Boolean);
+      return actors.length > 0 ? (
+        <div className="flex items-center gap-1.5 text-sm font-medium">
+          <Users className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+          <span className="truncate max-w-[200px]">{actors.join(" ↔ ")}</span>
+        </div>
+      ) : (
+        <span className="text-sm text-muted-foreground">(unknown actors)</span>
+      );
+    },
+  },
+  {
+    key: "location",
+    label: "Location",
+    defaultVisible: true,
+    renderHeader: () => "Location",
+    renderCell: (event) =>
+      event.actionGeoFullname ? (
+        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
+          <span className="truncate max-w-[180px]">{event.actionGeoFullname}</span>
+        </div>
+      ) : (
+        <span className="text-sm text-muted-foreground">—</span>
+      ),
+  },
+  {
+    key: "mentions",
+    label: "Mentions",
+    defaultVisible: true,
+    renderHeader: () => "Mentions",
+    renderCell: (event) => <MentionBar count={event.numMentions} />,
+  },
+  {
+    key: "tone",
+    label: "Tone",
+    defaultVisible: true,
+    renderHeader: () => "Tone",
+    renderCell: (event) => (
+      <span className={`text-sm tabular-nums font-medium ${toneColor(event.avgTone)}`}>
         {event.avgTone != null ? event.avgTone.toFixed(1) : "—"}
-      </td>
-
-      {/* Time */}
-      <td className="py-3 px-4 text-sm text-muted-foreground tabular-nums whitespace-nowrap hidden md:table-cell">
+      </span>
+    ),
+  },
+  {
+    key: "date",
+    label: "Date",
+    defaultVisible: true,
+    renderHeader: () => "Date",
+    renderCell: (event) => (
+      <span className="text-sm text-muted-foreground tabular-nums whitespace-nowrap">
         {event.eventTime
           ? new Date(event.eventTime).toLocaleDateString(undefined, {
               month: "short",
@@ -98,39 +138,174 @@ function EventRow({
               year: "numeric",
             })
           : "—"}
-      </td>
+      </span>
+    ),
+  },
+  {
+    key: "coverage",
+    label: "Coverage",
+    defaultVisible: true,
+    renderHeader: () => "Coverage",
+    renderCell: (event) =>
+      (event.numMentions ?? 0) >= 3 ? (
+        <span className="inline-flex items-center gap-1 text-xs text-blue-600 font-medium">
+          <BarChart2 className="h-3.5 w-3.5" />
+          Coverage
+        </span>
+      ) : (
+        <span className="text-xs text-muted-foreground">—</span>
+      ),
+  },
+  {
+    key: "eventType",
+    label: "Event Type",
+    defaultVisible: false,
+    renderHeader: () => "Event Type",
+    renderCell: (event) => (
+      <span className="text-sm text-muted-foreground">
+        {event.eventCodeName ?? event.eventCode ?? "—"}
+      </span>
+    ),
+  },
+  {
+    key: "sources",
+    label: "Sources",
+    defaultVisible: false,
+    renderHeader: () => "Sources",
+    renderCell: (event) => (
+      <span className="text-sm tabular-nums">
+        {event.numSources != null ? event.numSources : "—"}
+      </span>
+    ),
+  },
+  {
+    key: "goldstein",
+    label: "Goldstein",
+    defaultVisible: false,
+    renderHeader: () => "Goldstein",
+    renderCell: (event) => (
+      <span
+        className={`text-sm tabular-nums font-medium ${
+          event.goldstein == null
+            ? "text-muted-foreground"
+            : event.goldstein < 0
+            ? "text-orange-500"
+            : "text-emerald-600"
+        }`}
+      >
+        {event.goldstein != null ? event.goldstein.toFixed(1) : "—"}
+      </span>
+    ),
+  },
+];
 
-      {/* Coverage CTA */}
-      <td className="py-3 px-4">
-        {(event.numMentions ?? 0) >= 3 ? (
-          <span className="inline-flex items-center gap-1 text-xs text-blue-600 font-medium">
-            <BarChart2 className="h-3.5 w-3.5" />
-            Coverage
-          </span>
-        ) : (
-          <span className="text-xs text-muted-foreground">—</span>
-        )}
-      </td>
-    </tr>
+const DEFAULT_VISIBLE = new Set<ColumnKey>(
+  COLUMN_DEFS.filter((c) => c.defaultVisible).map((c) => c.key),
+);
+const LS_KEY = "events-columns";
+
+// ─── Hooks ────────────────────────────────────────────────────────────────────
+
+function useColumnVisibility(): [Set<ColumnKey>, (key: ColumnKey, on: boolean) => void] {
+  const [visible, setVisible] = useState<Set<ColumnKey>>(() => {
+    try {
+      const stored = localStorage.getItem(LS_KEY);
+      if (stored) return new Set(JSON.parse(stored) as ColumnKey[]);
+    } catch {
+      // ignore parse errors
+    }
+    return DEFAULT_VISIBLE;
+  });
+
+  const toggle = (key: ColumnKey, on: boolean) => {
+    setVisible((prev) => {
+      if (!on && prev.size <= 1) return prev; // prevent empty set
+      const next = new Set(prev);
+      on ? next.add(key) : next.delete(key);
+      localStorage.setItem(LS_KEY, JSON.stringify([...next]));
+      return next;
+    });
+  };
+
+  return [visible, toggle];
+}
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+function ColumnPicker({
+  visible,
+  onToggle,
+}: {
+  visible: Set<ColumnKey>;
+  onToggle: (key: ColumnKey, on: boolean) => void;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size="sm" className="h-10 gap-1.5">
+          <SlidersHorizontal className="h-3.5 w-3.5" />
+          Columns
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-44">
+        <DropdownMenuLabel>Visible columns</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {COLUMN_DEFS.map((col) => (
+          <DropdownMenuCheckboxItem
+            key={col.key}
+            checked={visible.has(col.key)}
+            onCheckedChange={(checked) => onToggle(col.key, !!checked)}
+          >
+            {col.label}
+          </DropdownMenuCheckboxItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
-function Skeleton() {
+function EventRow({
+  event,
+  visibleColumns,
+  onSelect,
+}: {
+  event: EventItem;
+  visibleColumns: Set<ColumnKey>;
+  onSelect: (e: EventItem) => void;
+}) {
   return (
-    <tr className="border-b">
-      {[...Array(6)].map((_, i) => (
-        <td key={i} className="py-3 px-4">
-          <div className="h-4 rounded bg-muted animate-pulse" style={{ width: `${60 + i * 10}%` }} />
+    <tr
+      className="border-b last:border-b-0 hover:bg-muted/50 cursor-pointer transition-colors"
+      onClick={() => onSelect(event)}
+    >
+      {COLUMN_DEFS.filter((col) => visibleColumns.has(col.key)).map((col) => (
+        <td key={col.key} className="py-3 px-4">
+          {col.renderCell(event)}
         </td>
       ))}
     </tr>
   );
 }
 
+function Skeleton({ columnCount }: { columnCount: number }) {
+  return (
+    <tr className="border-b">
+      {[...Array(columnCount)].map((_, i) => (
+        <td key={i} className="py-3 px-4">
+          <div className="h-4 rounded bg-muted animate-pulse" style={{ width: `${60 + i * 8}%` }} />
+        </td>
+      ))}
+    </tr>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
 export default function IntelEventsPage() {
   const [q, setQ] = useState("");
   const [debounced] = useDebounce(q, 350);
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
+  const [visibleColumns, toggleColumn] = useColumnVisibility();
 
   const { ref, inView } = useInView();
 
@@ -146,6 +321,7 @@ export default function IntelEventsPage() {
   }, [inView, query]);
 
   const items = query.data?.pages.flatMap((p) => p.items) ?? [];
+  const activeColumnCount = COLUMN_DEFS.filter((c) => visibleColumns.has(c.key)).length;
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
@@ -157,14 +333,15 @@ export default function IntelEventsPage() {
         </p>
       </div>
 
-      {/* Search */}
-      <div className="mb-4">
+      {/* Search + column picker */}
+      <div className="mb-4 flex items-center gap-2">
         <input
           className="h-10 w-full max-w-sm rounded-md border bg-background px-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           placeholder="Filter by actor or location…"
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
+        <ColumnPicker visible={visibleColumns} onToggle={toggleColumn} />
       </div>
 
       {/* Table */}
@@ -172,21 +349,22 @@ export default function IntelEventsPage() {
         <table className="w-full text-sm">
           <thead className="text-left text-xs text-muted-foreground border-b">
             <tr>
-              <th className="py-3 px-4 font-medium">Actors</th>
-              <th className="py-3 px-4 font-medium hidden sm:table-cell">Location</th>
-              <th className="py-3 px-4 font-medium">Mentions</th>
-              <th className="py-3 px-4 font-medium">Tone</th>
-              <th className="py-3 px-4 font-medium hidden md:table-cell">Date</th>
-              <th className="py-3 px-4 font-medium">Coverage</th>
+              {COLUMN_DEFS.filter((col) => visibleColumns.has(col.key)).map((col) => (
+                <th key={col.key} className="py-3 px-4 font-medium">
+                  {col.renderHeader()}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
             {query.isLoading
-              ? [...Array(8)].map((_, i) => <Skeleton key={i} />)
+              ? [...Array(8)].map((_, i) => (
+                  <Skeleton key={i} columnCount={activeColumnCount} />
+                ))
               : query.isError
               ? (
                 <tr>
-                  <td colSpan={6} className="py-8 px-4 text-center text-sm text-muted-foreground">
+                  <td colSpan={activeColumnCount} className="py-8 px-4 text-center text-sm text-muted-foreground">
                     Failed to load events — {query.error?.message}
                   </td>
                 </tr>
@@ -194,16 +372,23 @@ export default function IntelEventsPage() {
               : items.length === 0
               ? (
                 <tr>
-                  <td colSpan={6} className="py-8 px-4 text-center text-sm text-muted-foreground">
+                  <td colSpan={activeColumnCount} className="py-8 px-4 text-center text-sm text-muted-foreground">
                     {debounced.length >= 2 ? "No events match your search." : "No events found."}
                   </td>
                 </tr>
               )
               : items.map((event) => (
-                <EventRow key={event.globalEventId} event={event} onSelect={setSelectedEvent} />
+                <EventRow
+                  key={event.globalEventId}
+                  event={event}
+                  visibleColumns={visibleColumns}
+                  onSelect={setSelectedEvent}
+                />
               ))}
 
-            {query.isFetchingNextPage && <Skeleton />}
+            {query.isFetchingNextPage && (
+              <Skeleton columnCount={activeColumnCount} />
+            )}
           </tbody>
         </table>
       </div>
