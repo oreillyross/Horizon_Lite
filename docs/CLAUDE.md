@@ -1,9 +1,11 @@
-claude you will clean this up into a well formatted Clude.md file for you to follow.
+# Claude Instructions
 
-What I want you to add explcitly is that you (Claude) must never look into the archive folder in docs/archive for context. IGNORE IT.
+The authoritative CLAUDE.md for this project lives at the **repository root**:
 
-So lets clean this up, I want you to have clear instructions with regards to following the TASKS.md and only completing one subtask at a time, never jump ahead and try to do more than necessary. 
+```
+/CLAUDE.md
+```
 
-Stay on track, give me as the human in the loop a architectural decision, but for the most part go ahead and plan the tasks implementation based on what you know about front end best practice, building apps, dashboards, react typescript postgres etc. 
+Read that file for all project instructions, conventions, and rules.
 
-Now go ahead and rebuild this Claude.md file.
+> Do not modify this file. Edit `/CLAUDE.md` at the root instead.
