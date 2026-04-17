@@ -8,14 +8,14 @@ interface SubNavItem {
 }
 
 const SUB_NAV_ITEMS: SubNavItem[] = [
-  { linkName: "Snippets", href: "/snippet/show" },
+  { linkName: "Overview", href: "/horizon/overview" },
   { linkName: "Themes", href: "/themes" },
-  { linkName: "Tags", href: "/tags/show" },
-  { linkName: "Trends", href: "/horizon/overview" },
   { linkName: "Scenarios", href: "/horizon/scenarios" },
+  { linkName: "Signals", href: "/horizon/signals" },
+  { linkName: "Updates", href: "/horizon/updates" },
+  { linkName: "Reports", href: "/horizon/reports" },
   { linkName: "Intel Feed", href: "/intel/feed" },
   { linkName: "Events", href: "/intel/events" },
-  { linkName: "Sources", href: "/sources/recent" },
 ];
 
 function isActiveRoute(pathname: string, href: string): boolean {
