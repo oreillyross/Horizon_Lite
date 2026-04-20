@@ -5,15 +5,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { trpc, trpcClient } from "@/lib/trpc";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
-import SnippetScreen from "./pages/SnippetScreen";
 import NavigationBar from "@/components/NavigationBar";
 import SubNavigationBar from "@/components/SubNavigationBar";
-import SnippetTable from "./pages/SnippetTable";
-import EditSnippetScreen from "./pages/EditSnippetScreen";
-import TagsScreen from "./pages/TagsScreen";
-import SnippetViewScreen from "@/pages/SnippetViewScreen";
-import RecentSourcesScreen from "@/pages/RecentSourcesScreen";
-import WebcutScreen from "@/pages/WebcutScreen";
 import AdminScreen from "@/pages/AdminScreen";
 import ThemeViewScreen from "@/pages/ThemeViewScreen";
 import ThemeCreateForm from "@/pages/forms/ThemeCreateForm";
@@ -31,7 +24,6 @@ import HorizonSignalsScreen from "@/pages/HorizonSignalsScreen";
 import HorizonIndicatorDetailScreen from "@/pages/HorizonIndicatorDetailScreen";
 import HorizonUpdatesScreen from "@/pages/HorizonUpdatesScreen";
 import HorizonReportsScreen from "@/pages/HorizonReportsScreen"
-import SourcesScreen from "@/pages/SourcesScreen"
 import IntelFeed from "@/pages/IntelFeed"
 import IntelEventsPage from "@/pages/IntelEventsPage"
 
@@ -111,50 +103,9 @@ function Router() {
           <IntelEventsPage />
         </RequireAuth>
       </Route>
-      <Route path="/sources">
-        <RequireAuth>
-         <SourcesScreen/>
-        </RequireAuth>
-      </Route>
 
       <Route path="/signup">
         <SignupForm />
-      </Route>
-
-      <Route path="/snippet/create">
-        <RequireAuth>
-          <SnippetScreen />
-        </RequireAuth>
-      </Route>
-
-      <Route path="/snippet/show">
-        <RequireAuth>
-          <SnippetTable />
-        </RequireAuth>
-      </Route>
-
-      <Route path="/snippet/:id/edit">
-        <RequireAuth>
-          <EditSnippetScreen />
-        </RequireAuth>
-      </Route>
-
-      <Route path="/snippet/:id">
-        <RequireAuth>
-          <SnippetViewScreen />
-        </RequireAuth>
-      </Route>
-
-      <Route path="/sources/recent">
-        <RequireAuth>
-          <RecentSourcesScreen />
-        </RequireAuth>
-      </Route>
-
-      <Route path="/tags/show">
-        <RequireAuth>
-          <TagsScreen />
-        </RequireAuth>
       </Route>
 
       <Route path="/themes">
@@ -178,12 +129,6 @@ function Router() {
       <Route path="/theme/:id">
         <RequireAuth>
           <ThemeViewScreen />
-        </RequireAuth>
-      </Route>
-
-      <Route path="/webcut">
-        <RequireAuth>
-          <WebcutScreen />
         </RequireAuth>
       </Route>
 
