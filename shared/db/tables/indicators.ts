@@ -1,7 +1,7 @@
-import { pgTable, text, timestamp, doublePrecision } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, doublePrecision, integer, uuid } from "drizzle-orm/pg-core";
 
 export const indicators = pgTable("indicators", {
-  id: text("id").primaryKey(),
+  id: uuid("id").defaultRandom().primaryKey(),
 
   name: text("name").notNull(),
 
@@ -24,6 +24,15 @@ export const indicators = pgTable("indicators", {
 
   status: text("status").default("normal"),
   // normal | watching | triggered
+
+  strength: integer("strength").notNull().default(5),
+  // 1–9 scale of analyst-assigned indicator weight
+
+  timeWeight: text("time_weight").notNull().default("week"),
+  // day | week | month | year
+
+  decayBehaviour: text("decay_behaviour").notNull().default("linear"),
+  // linear | step | none
 
   lastTriggeredAt: timestamp("last_triggered_at"),
 

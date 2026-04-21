@@ -13,7 +13,7 @@ export const signalEvents = pgTable(
   {
     id: uuid("id").defaultRandom().primaryKey(),
 
-    indicatorId: text("indicator_id")
+    indicatorId: uuid("indicator_id")
       .references(() => indicators.id)
       .notNull(),
 
