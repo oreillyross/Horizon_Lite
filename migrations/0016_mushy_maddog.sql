@@ -1,7 +1,35 @@
-ALTER TABLE "signal_events" ALTER COLUMN "indicator_id" SET DATA TYPE uuid;--> statement-breakpoint
-ALTER TABLE "scenario_indicator_map" ALTER COLUMN "scenario_id" SET DATA TYPE uuid;--> statement-breakpoint
-ALTER TABLE "scenario_indicator_map" ALTER COLUMN "indicator_id" SET DATA TYPE uuid;--> statement-breakpoint
-ALTER TABLE "indicators" ALTER COLUMN "id" SET DATA TYPE uuid;--> statement-breakpoint
+ALTER TABLE "signal_events" 
+ALTER COLUMN "indicator_id" 
+SET DATA TYPE uuid USING 
+  CASE 
+    WHEN indicator_id ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' 
+    THEN indicator_id::uuid 
+    ELSE gen_random_uuid() 
+  END;--> statement-breakpoint
+ALTER TABLE "scenario_indicator_map" 
+ALTER COLUMN "scenario_id" 
+SET DATA TYPE uuid USING 
+  CASE 
+    WHEN scenario_id ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' 
+    THEN scenario_id::uuid 
+    ELSE gen_random_uuid() 
+  END;--> statement-breakpoint
+ALTER TABLE "scenario_indicator_map" 
+ALTER COLUMN "indicator_id" 
+SET DATA TYPE uuid USING 
+  CASE 
+    WHEN indicator_id ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' 
+    THEN indicator_id::uuid 
+    ELSE gen_random_uuid() 
+  END;--> statement-breakpoint
+ALTER TABLE "indicators" 
+ALTER COLUMN "id" 
+SET DATA TYPE uuid USING 
+  CASE 
+    WHEN id ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' 
+    THEN id::uuid 
+    ELSE gen_random_uuid() 
+  END;--> statement-breakpoint
 ALTER TABLE "indicators" ALTER COLUMN "id" SET DEFAULT gen_random_uuid();--> statement-breakpoint
 ALTER TABLE "indicators" ADD COLUMN "strength" integer DEFAULT 5 NOT NULL;--> statement-breakpoint
 ALTER TABLE "indicators" ADD COLUMN "time_weight" text DEFAULT 'week' NOT NULL;--> statement-breakpoint
