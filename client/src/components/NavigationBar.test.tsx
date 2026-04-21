@@ -20,11 +20,6 @@ vi.mock("@/lib/trpc", () => ({
   },
 }));
 
-vi.mock("@/components/GlobalSearch", () => ({
-  GlobalSearch: () => null,
-  default: () => null,
-}));
-
 vi.mock("@/hooks/useSession", () => ({
   useSession: vi.fn(() => ({
     user: { username: "Jo", role: "user" },
