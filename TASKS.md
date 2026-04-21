@@ -33,7 +33,7 @@ themes → scenarios → indicators → events model. No mock or hardcoded retur
 
 - [x] Rewrite `SubNavigationBar.tsx` `SUB_NAV_ITEMS` to contain only: Overview (`/horizon/overview`), Themes (`/themes`), Scenarios (`/horizon/scenarios`), Signals (`/horizon/signals`), Updates (`/horizon/updates`), Reports (`/horizon/reports`), Intel Feed (`/intel/feed`), Events (`/intel/events`)
 - [x] Remove the `/snippet/create`, `/snippet/show`, `/snippet/:id`, `/snippet/:id/edit`, `/tags/show`, `/sources`, `/sources/recent`, and `/webcut` routes from `client/src/App.tsx` (keep the page files; just unregister the routes)
-- [ ] Remove the `GlobalSearch` component from `NavigationBar.tsx` — it queries snippets and sources, which are now unreachable; replace with a plain wordmark link until a vision-aligned search exists
+- [x] Remove the `GlobalSearch` component from `NavigationBar.tsx` — it queries snippets and sources, which are now unreachable; replace with a plain wordmark link until a vision-aligned search exists
 
 ---
 

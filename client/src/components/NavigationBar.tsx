@@ -2,7 +2,6 @@
 
 import { Link } from "wouter";
 import { cn } from "@/lib/utils";
-import { GlobalSearch } from "@/components/GlobalSearch";
 import { trpc } from "@/lib/trpc";
 import { useSession } from "@/hooks/useSession";
 import {
@@ -51,13 +50,6 @@ export default function NavigationBar() {
             </div>
           </Link>
 
-          {/* Search — hidden on xs, shown on sm+ */}
-         {isAuthenticated && <div className="hidden sm:flex flex-1 justify-center">
-            <div className="w-full max-w-xl">
-              <GlobalSearch />
-            </div>
-          </div>}
-
           {/* Auth controls */}
           <div className="flex items-center gap-2 shrink-0">
             {isLoading ? null : isAuthenticated ? (
@@ -105,11 +97,6 @@ export default function NavigationBar() {
               </div>
             )}
           </div>
-        </div>
-
-        {/* Mobile search */}
-        <div className="sm:hidden pb-3">
-          {isAuthenticated && <GlobalSearch />}
         </div>
       </nav>
     </header>
