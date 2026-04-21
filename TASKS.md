@@ -39,9 +39,9 @@ themes → scenarios → indicators → events model. No mock or hardcoded retur
 
 ### Data model gaps
 
-- [ ] Add `themeId uuid NOT NULL REFERENCES themes(id) ON DELETE CASCADE` to the `scenarios` table (`shared/db/tables/scenarios.ts`); run `npm run db:generate` then `npm run db:migrate`
-- [ ] Add `strength integer NOT NULL DEFAULT 5` (1–9 scale), `timeWeight text NOT NULL DEFAULT 'week'` (day/week/month/year enum), and `decayBehaviour text NOT NULL DEFAULT 'linear'` (linear/step/none) columns to the `indicators` table (`shared/db/tables/indicators.ts`); run `npm run db:generate` then `npm run db:migrate`
-- [ ] Add proper FK constraints to `scenarioIndicatorMap`: `scenarioId` should reference `scenarios(id)` and `indicatorId` should reference `indicators(id)` with `ON DELETE CASCADE`; fix column types so both are `uuid` if scenarios migrated to uuid, or keep as `text` consistently — choose one and apply; run `npm run db:generate` then `npm run db:migrate`
+- [x] Add `themeId uuid NOT NULL REFERENCES themes(id) ON DELETE CASCADE` to the `scenarios` table (`shared/db/tables/scenarios.ts`); run `npm run db:generate` then `npm run db:migrate`
+- [x] Add `strength integer NOT NULL DEFAULT 5` (1–9 scale), `timeWeight text NOT NULL DEFAULT 'week'` (day/week/month/year enum), and `decayBehaviour text NOT NULL DEFAULT 'linear'` (linear/step/none) columns to the `indicators` table (`shared/db/tables/indicators.ts`); run `npm run db:generate` then `npm run db:migrate`
+- [x] Add proper FK constraints to `scenarioIndicatorMap`: `scenarioId` should reference `scenarios(id)` and `indicatorId` should reference `indicators(id)` with `ON DELETE CASCADE`; fix column types so both are `uuid` if scenarios migrated to uuid, or keep as `text` consistently — choose one and apply; run `npm run db:generate` then `npm run db:migrate`
 
 ---
 
