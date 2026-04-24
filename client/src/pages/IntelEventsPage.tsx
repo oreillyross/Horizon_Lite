@@ -102,7 +102,7 @@ function EventRow({
 
       {/* Coverage CTA */}
       <td className="py-3 px-4">
-        {(event.numMentions ?? 0) > 15 ? (
+        {(event.numMentions ?? 0) >= 3 ? (
           <span className="inline-flex items-center gap-1 text-xs text-blue-600 font-medium">
             <BarChart2 className="h-3.5 w-3.5" />
             Coverage
