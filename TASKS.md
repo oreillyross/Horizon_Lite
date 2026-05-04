@@ -47,7 +47,7 @@ themes → scenarios → indicators → events model. No mock or hardcoded retur
 
 ### Wire core routers to the database
 
-- [ ] Replace `server/routers/scenarios.router.ts` in-memory store with Drizzle queries: `list` filtered by `themeId` (query param), `getById`, `create`, `update`, `delete` — all hitting the `scenarios` table
+- [x] Replace `server/routers/scenarios.router.ts` in-memory store with Drizzle queries: `list` filtered by `themeId` (query param), `getById`, `create`, `update`, `delete` — all hitting the `scenarios` table
 - [ ] Replace `server/routers/horizonThemes.router.ts` mock array with real Drizzle queries against the `themes` table: `list` (all themes for the session's analyst group), `getById` (single theme with scenario count)
 - [ ] Replace `server/routers/signals.router.ts` mock data with real Drizzle queries against the `indicators` table: `listIndicators` (optionally filtered by `themeId` via joined scenarios), `getIndicator` by id
 - [ ] Replace `server/routers/updates.router.ts` mock data with a real query: compute belief updates by joining `signalEvents` → `scenarioIndicatorMap` → `scenarios`; return an empty array if no data — never a hardcoded list
