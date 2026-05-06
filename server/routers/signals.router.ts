@@ -140,7 +140,11 @@ export const signalsRouter = router({
           ),
         );
 
-      const themeId = linkRows[0]?.themeId ?? "";
+      if (linkRows.length === 0) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Indicator not found" });
+      }
+
+      const themeId = linkRows[0].themeId;
 
       return {
         indicator: {
