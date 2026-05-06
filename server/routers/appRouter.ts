@@ -10,7 +10,6 @@ import { themeSynopsisRouter } from "./themeSynopsis.router";
 import { authRouter } from "./auth.router";
 import { adminRouter } from "./adminRouter";
 import { dashboardRouter } from "./horizon.router";
-import { horizonThemesRouter } from "./horizonThemes.router";
 import { scenariosRouter } from "./scenarios.router";
 import { signalsRouter } from "./signals.router";
 import { updatesRouter } from "./updates.router";
@@ -29,7 +28,7 @@ export const appRouter = router({
   intel: intelRouter,
   horizon: router({
     dashboard: dashboardRouter,
-    themes: horizonThemesRouter,
+    themes: themesRouter,
     scenarios: scenariosRouter,
     signals: signalsRouter,
     updates: updatesRouter,
