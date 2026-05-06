@@ -51,7 +51,7 @@ themes → scenarios → indicators → events model. No mock or hardcoded retur
 - [x] Replace `server/routers/horizonThemes.router.ts` mock array with real Drizzle queries against the `themes` table: `list` (all themes for the session's analyst group), `getById` (single theme with scenario count)
 - [x] Replace `server/routers/signals.router.ts` mock data with real Drizzle queries against the `indicators` table: `listIndicators` (optionally filtered by `themeId` via joined scenarios), `getIndicator` by id
 - [x] Replace `server/routers/updates.router.ts` mock data with a real query: compute belief updates by joining `signalEvents` → `scenarioIndicatorMap` → `scenarios`; return an empty array if no data — never a hardcoded list
-- [ ] Replace `server/routers/reports.router.ts` mock brief with a real query: for a given `themeId`, return each scenario with its linked indicator count and total signal event count; this is the skeleton the Phase 2 assessment will flesh out
+- [x] Replace `server/routers/reports.router.ts` mock brief with a real query: for a given `themeId`, return each scenario with its linked indicator count and total signal event count; this is the skeleton the Phase 2 assessment will flesh out
 
 ---
 
