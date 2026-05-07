@@ -69,30 +69,3 @@ export type GeoPulse = {
   metric: "volume" | "acceleration" | "emotionShift";
   value: number;
 };
-
-export type OverviewDTO = {
-  theme: { id: string; name: string; regionScope: string; updatedAt: string };
-  lastUpdateAt: string;
-  overallConfidence: Confidence;
-  heroLine: string; // “Narrative pressure is shifting toward...”
-  scenarios: ScenarioSummary[]; // exactly 4 for V1
-  pressureSeries: PressurePoint[]; // 7–30 days
-  weakSignals: Pick<
-    IndicatorSummary,
-    | "id"
-    | "name"
-    | "category"
-    | "status"
-    | "accelerationScore"
-    | "lastTriggeredAt"
-  >[]; // top 10
-  geoPulse: GeoPulse[]; // for current metric mode
-  hotspots: { geoKey: string; label: string; value: number }[]; // top 5
-  explainability: {
-    indicatorId: string;
-    indicatorName: string;
-    rationale: string;
-    confidence: Confidence;
-    evidenceIds: string[];
-  }[]; // 3–5 items
-};

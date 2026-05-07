@@ -108,43 +108,21 @@ export const GeoPulseSchema = z.object({
 export type GeoPulse = z.infer<typeof GeoPulseSchema>;
 
 export const OverviewDTOSchema = z.object({
-  theme: z.object({
-    id: IdSchema,
-    name: z.string().min(1),
-    regionScope: z.string().min(1),
-    updatedAt: IsoDateTimeSchema,
-  }),
-  lastUpdateAt: IsoDateTimeSchema,
-  overallConfidence: ConfidenceSchema,
-  heroLine: z.string().min(1),
-  scenarios: z.array(ScenarioSummarySchema).length(4),
-  pressureSeries: z.array(PressurePointSchema).min(7),
-  weakSignals: z
-    .array(
-      z.object({
-        id: IdSchema,
-        name: z.string().min(1),
-        category: IndicatorCategorySchema,
-        status: IndicatorStatusSchema,
-        accelerationScore: z.number(),
-        lastTriggeredAt: IsoDateTimeSchema.nullable(),
-      })
-    )
-    .max(10),
-  geoPulse: z.array(GeoPulseSchema),
-  hotspots: z
-    .array(z.object({ geoKey: z.string(), label: z.string(), value: z.number() }))
-    .max(5),
-  explainability: z
-    .array(
-      z.object({
-        indicatorId: IdSchema,
-        indicatorName: z.string().min(1),
-        rationale: z.string().min(1).max(220),
-        confidence: ConfidenceSchema,
-        evidenceIds: z.array(IdSchema).max(5),
-      })
-    )
-    .max(5),
+  themes: z.array(
+    z.object({
+      id: IdSchema,
+      name: z.string().min(1),
+      scenarioCount: z.number().int().nonnegative(),
+    })
+  ),
+  scenarios: z.array(
+    z.object({
+      id: IdSchema,
+      themeId: IdSchema,
+      themeName: z.string().min(1),
+      name: z.string().min(1),
+      description: z.string(),
+    })
+  ),
 });
 export type OverviewDTO = z.infer<typeof OverviewDTOSchema>;
