@@ -59,7 +59,7 @@ themes → scenarios → indicators → events model. No mock or hardcoded retur
 
 - [x] Audit `HorizonOverviewScreen` — remove any hardcoded mock values; wire to the real `horizon.dashboard` tRPC procedure; add an empty state for when no themes/scenarios exist
 - [x] Audit `HorizonScenariosListScreen` — confirm it calls the updated scenarios router; add a "No scenarios yet" empty state with a link to create one
-- [ ] Audit `HorizonSignalsScreen` — confirm it calls the updated indicators router after the mock is removed; add an empty state
+- [x] Audit `HorizonSignalsScreen` — confirm it calls the updated indicators router after the mock is removed; add an empty state
 - [ ] Audit `HorizonUpdatesScreen` — confirm it renders the real (possibly empty) updates list gracefully; remove any hardcoded sample entries
 - [ ] Audit `HorizonReportsScreen` — confirm it renders the real sparse report skeleton; remove any hardcoded brief text
 

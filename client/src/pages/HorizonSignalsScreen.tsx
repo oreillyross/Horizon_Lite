@@ -1,10 +1,8 @@
 import React, { useMemo, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
-import { Loader2 } from "lucide-react";
-
-type IndicatorStatus = "normal" | "watching" | "triggered";
-type IndicatorCategory = "infoops" | "political" | "infra" | "diplomatic";
+import { Loader2, Activity } from "lucide-react";
+import type { IndicatorStatus, IndicatorCategory } from "@shared";
 
 function Pill({
   children,
@@ -65,6 +63,7 @@ export default function HorizonSignalsScreen() {
   const listQ = trpc.horizon.signals.listIndicators.useQuery(queryInput);
 
   const rows = listQ.data ?? [];
+  const filtersActive = !!(q || status || category);
 
   const total = rows.length;
   const triggeredCount = rows.filter((r) => r.status === "triggered").length;
@@ -167,22 +166,39 @@ export default function HorizonSignalsScreen() {
             </button>
           </div>
         ) : rows.length === 0 ? (
-          <div className="rounded-lg border bg-background p-6 shadow-sm">
-            <div className="text-sm font-medium">No indicators found</div>
-            <div className="mt-2 text-sm text-muted-foreground">
-              Try clearing filters, or add indicators in the backend seed data.
+          filtersActive ? (
+            <div className="rounded-lg border bg-background p-8 shadow-sm text-center">
+              <div className="text-sm font-medium">No indicators match your filters</div>
+              <div className="mt-2 text-sm text-muted-foreground">
+                Try adjusting or clearing the search and filter values.
+              </div>
+              <button
+                onClick={() => {
+                  setQ("");
+                  setCategory("");
+                  setStatus("");
+                }}
+                className="mt-4 inline-flex items-center rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted"
+              >
+                Clear filters
+              </button>
             </div>
-            <button
-              onClick={() => {
-                setQ("");
-                setCategory("");
-                setStatus("");
-              }}
-              className="mt-4 inline-flex items-center rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted"
-            >
-              Clear filters
-            </button>
-          </div>
+          ) : (
+            <div className="rounded-lg border bg-background p-12 shadow-sm text-center">
+              <Activity className="mx-auto h-10 w-10 text-muted-foreground/40" />
+              <div className="mt-4 text-sm font-medium">No indicators yet</div>
+              <div className="mt-2 text-sm text-muted-foreground max-w-xs mx-auto">
+                Indicators are created and linked to scenarios. Add a scenario first, then define
+                indicators to track it.
+              </div>
+              <Link
+                href="/horizon/scenarios"
+                className="mt-4 inline-flex items-center rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted"
+              >
+                Go to Scenarios
+              </Link>
+            </div>
+          )
         ) : (
           <div className="overflow-x-auto rounded-lg border bg-background shadow-sm">
             <table className="w-full text-sm">
