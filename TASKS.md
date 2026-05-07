@@ -86,9 +86,9 @@ indicators, and see which scenarios moved — without leaving the app.
 
 ### Scenario ↔ Indicator linking
 
-- [ ] Add `assignIndicator` and `removeIndicator` tRPC procedures to `scenarios.router.ts` (write to / delete from `scenarioIndicatorMap`)
-- [ ] Add a "Linked indicators" panel to `HorizonScenarioDetailScreen` listing current indicator links with their weight; each entry has a remove button
-- [ ] Add a combobox on `HorizonScenarioDetailScreen` to search existing indicators and assign them to the scenario with a weight (default 1.0)
+- [x] Add `assignIndicator` and `removeIndicator` tRPC procedures to `scenarios.router.ts` (write to / delete from `scenarioIndicatorMap`)
+- [x] Add a "Linked indicators" panel to `HorizonScenarioDetailScreen` listing current indicator links with their weight; each entry has a remove button
+- [x] Add a combobox on `HorizonScenarioDetailScreen` to search existing indicators and assign them to the scenario with a weight (default 1.0)
 
 ### Event → Indicator suggestion
 
