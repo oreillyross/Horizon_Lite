@@ -228,4 +228,56 @@ export const signalsRouter = router({
       if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Indicator not found" });
       return { id: row.id };
     }),
+
+  searchIndicators: protectedProcedure
+    .input(
+      z.object({
+        q: z.string().optional(),
+        excludeScenarioId: z.string().uuid().optional(),
+      }),
+    )
+    .output(
+      z.array(
+        z.object({
+          id: z.string().uuid(),
+          name: z.string(),
+          category: z.string(),
+          strength: z.number(),
+        }),
+      ),
+    )
+    .query(async ({ ctx, input }) => {
+      if (!ctx.user.analystGroupId) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "No analyst group" });
+      }
+
+      const conditions: SQL[] = [];
+      if (input.q) conditions.push(ilike(indicators.name, `%${input.q}%`));
+
+      const rows = await db
+        .select({
+          id: indicators.id,
+          name: indicators.name,
+          category: indicators.category,
+          strength: indicators.strength,
+        })
+        .from(indicators)
+        .where(conditions.length > 0 ? and(...conditions) : undefined)
+        .limit(50);
+
+      if (!input.excludeScenarioId) {
+        return rows.map((r) => ({ ...r, strength: r.strength ?? 5 }));
+      }
+
+      const linkedIds = await db
+        .select({ indicatorId: scenarioIndicatorMap.indicatorId })
+        .from(scenarioIndicatorMap)
+        .where(eq(scenarioIndicatorMap.scenarioId, input.excludeScenarioId));
+
+      const linkedSet = new Set(linkedIds.map((l) => l.indicatorId));
+
+      return rows
+        .filter((r) => !linkedSet.has(r.id))
+        .map((r) => ({ ...r, strength: r.strength ?? 5 }));
+    }),
 });
