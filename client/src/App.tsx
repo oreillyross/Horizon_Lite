@@ -21,6 +21,7 @@ import HorizonScenariosListScreen from "@/pages/HorizonScenariosListScreen";
 import HorizonScenarioNewScreen from "@/pages/HorizonScenarioNewScreen";
 import HorizonScenarioDetailScreen from "@/pages/HorizonScenarioDetailScreen";
 import HorizonSignalsScreen from "@/pages/HorizonSignalsScreen";
+import HorizonIndicatorNewScreen from "@/pages/HorizonIndicatorNewScreen";
 import HorizonIndicatorDetailScreen from "@/pages/HorizonIndicatorDetailScreen";
 import HorizonUpdatesScreen from "@/pages/HorizonUpdatesScreen";
 import HorizonReportsScreen from "@/pages/HorizonReportsScreen"
@@ -72,6 +73,12 @@ function Router() {
       <Route path="/horizon/signals">
         <RequireAuth>
           <HorizonSignalsScreen />
+        </RequireAuth>
+      </Route>
+
+      <Route path="/horizon/signals/new">
+        <RequireAuth>
+          <HorizonIndicatorNewScreen />
         </RequireAuth>
       </Route>
 
