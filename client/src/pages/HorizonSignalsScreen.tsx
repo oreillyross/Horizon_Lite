@@ -214,6 +214,8 @@ export default function HorizonSignalsScreen() {
                   <th className="py-3 px-4">Indicator</th>
                   <th className="py-3 px-4">Category</th>
                   <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4">Strength</th>
+                  <th className="py-3 px-4">Time Weight</th>
                   <th className="py-3 px-4">Acceleration</th>
                   <th className="py-3 px-4">Current / Baseline</th>
                   <th className="py-3 px-4">Last Triggered</th>
@@ -237,6 +239,14 @@ export default function HorizonSignalsScreen() {
                       <td className="py-3 px-4 text-muted-foreground">{r.category}</td>
                       <td className="py-3 px-4">
                         <Pill tone={r.status as any}>{r.status}</Pill>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="inline-flex items-center justify-center rounded-full bg-primary/10 text-primary border border-primary/20 w-7 h-7 text-xs font-semibold tabular-nums">
+                          {r.strength}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-muted-foreground capitalize">
+                        {r.timeWeight}
                       </td>
                       <td className="py-3 px-4 font-mono tabular-nums">
                         {r.accelerationScore.toFixed(2)}

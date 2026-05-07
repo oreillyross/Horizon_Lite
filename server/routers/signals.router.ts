@@ -113,6 +113,11 @@ export const signalsRouter = router({
         accelerationScore: ind.accelerationScore ?? 0,
         lastTriggeredAt: ind.lastTriggeredAt?.toISOString() ?? null,
         mappedScenarios: mappedScenariosById.get(ind.id) ?? [],
+        strength: ind.strength ?? 5,
+        timeWeight: (ind.timeWeight ?? "week") as "day" | "week" | "month" | "year",
+        decayBehaviour: (ind.decayBehaviour ?? "linear") as "linear" | "step" | "none",
+        description: ind.description ?? null,
+        regionScope: ind.regionScope ?? null,
       }));
     }),
 
@@ -165,6 +170,11 @@ export const signalsRouter = router({
           accelerationScore: ind.accelerationScore ?? 0,
           lastTriggeredAt: ind.lastTriggeredAt?.toISOString() ?? null,
           mappedScenarios: linkRows.map((l) => ({ scenarioId: l.scenarioId, weight: l.weight })),
+          strength: ind.strength ?? 5,
+          timeWeight: (ind.timeWeight ?? "week") as "day" | "week" | "month" | "year",
+          decayBehaviour: (ind.decayBehaviour ?? "linear") as "linear" | "step" | "none",
+          description: ind.description ?? null,
+          regionScope: ind.regionScope ?? null,
         },
         trend: [],
         triggerHistory: [],
