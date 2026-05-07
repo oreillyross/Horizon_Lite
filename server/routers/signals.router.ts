@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { eq, and, inArray, ilike, SQL } from "drizzle-orm";
+import { createInsertSchema } from "drizzle-zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "../trpc";
 import { db } from "../db";
@@ -11,6 +12,12 @@ import {
   EvidenceSummarySchema,
   IsoDateTimeSchema,
 } from "../../shared";
+
+const IndicatorInsertSchema = createInsertSchema(indicators).omit({ id: true, createdAt: true });
+
+const IndicatorUpdateSchema = createInsertSchema(indicators)
+  .omit({ id: true, createdAt: true })
+  .partial();
 
 const IndicatorDetailSchema = z.object({
   indicator: IndicatorSummarySchema,
@@ -168,5 +175,47 @@ export const signalsRouter = router({
           weight: l.weight,
         })),
       };
+    }),
+
+  createIndicator: protectedProcedure
+    .input(IndicatorInsertSchema)
+    .output(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.user.analystGroupId) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "No analyst group" });
+      }
+      const [row] = await db.insert(indicators).values(input).returning({ id: indicators.id });
+      return { id: row.id };
+    }),
+
+  updateIndicator: protectedProcedure
+    .input(z.object({ id: z.string().uuid(), data: IndicatorUpdateSchema }))
+    .output(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.user.analystGroupId) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "No analyst group" });
+      }
+      const [row] = await db
+        .update(indicators)
+        .set(input.data)
+        .where(eq(indicators.id, input.id))
+        .returning({ id: indicators.id });
+      if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Indicator not found" });
+      return { id: row.id };
+    }),
+
+  deleteIndicator: protectedProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .output(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.user.analystGroupId) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "No analyst group" });
+      }
+      const [row] = await db
+        .delete(indicators)
+        .where(eq(indicators.id, input.id))
+        .returning({ id: indicators.id });
+      if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Indicator not found" });
+      return { id: row.id };
     }),
 });
