@@ -20,7 +20,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Loader2, Pencil, Trash2 } from "lucide-react";
+import { Check, Loader2, Pencil, Trash2, X } from "lucide-react";
 import { createIndicatorInputSchema, type CreateIndicatorInput } from "@shared";
 
 function Pill({
@@ -80,6 +80,136 @@ function EmptyBox({ title, body }: { title: string; body: string }) {
       <div className="text-sm font-medium">{title}</div>
       <div className="mt-1 text-sm text-muted-foreground">{body}</div>
     </div>
+  );
+}
+
+function SuggestionsPanel({ indicatorId }: { indicatorId: string }) {
+  const { toast } = useToast();
+  const utils = trpc.useUtils();
+
+  const q = trpc.horizon.signals.listSuggestions.useQuery(
+    { indicatorId },
+    { enabled: Boolean(indicatorId) },
+  );
+
+  const approveMutation = trpc.horizon.signals.approveLink.useMutation({
+    onSuccess: () => {
+      utils.horizon.signals.listSuggestions.invalidate({ indicatorId });
+    },
+    onError: (err) => {
+      toast({ title: "Approve failed", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const dismissMutation = trpc.horizon.signals.dismissLink.useMutation({
+    onSuccess: () => {
+      utils.horizon.signals.listSuggestions.invalidate({ indicatorId });
+    },
+    onError: (err) => {
+      toast({ title: "Dismiss failed", description: err.message, variant: "destructive" });
+    },
+  });
+
+  return (
+    <SectionCard
+      title="Signal suggestions"
+      right={
+        q.data && q.data.length > 0 ? (
+          <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+            {q.data.length} pending
+          </span>
+        ) : undefined
+      }
+    >
+      {q.isLoading ? (
+        <div className="space-y-2">
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+        </div>
+      ) : q.isError ? (
+        <div className="text-sm text-destructive">{q.error.message}</div>
+      ) : !q.data || q.data.length === 0 ? (
+        <EmptyBox
+          title="No pending suggestions"
+          body="Approved and dismissed suggestions are removed from this queue. New suggestions appear here as ingestion runs."
+        />
+      ) : (
+        <div className="divide-y">
+          {q.data.map((event) => {
+            const approveBusy =
+              approveMutation.isPending &&
+              approveMutation.variables?.signalEventId === event.id;
+            const dismissBusy =
+              dismissMutation.isPending &&
+              dismissMutation.variables?.signalEventId === event.id;
+            const isBusy = approveBusy || dismissBusy;
+
+            return (
+              <div key={event.id} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-medium">
+                    {event.title ?? (
+                      <span className="italic text-muted-foreground">Untitled</span>
+                    )}
+                  </div>
+                  <div className="mt-0.5 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                    {event.sourceHost && <span>{event.sourceHost}</span>}
+                    <span className="font-mono tabular-nums">
+                      score {event.score.toFixed(2)}
+                    </span>
+                    <span>{new Date(event.createdAt).toLocaleDateString()}</span>
+                  </div>
+                  {event.sourceUrl && (
+                    <a
+                      href={event.sourceUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-0.5 block truncate text-xs text-blue-600 hover:underline"
+                    >
+                      {event.sourceUrl}
+                    </a>
+                  )}
+                </div>
+                <div className="flex shrink-0 gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                    disabled={isBusy}
+                    onClick={() =>
+                      approveMutation.mutate({ signalEventId: event.id })
+                    }
+                  >
+                    {approveBusy ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Check className="mr-1 h-3.5 w-3.5" />
+                    )}
+                    Approve
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 text-muted-foreground"
+                    disabled={isBusy}
+                    onClick={() =>
+                      dismissMutation.mutate({ signalEventId: event.id })
+                    }
+                  >
+                    {dismissBusy ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <X className="mr-1 h-3.5 w-3.5" />
+                    )}
+                    Dismiss
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </SectionCard>
   );
 }
 
@@ -546,6 +676,11 @@ export default function HorizonIndicatorDetailScreen() {
             />
           )}
         </SectionCard>
+      </div>
+
+      {/* Signal suggestions */}
+      <div className="mt-6">
+        <SuggestionsPanel indicatorId={indicatorId} />
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
