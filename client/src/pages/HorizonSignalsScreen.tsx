@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
-import { Loader2, Activity } from "lucide-react";
+import { Loader2, Activity, Plus } from "lucide-react";
 import type { IndicatorStatus, IndicatorCategory } from "@shared";
 
 function Pill({
@@ -88,6 +88,13 @@ export default function HorizonSignalsScreen() {
         </div>
 
         <div className="flex items-center gap-3">
+          <Link
+            href="/horizon/signals/new"
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          >
+            <Plus className="h-4 w-4" />
+            New Indicator
+          </Link>
           <div className="rounded-lg border bg-background px-4 py-2 shadow-sm">
             <div className="text-xs text-muted-foreground">Total</div>
             <div className="text-xl font-semibold tabular-nums">{total}</div>

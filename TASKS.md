@@ -79,7 +79,7 @@ indicators, and see which scenarios moved — without leaving the app.
 ### Indicator management
 
 - [x] Add `createIndicator`, `updateIndicator`, `deleteIndicator` tRPC procedures to `signals.router.ts` using the updated indicators schema (including `strength`, `timeWeight`, `decayBehaviour`)
-- [ ] Build a create-indicator form (`HorizonIndicatorNewScreen`) using React Hook Form + Zod derived from the indicators insert schema; route it at `/horizon/signals/new`
+- [x] Build a create-indicator form (`HorizonIndicatorNewScreen`) using React Hook Form + Zod derived from the indicators insert schema; route it at `/horizon/signals/new`
 - [ ] Build an edit-indicator form on `HorizonIndicatorDetailScreen` with pre-populated values; use the same Zod schema
 - [ ] Add a delete-indicator action on `HorizonIndicatorDetailScreen` with an `AlertDialog` confirmation
 - [ ] Display `strength` (1–9 badge) and `timeWeight` on each indicator card in `HorizonSignalsScreen`
