@@ -120,6 +120,13 @@
       "when": 1776778742805,
       "tag": "0016_mushy_maddog",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1746576000000,
+      "tag": "0017_signal_events_status",
+      "breakpoints": true
     }
   ]
 }

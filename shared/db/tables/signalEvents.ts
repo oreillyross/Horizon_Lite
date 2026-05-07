@@ -26,6 +26,8 @@ export const signalEvents = pgTable(
 
     dedupeKey: text("dedupe_key"),
 
+    status: text("status").notNull().default("pending"),
+
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (t) => ({
