@@ -93,7 +93,7 @@ indicators, and see which scenarios moved — without leaving the app.
 ### Event → Indicator suggestion
 
 - [x] Add a `listSuggestions` tRPC procedure in `signals.router.ts` that returns `signalEvents` rows whose `indicatorId` matches a given indicator and whose status is `pending`; add a `status text DEFAULT 'pending'` column to `signalEvents` if not present and run migrations
-- [ ] Add `approveLink` and `dismissLink` procedures that set `status = 'approved'` or `'dismissed'` on a `signalEvents` row
+- [x] Add `approveLink` and `dismissLink` procedures that set `status = 'approved'` or `'dismissed'` on a `signalEvents` row
 - [ ] Build a suggestion review panel on `HorizonIndicatorDetailScreen` — lists pending signal events with approve / dismiss buttons
 
 ### Scenario warmth on the dashboard

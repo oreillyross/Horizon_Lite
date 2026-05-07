@@ -273,6 +273,38 @@ export const signalsRouter = router({
       }));
     }),
 
+  approveLink: protectedProcedure
+    .input(z.object({ signalEventId: z.string().uuid() }))
+    .output(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.user.analystGroupId) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "No analyst group" });
+      }
+      const [row] = await db
+        .update(signalEvents)
+        .set({ status: "approved" })
+        .where(eq(signalEvents.id, input.signalEventId))
+        .returning({ id: signalEvents.id });
+      if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Signal event not found" });
+      return { id: row.id };
+    }),
+
+  dismissLink: protectedProcedure
+    .input(z.object({ signalEventId: z.string().uuid() }))
+    .output(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.user.analystGroupId) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "No analyst group" });
+      }
+      const [row] = await db
+        .update(signalEvents)
+        .set({ status: "dismissed" })
+        .where(eq(signalEvents.id, input.signalEventId))
+        .returning({ id: signalEvents.id });
+      if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Signal event not found" });
+      return { id: row.id };
+    }),
+
   searchIndicators: protectedProcedure
     .input(
       z.object({
