@@ -51,7 +51,7 @@ export default function HorizonScenariosListScreen() {
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
 
   const utils = trpc.useUtils();
-  const listQuery = trpc.horizon.scenarios.list.useQuery();
+  const listQuery = trpc.horizon.scenarios.list.useQuery({});
 
   const deleteMutation = trpc.horizon.scenarios.delete.useMutation({
     onSuccess: () => {
