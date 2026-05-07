@@ -65,6 +65,11 @@ export const IndicatorSummarySchema = z.object({
       weight: z.number(),
     })
   ),
+  strength: z.number().int().min(1).max(9),
+  timeWeight: z.enum(["day", "week", "month", "year"]),
+  decayBehaviour: z.enum(["linear", "step", "none"]),
+  description: z.string().nullable().optional(),
+  regionScope: z.string().nullable().optional(),
 });
 export type IndicatorSummary = z.infer<typeof IndicatorSummarySchema>;
 
