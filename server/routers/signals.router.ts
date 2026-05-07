@@ -4,7 +4,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "../trpc";
 import { db } from "../db";
-import { indicators, scenarioIndicatorMap, scenarios } from "@shared/db";
+import { indicators, scenarioIndicatorMap, scenarios, signalEvents } from "@shared/db";
 import {
   IndicatorSummarySchema,
   IndicatorStatusSchema,
@@ -227,6 +227,50 @@ export const signalsRouter = router({
         .returning({ id: indicators.id });
       if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Indicator not found" });
       return { id: row.id };
+    }),
+
+  listSuggestions: protectedProcedure
+    .input(z.object({ indicatorId: z.string().uuid() }))
+    .output(
+      z.array(
+        z.object({
+          id: z.string().uuid(),
+          indicatorId: z.string().uuid(),
+          title: z.string().nullable(),
+          sourceUrl: z.string().nullable(),
+          sourceHost: z.string().nullable(),
+          score: z.number(),
+          status: z.string(),
+          createdAt: z.string(),
+        }),
+      ),
+    )
+    .query(async ({ ctx, input }) => {
+      if (!ctx.user.analystGroupId) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "No analyst group" });
+      }
+
+      const rows = await db
+        .select()
+        .from(signalEvents)
+        .where(
+          and(
+            eq(signalEvents.indicatorId, input.indicatorId),
+            eq(signalEvents.status, "pending"),
+          ),
+        )
+        .orderBy(signalEvents.createdAt);
+
+      return rows.map((r) => ({
+        id: r.id,
+        indicatorId: r.indicatorId,
+        title: r.title ?? null,
+        sourceUrl: r.sourceUrl ?? null,
+        sourceHost: r.sourceHost ?? null,
+        score: r.score,
+        status: r.status,
+        createdAt: r.createdAt.toISOString(),
+      }));
     }),
 
   searchIndicators: protectedProcedure
