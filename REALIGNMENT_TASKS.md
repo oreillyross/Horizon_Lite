@@ -54,10 +54,10 @@ The create-indicator mutation errors out. Indicators must be linkable to a scena
 
 ## UX Cleanup (after Drifts 1-4 are resolved)
 
-- [ ] **5.1** Audit every screen for modal overload — collapse any nested modal flows into inline panels or dedicated routes.
-- [ ] **5.2** Remove dashboard widgets that do not directly surface theme → scenario → indicator → event data.
-- [ ] **5.3** Review navigation hierarchy — ensure every screen has a clear "up" link in the analyst reasoning chain.
-- [ ] **5.4** Reduce visual noise: remove decorative chart panels, vanity stats, or section headers that add no analytical value.
+- [x] **5.1** Audit every screen for modal overload — collapse any nested modal flows into inline panels or dedicated routes.
+- [x] **5.2** Remove dashboard widgets that do not directly surface theme → scenario → indicator → event data.
+- [x] **5.3** Review navigation hierarchy — ensure every screen has a clear "up" link in the analyst reasoning chain.
+- [x] **5.4** Reduce visual noise: remove decorative chart panels, vanity stats, or section headers that add no analytical value.
 
 ---
 
