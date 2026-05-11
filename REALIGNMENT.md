@@ -22,50 +22,71 @@ it should not be done.
 
 # Current Drift
 
-## Drift 1 — UI becoming dashboard-heavy
+## Drift 1 — Theme Screen not composed with Scenarios and indicators
 
+Current state:
+- ThemeViewScreen shows Synopsis, Refresh Synopsis button, Synopsis updated info (GOOD)
+- ThemeViewScreen shows snippets (OUTDATED)
+- 
 Symptoms:
-- too many disconnected cards
+- Not following theme - scenarios - indicator - event flow
 - visual fragmentation
 - weak information hierarchy
-- increasing "enterprise dashboard" feel
 
 Correction:
-- consolidate related information
-- reduce card proliferation
+- Show the linked scenarios, and some information about the indicators count per scenario 
+- Ensure every uesfule piece of derived state from the indicator counts, or scenario counts are hyperlinked to their respective detail screens.
 - emphasize analytical flow over widget density
 - prefer narrative analytical surfaces
+- Show a capture Scenario button from this point. Then its intuitive user sees a theme detail and can create scenarios from this.
 
 ---
 
-## Drift 2 — Too much abstraction in ingestion pipeline
+## Drift 2 — Scenarios
+
+Current state:
+- HorizonScenarioNewScreen allows capture of scenario name and description (GOOD) 
+- HorizonScenarioListScreen shows an empty no scenarios yet with headers name description, updated (GOOD)
+- HorizonScenarioListScreen shows new scenario button (GOOD)
+
 
 Symptoms:
-- unnecessary indirection
+- lack of coherence with Theme linkages
 - hard-to-follow flow
-- premature extensibility
-- difficult debugging
+- Need to know which sceneario links to which themes, themes - scenario flow
 
 Correction:
-- flatten ingestion path
-- make data flow explicit
-- reduce abstraction layers
-- optimize for inspectability
-
+- Allow Themes to be linked from the created scenario
+- Allow a dropdown for the linked theme.
+- Make the Create Scenario button work. The mutation to create a scenario errors out.
+  
 ---
 
-## Drift 3 — AI features becoming too central
+## Drift 3 — Scenario Detail Screen
 
+Current state:
+- HorizonScenarioDetailScreen appears to show a lot of detail (TO BE CONFIRMED)
+- 
 Symptoms:
-- analyst workflow depends on AI output
-- generated summaries dominate screens
-- system becoming "AI-first"
+- To BE confirmed based on review of Current state
 
 Correction:
-- AI suggestions must remain secondary
-- evidence and indicators stay primary
-- analyst judgement visually centered
-- preserve explainability
+- Refine the screen based on above scenario - indicator linkages, as well as backlinks to linked themes.
+  
+
+## Drift 4 — Indicators Screen
+
+Current state:
+- HorizonIndicatorsDetailScreen, HorizonIndicatorsNewScreen, HorizonIndicatorsListScreen exist (GOOD)
+- Unclear if the Theme - Scenario - Indicator flow is being respected.
+  
+Symptoms:
+- Indicator creation seems disconnected from flow of the Scenario screen button to create indicators, then automatically and logically link the indicators to a scenario.
+
+Correction:
+- Allow a drop down in indicators new screen to link a scenario.
+- Allow a indicator to be automatically linked if the create indicator button in the Scneario detail screen is clicked.
+- The create indicator button in new indicator screen errors out, probably the same as new scenario trpc / postgres backend issue.
 
 ---
 
