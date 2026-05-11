@@ -51,8 +51,9 @@ export const scenariosRouter = router({
     if (!groupId) throw new TRPCError({ code: "FORBIDDEN", message: "No analyst group" });
 
     const [row] = await db
-      .select()
+      .select({ ...getTableColumns(scenarios), themeName: themes.name })
       .from(scenarios)
+      .leftJoin(themes, eq(themes.id, scenarios.themeId))
       .where(and(eq(scenarios.id, input.id), eq(scenarios.analystGroupId, groupId)));
 
     if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Scenario not found" });
@@ -131,6 +132,7 @@ export const scenariosRouter = router({
         name: indicators.name,
         category: indicators.category,
         strength: indicators.strength,
+        status: indicators.status,
         timeWeight: indicators.timeWeight,
       })
       .from(scenarioIndicatorMap)

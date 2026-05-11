@@ -30,17 +30,13 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { Loader2, Trash2, Plus, X, Link2 } from "lucide-react";
+import { Loader2, Trash2, Plus, X, Link2, ExternalLink } from "lucide-react";
 import { updateScenarioInputSchema, type UpdateScenarioInput } from "@shared";
 
 function Skeleton({ className }: { className?: string }) {
   return <div className={`animate-pulse rounded-md bg-muted ${className ?? ""}`} />;
 }
 
-function fmtDate(d: Date | string | null | undefined): string {
-  if (!d) return "—";
-  return new Date(d).toLocaleString();
-}
 
 export default function HorizonScenarioDetailScreen() {
   const params = useParams<{ id: string }>();
@@ -181,20 +177,46 @@ export default function HorizonScenarioDetailScreen() {
 
   return (
     <div className="mx-auto max-w-3xl px-6 lg:px-8 py-8">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-1 text-sm text-muted-foreground">
+        {query.isLoading ? (
+          <Skeleton className="h-4 w-48" />
+        ) : scenario?.themeId ? (
+          <>
+            <button
+              type="button"
+              onClick={() => setLocation(`/theme/${scenario.themeId}`)}
+              className="hover:text-foreground transition-colors"
+            >
+              {scenario.themeName ?? "Theme"}
+            </button>
+            <span>/</span>
+            <button
+              type="button"
+              onClick={() => setLocation("/horizon/scenarios")}
+              className="hover:text-foreground transition-colors"
+            >
+              Scenarios
+            </button>
+          </>
+        ) : (
           <button
             type="button"
             onClick={() => setLocation("/horizon/scenarios")}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            className="hover:text-foreground transition-colors"
           >
             ← Scenarios
           </button>
+        )}
+      </div>
+
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4 mt-2">
+        <div className="min-w-0">
           {query.isLoading ? (
-            <Skeleton className="mt-2 h-8 w-72" />
+            <Skeleton className="h-8 w-72" />
           ) : (
-            <h1 className="mt-2 text-3xl font-semibold truncate">{scenario?.name}</h1>
+            <h1 className="text-3xl font-semibold truncate">{scenario?.name}</h1>
           )}
         </div>
 
@@ -215,15 +237,6 @@ export default function HorizonScenarioDetailScreen() {
           </div>
         )}
       </div>
-
-      {/* Timestamps */}
-      {query.isLoading ? (
-        <Skeleton className="mt-3 h-4 w-64" />
-      ) : scenario ? (
-        <div className="mt-3 text-xs text-muted-foreground">
-          Created {fmtDate(scenario.createdAt)} · Updated {fmtDate(scenario.updatedAt)}
-        </div>
-      ) : null}
 
       {/* Body */}
       <div className="mt-6 rounded-lg border bg-background p-6 shadow-sm">
@@ -312,6 +325,16 @@ export default function HorizonScenarioDetailScreen() {
               </Badge>
             )}
           </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="default"
+              size="sm"
+              className="gap-1"
+              onClick={() => setLocation(`/horizon/signals/new?scenarioId=${id}`)}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Add Indicator
+            </Button>
           <Popover open={comboboxOpen} onOpenChange={setComboboxOpen}>
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className="gap-1">
@@ -375,6 +398,7 @@ export default function HorizonScenarioDetailScreen() {
               </Command>
             </PopoverContent>
           </Popover>
+          </div>
         </div>
 
         {linkedIndicatorsQuery.isLoading ? (
@@ -401,14 +425,27 @@ export default function HorizonScenarioDetailScreen() {
                     <button
                       type="button"
                       onClick={() => setLocation(`/horizon/signals/${link.indicatorId}`)}
-                      className="font-medium text-sm truncate hover:underline text-left"
+                      className="font-medium text-sm truncate hover:underline text-left flex items-center gap-1"
                     >
                       {link.name}
+                      <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground" />
                     </button>
                     <div className="text-xs text-muted-foreground flex items-center gap-2">
                       <span className="capitalize">{link.category}</span>
                       <span>·</span>
                       <span>{link.timeWeight}</span>
+                      <span>·</span>
+                      <span
+                        className={
+                          link.status === "triggered"
+                            ? "text-destructive font-medium"
+                            : link.status === "watching"
+                              ? "text-yellow-600 dark:text-yellow-400 font-medium"
+                              : "text-muted-foreground"
+                        }
+                      >
+                        {link.status ?? "normal"}
+                      </span>
                     </div>
                   </div>
                 </div>

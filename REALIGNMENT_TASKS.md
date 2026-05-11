@@ -32,11 +32,11 @@ The create-scenario mutation errors out. Scenario creation must also support lin
 
 ## Drift 3 — Scenario Detail Screen: confirm state and add backlinks
 
-- [ ] **3.1** Open `HorizonScenarioDetailScreen` against a real scenario and document what is actually rendered (screenshot or written description shared with user).
-- [ ] **3.2** Add a backlink breadcrumb to the linked theme at the top of the screen (visible only when `themeId` is set).
-- [ ] **3.3** Ensure indicators linked to this scenario are listed with name, status/trend, and a hyperlink to the indicator detail screen.
-- [ ] **3.4** Add a "Add Indicator" button that navigates to `HorizonIndicatorsNewScreen` with `scenarioId` pre-filled.
-- [ ] **3.5** Remove any widget or panel that does not directly serve the scenario → indicator → event reasoning chain.
+- [x] **3.1** Open `HorizonScenarioDetailScreen` against a real scenario and document what is actually rendered (screenshot or written description shared with user).
+- [x] **3.2** Add a backlink breadcrumb to the linked theme at the top of the screen (visible only when `themeId` is set).
+- [x] **3.3** Ensure indicators linked to this scenario are listed with name, status/trend, and a hyperlink to the indicator detail screen.
+- [x] **3.4** Add a "Add Indicator" button that navigates to `HorizonIndicatorsNewScreen` with `scenarioId` pre-filled.
+- [x] **3.5** Remove any widget or panel that does not directly serve the scenario → indicator → event reasoning chain.
 
 ---
 
