@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useLocation } from "wouter";
@@ -11,10 +12,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { createIndicatorInputSchema, type CreateIndicatorInput } from "@shared";
 
+function useSearchParam(key: string): string | null {
+  if (typeof window === "undefined") return null;
+  return new URLSearchParams(window.location.search).get(key);
+}
+
 export default function HorizonIndicatorNewScreen() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const utils = trpc.useUtils();
+
+  const preselectedScenarioId = useSearchParam("scenarioId");
 
   const form = useForm<CreateIndicatorInput>({
     resolver: zodResolver(createIndicatorInputSchema),
@@ -26,9 +34,23 @@ export default function HorizonIndicatorNewScreen() {
       strength: 5,
       timeWeight: "week",
       decayBehaviour: "linear",
+      scenarioId: preselectedScenarioId ?? undefined,
     },
     mode: "onBlur",
   });
+
+  useEffect(() => {
+    if (preselectedScenarioId) {
+      form.setValue("scenarioId", preselectedScenarioId);
+    }
+  }, [preselectedScenarioId]);
+
+  const scenariosQ = trpc.horizon.scenarios.list.useQuery({});
+  const scenarios = scenariosQ.data ?? [];
+
+  const preselectedScenario = preselectedScenarioId
+    ? scenarios.find((s) => s.id === preselectedScenarioId)
+    : null;
 
   const createMutation = trpc.horizon.signals.createIndicator.useMutation({
     onSuccess: (created) => {
@@ -49,15 +71,25 @@ export default function HorizonIndicatorNewScreen() {
     });
   }
 
+  const backHref = preselectedScenarioId
+    ? `/horizon/scenarios/${preselectedScenarioId}`
+    : "/horizon/signals";
+
+  const backLabel = preselectedScenario
+    ? `← ${preselectedScenario.name}`
+    : preselectedScenarioId
+    ? "← Scenario"
+    : "← Signals";
+
   return (
     <div className="mx-auto max-w-3xl px-6 lg:px-8 py-8">
       <div className="mb-6">
         <button
           type="button"
-          onClick={() => setLocation("/horizon/signals")}
+          onClick={() => setLocation(backHref)}
           className="text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
-          ← Signals
+          {backLabel}
         </button>
         <h1 className="mt-2 text-3xl font-semibold">New Indicator</h1>
       </div>
@@ -106,6 +138,33 @@ export default function HorizonIndicatorNewScreen() {
               {form.formState.errors.category?.message && (
                 <p className="text-sm text-destructive">{form.formState.errors.category.message}</p>
               )}
+            </div>
+
+            {/* Linked Scenario */}
+            <div className="space-y-1.5">
+              <Label htmlFor="scenarioId">Linked Scenario</Label>
+              {preselectedScenarioId ? (
+                <div className="h-10 w-full rounded-md border bg-muted px-3 flex items-center text-sm text-muted-foreground">
+                  {preselectedScenario?.name ?? preselectedScenarioId}
+                  <input type="hidden" {...form.register("scenarioId")} />
+                </div>
+              ) : (
+                <select
+                  id="scenarioId"
+                  className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                  {...form.register("scenarioId")}
+                >
+                  <option value="">— None —</option>
+                  {scenarios.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Optionally link this indicator to a scenario.
+              </p>
             </div>
 
             {/* Description */}
@@ -216,7 +275,7 @@ export default function HorizonIndicatorNewScreen() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setLocation("/horizon/signals")}
+                onClick={() => setLocation(backHref)}
               >
                 Cancel
               </Button>

@@ -266,7 +266,7 @@ export default function HorizonSignalsScreen() {
                               className="rounded-md border bg-muted px-2 py-1 text-xs hover:underline"
                               title={`weight: ${ms.weight}`}
                             >
-                              {ms.scenarioId}
+                              {ms.scenarioName ?? ms.scenarioId.slice(0, 8)}
                             </a>
                           ))}
                           {r.mappedScenarios?.length > 3 ? (

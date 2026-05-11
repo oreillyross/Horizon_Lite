@@ -18,6 +18,7 @@ export const createIndicatorInputSchema = z.object({
     .default(5),
   timeWeight: z.enum(["day", "week", "month", "year"]).default("week"),
   decayBehaviour: z.enum(["linear", "step", "none"]).default("linear"),
+  scenarioId: z.string().uuid().optional(),
 });
 
 export type CreateIndicatorInput = z.infer<typeof createIndicatorInputSchema>;

@@ -63,6 +63,7 @@ export const IndicatorSummarySchema = z.object({
     z.object({
       scenarioId: IdSchema,
       weight: z.number(),
+      scenarioName: z.string().optional(),
     })
   ),
   strength: z.number().int().min(1).max(9),

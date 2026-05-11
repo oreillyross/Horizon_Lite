@@ -11,9 +11,8 @@ import {
   IndicatorCategorySchema,
   EvidenceSummarySchema,
   IsoDateTimeSchema,
+  createIndicatorInputSchema,
 } from "../../shared";
-
-const IndicatorInsertSchema = createInsertSchema(indicators).omit({ id: true, createdAt: true });
 
 const IndicatorUpdateSchema = createInsertSchema(indicators)
   .omit({ id: true, createdAt: true })
@@ -66,6 +65,7 @@ export const signalsRouter = router({
         .select({
           indicatorId: scenarioIndicatorMap.indicatorId,
           scenarioId: scenarioIndicatorMap.scenarioId,
+          scenarioName: scenarios.name,
           weight: scenarioIndicatorMap.weight,
           themeId: scenarios.themeId,
         })
@@ -88,17 +88,18 @@ export const signalsRouter = router({
         .where(and(...indConditions));
 
       // Build per-indicator scenario maps and derive themeId from first link
-      const mappedScenariosById = new Map<string, { scenarioId: string; weight: number }[]>();
+      const mappedScenariosById = new Map<string, { scenarioId: string; weight: number; scenarioName: string }[]>();
       const themeByIndicator = new Map<string, string>();
 
       for (const link of linkRows) {
         if (!mappedScenariosById.has(link.indicatorId)) {
           mappedScenariosById.set(link.indicatorId, []);
-          themeByIndicator.set(link.indicatorId, link.themeId);
+          themeByIndicator.set(link.indicatorId, link.themeId ?? "");
         }
         mappedScenariosById.get(link.indicatorId)!.push({
           scenarioId: link.scenarioId,
           weight: link.weight,
+          scenarioName: link.scenarioName,
         });
       }
 
@@ -152,16 +153,12 @@ export const signalsRouter = router({
           ),
         );
 
-      if (linkRows.length === 0) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Indicator not found" });
-      }
-
-      const themeId = linkRows[0].themeId;
+      const themeId = linkRows[0]?.themeId ?? null;
 
       return {
         indicator: {
           id: ind.id,
-          themeId,
+          themeId: themeId ?? "",
           name: ind.name,
           category: ind.category as z.infer<typeof IndicatorCategorySchema>,
           status: (ind.status ?? "normal") as z.infer<typeof IndicatorStatusSchema>,
@@ -169,7 +166,11 @@ export const signalsRouter = router({
           baselineValue: ind.baselineValue ?? 0,
           accelerationScore: ind.accelerationScore ?? 0,
           lastTriggeredAt: ind.lastTriggeredAt?.toISOString() ?? null,
-          mappedScenarios: linkRows.map((l) => ({ scenarioId: l.scenarioId, weight: l.weight })),
+          mappedScenarios: linkRows.map((l) => ({
+            scenarioId: l.scenarioId,
+            weight: l.weight,
+            scenarioName: l.scenarioName,
+          })),
           strength: ind.strength ?? 5,
           timeWeight: (ind.timeWeight ?? "week") as "day" | "week" | "month" | "year",
           decayBehaviour: (ind.decayBehaviour ?? "linear") as "linear" | "step" | "none",
@@ -188,13 +189,39 @@ export const signalsRouter = router({
     }),
 
   createIndicator: protectedProcedure
-    .input(IndicatorInsertSchema)
+    .input(createIndicatorInputSchema)
     .output(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      if (!ctx.user.analystGroupId) {
+      const groupId = ctx.user.analystGroupId;
+      if (!groupId) {
         throw new TRPCError({ code: "FORBIDDEN", message: "No analyst group" });
       }
-      const [row] = await db.insert(indicators).values(input).returning({ id: indicators.id });
+
+      const { scenarioId, ...indicatorFields } = input;
+
+      if (scenarioId) {
+        const [scenario] = await db
+          .select({ id: scenarios.id })
+          .from(scenarios)
+          .where(and(eq(scenarios.id, scenarioId), eq(scenarios.analystGroupId, groupId)));
+        if (!scenario) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Scenario not found in your group" });
+        }
+      }
+
+      const [row] = await db
+        .insert(indicators)
+        .values({ ...indicatorFields, scenarioId: scenarioId ?? null })
+        .returning({ id: indicators.id });
+
+      if (scenarioId) {
+        await db.insert(scenarioIndicatorMap).values({
+          scenarioId,
+          indicatorId: row.id,
+          weight: 1.0,
+        });
+      }
+
       return { id: row.id };
     }),
 
