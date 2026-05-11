@@ -10,8 +10,7 @@ export const scenarios = pgTable(
       .notNull()
       .references(() => analystGroups.id, { onDelete: "cascade" }),
     themeId: uuid("theme_id")
-      .notNull()
-      .references(() => themes.id, { onDelete: "cascade" }),
+      .references(() => themes.id, { onDelete: "set null" }),
     name: text("name").notNull(),
     description: text("description").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })

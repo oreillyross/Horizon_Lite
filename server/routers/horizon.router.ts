@@ -40,7 +40,7 @@ export const dashboardRouter = router({
           description: scenarios.description,
         })
         .from(scenarios)
-        .innerJoin(themes, eq(themes.id, scenarios.themeId))
+        .leftJoin(themes, eq(themes.id, scenarios.themeId))
         .where(whereClause)
         .orderBy(desc(scenarios.updatedAt));
 

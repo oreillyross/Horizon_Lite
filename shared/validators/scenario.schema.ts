@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const createScenarioInputSchema = z.object({
-  themeId: z.string().uuid("themeId must be a valid UUID"),
+  themeId: z.string().uuid("themeId must be a valid UUID").optional(),
   name: z.string().min(1, "Name is required").max(100, "Name must be 100 characters or fewer"),
   description: z
     .string()

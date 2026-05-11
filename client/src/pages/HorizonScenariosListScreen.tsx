@@ -35,6 +35,9 @@ function SkeletonRow() {
         <div className="h-4 w-64 animate-pulse rounded bg-muted" />
       </td>
       <td className="px-4 py-3">
+        <div className="h-4 w-24 animate-pulse rounded bg-muted" />
+      </td>
+      <td className="px-4 py-3">
         <div className="h-4 w-6 animate-pulse rounded bg-muted" />
       </td>
       <td className="px-4 py-3">
@@ -101,6 +104,7 @@ export default function HorizonScenariosListScreen() {
             <tr>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground w-48">Name</th>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">Description</th>
+              <th className="px-4 py-3 text-left font-medium text-muted-foreground w-36">Theme</th>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground w-16">Warmth</th>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground w-28">Updated</th>
               <th className="px-4 py-3 w-10" />
@@ -111,7 +115,7 @@ export default function HorizonScenariosListScreen() {
               Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} />)
             ) : rows.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-12 text-center">
+                <td colSpan={6} className="px-4 py-12 text-center">
                   <div className="text-sm font-medium text-muted-foreground">
                     No scenarios yet. Create your first threat narrative.
                   </div>
@@ -132,6 +136,9 @@ export default function HorizonScenariosListScreen() {
                   <td className="px-4 py-3 font-medium">{scenario.name}</td>
                   <td className="px-4 py-3 text-muted-foreground max-w-xs truncate">
                     {scenario.description}
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground text-sm truncate max-w-[9rem]">
+                    {scenario.themeName ?? <span className="italic">—</span>}
                   </td>
                   <td className="px-4 py-3 text-center">
                     <WarmthBadge delta={warmthMap.get(scenario.id) ?? 0} />
