@@ -228,3 +228,4 @@ and the system runs unattended in production without surprises.
 ## Completed phases
 
 - [x] **Phase 0 — Foundation** — type-safe monorepo, Drizzle schema, tRPC routers, GDELT ingest pipeline, Passport auth, React + Vite UI shell
+- [x] **Phase 1 — Analyst Workflow** — indicator CRUD, scenario↔indicator linking, signal suggestion review, scenario warmth scoring and dashboard display
