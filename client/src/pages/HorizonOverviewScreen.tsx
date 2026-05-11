@@ -18,8 +18,15 @@ function ScenarioCardSkeleton() {
   );
 }
 
+function WarmthBadge({ delta }: { delta: number }) {
+  if (delta > 0) return <span className="font-semibold text-emerald-600">▲</span>;
+  if (delta < 0) return <span className="font-semibold text-rose-500">▼</span>;
+  return <span className="text-muted-foreground">—</span>;
+}
+
 function ScenarioCard({
   scenario,
+  delta,
 }: {
   scenario: {
     id: string;
@@ -28,14 +35,18 @@ function ScenarioCard({
     name: string;
     description: string;
   };
+  delta?: number;
 }) {
   return (
     <a
       href={`/horizon/scenarios/${scenario.id}`}
       className="group rounded-lg border bg-background p-4 shadow-sm transition hover:shadow-md"
     >
-      <div className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-        {scenario.themeName}
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground truncate">
+          {scenario.themeName}
+        </span>
+        {delta !== undefined && <WarmthBadge delta={delta} />}
       </div>
       <div className="truncate text-sm font-semibold">{scenario.name}</div>
       {scenario.description && (
@@ -88,9 +99,19 @@ function EmptyNoScenarios() {
 
 export default function HorizonOverviewScreen() {
   const overviewQ = trpc.horizon.dashboard.getOverview.useQuery(undefined);
+  const warmthQ = trpc.horizon.dashboard.getScenarioWarmth.useQuery();
 
   const themes = overviewQ.data?.themes ?? [];
   const scenarios = overviewQ.data?.scenarios ?? [];
+
+  const warmthMap = new Map(
+    (warmthQ.data ?? []).map((w) => [w.scenarioId, w.delta])
+  );
+
+  const warmthSorted = [...(warmthQ.data ?? [])].sort((a, b) => b.delta - a.delta);
+  const top3Warmest = warmthSorted.filter((w) => w.delta > 0).slice(0, 3);
+  const top3Coldest = [...warmthSorted].reverse().filter((w) => w.delta < 0).slice(0, 3);
+  const hasRecentlyMoved = top3Warmest.length > 0 || top3Coldest.length > 0;
 
   return (
     <div className="mx-auto max-w-7xl px-6 lg:px-8">
@@ -137,11 +158,58 @@ export default function HorizonOverviewScreen() {
         ) : (
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
             {scenarios.map((s) => (
-              <ScenarioCard key={s.id} scenario={s} />
+              <ScenarioCard key={s.id} scenario={s} delta={warmthMap.get(s.id)} />
             ))}
           </div>
         )}
       </section>
+
+      {/* Recently moved */}
+      {hasRecentlyMoved && (
+        <section className="mt-10">
+          <div className="mb-3 text-xl font-medium">Recently moved</div>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            {top3Warmest.length > 0 && (
+              <div>
+                <div className="mb-2 text-sm font-semibold text-emerald-600">▲ Warming</div>
+                <div className="divide-y rounded-md border">
+                  {top3Warmest.map((w) => (
+                    <a
+                      key={w.scenarioId}
+                      href={`/horizon/scenarios/${w.scenarioId}`}
+                      className="flex items-center justify-between px-4 py-3 text-sm hover:bg-muted/20 transition"
+                    >
+                      <span className="font-medium truncate">{w.scenarioName}</span>
+                      <span className="ml-4 shrink-0 font-semibold text-emerald-600 tabular-nums">
+                        +{w.delta.toFixed(1)}
+                      </span>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+            {top3Coldest.length > 0 && (
+              <div>
+                <div className="mb-2 text-sm font-semibold text-rose-500">▼ Cooling</div>
+                <div className="divide-y rounded-md border">
+                  {top3Coldest.map((w) => (
+                    <a
+                      key={w.scenarioId}
+                      href={`/horizon/scenarios/${w.scenarioId}`}
+                      className="flex items-center justify-between px-4 py-3 text-sm hover:bg-muted/20 transition"
+                    >
+                      <span className="font-medium truncate">{w.scenarioName}</span>
+                      <span className="ml-4 shrink-0 font-semibold text-rose-500 tabular-nums">
+                        {w.delta.toFixed(1)}
+                      </span>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

@@ -19,6 +19,12 @@ import {
 } from "@/components/ui/dialog";
 import { MoreHorizontal, Plus } from "lucide-react";
 
+function WarmthBadge({ delta }: { delta: number }) {
+  if (delta > 0) return <span className="font-semibold text-emerald-600">▲</span>;
+  if (delta < 0) return <span className="font-semibold text-rose-500">▼</span>;
+  return <span className="text-muted-foreground">—</span>;
+}
+
 function SkeletonRow() {
   return (
     <tr className="border-t">
@@ -27,6 +33,9 @@ function SkeletonRow() {
       </td>
       <td className="px-4 py-3">
         <div className="h-4 w-64 animate-pulse rounded bg-muted" />
+      </td>
+      <td className="px-4 py-3">
+        <div className="h-4 w-6 animate-pulse rounded bg-muted" />
       </td>
       <td className="px-4 py-3">
         <div className="h-4 w-16 animate-pulse rounded bg-muted" />
@@ -52,6 +61,7 @@ export default function HorizonScenariosListScreen() {
 
   const utils = trpc.useUtils();
   const listQuery = trpc.horizon.scenarios.list.useQuery({});
+  const warmthQuery = trpc.horizon.dashboard.getScenarioWarmth.useQuery();
 
   const deleteMutation = trpc.horizon.scenarios.delete.useMutation({
     onSuccess: () => {
@@ -66,6 +76,10 @@ export default function HorizonScenariosListScreen() {
 
   const rows = listQuery.data ?? [];
   const deleteTarget = rows.find((r) => r.id === deleteTargetId);
+
+  const warmthMap = new Map(
+    (warmthQuery.data ?? []).map((w) => [w.scenarioId, w.delta])
+  );
 
   return (
     <div className="mx-auto max-w-7xl px-6 lg:px-8 py-8">
@@ -87,6 +101,7 @@ export default function HorizonScenariosListScreen() {
             <tr>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground w-48">Name</th>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">Description</th>
+              <th className="px-4 py-3 text-left font-medium text-muted-foreground w-16">Warmth</th>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground w-28">Updated</th>
               <th className="px-4 py-3 w-10" />
             </tr>
@@ -96,7 +111,7 @@ export default function HorizonScenariosListScreen() {
               Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} />)
             ) : rows.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-4 py-12 text-center">
+                <td colSpan={5} className="px-4 py-12 text-center">
                   <div className="text-sm font-medium text-muted-foreground">
                     No scenarios yet. Create your first threat narrative.
                   </div>
@@ -117,6 +132,9 @@ export default function HorizonScenariosListScreen() {
                   <td className="px-4 py-3 font-medium">{scenario.name}</td>
                   <td className="px-4 py-3 text-muted-foreground max-w-xs truncate">
                     {scenario.description}
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <WarmthBadge delta={warmthMap.get(scenario.id) ?? 0} />
                   </td>
                   <td className="px-4 py-3 text-muted-foreground tabular-nums">
                     {relativeTime(scenario.updatedAt)}
