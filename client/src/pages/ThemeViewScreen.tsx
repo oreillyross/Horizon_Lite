@@ -1,6 +1,7 @@
 import { trpc } from "@/lib/trpc";
-import { Link, useRoute } from "wouter";
-import { Loader2 } from "lucide-react";
+import { Link, useRoute, useLocation } from "wouter";
+import { Loader2, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { RefreshSynopsisButton } from "@/components/RefreshSynopsisButton";
 
 function fmtDate(d?: Date | null) {
@@ -11,13 +12,14 @@ function fmtDate(d?: Date | null) {
 
 export default function ThemeViewScreen() {
   const [, params] = useRoute("/theme/:id");
+  const [, setLocation] = useLocation();
   const id = params?.id ?? "";
 
   const themeQuery = trpc.themes.getThemeById.useQuery({ id }, { enabled: !!id });
-  const snippetsQuery = trpc.snippets.getSnippets.useQuery(); // we’ll filter client-side for now
-
-  // (Optional now, useful later) stub refresh button can call a future mutation
-  // const refresh = trpc.themes.refreshThemeSynopsis.useMutation();
+  const scenariosQuery = trpc.horizon.scenarios.list.useQuery(
+    { themeId: id },
+    { enabled: !!id },
+  );
 
   if (themeQuery.isLoading) {
     return (
@@ -45,8 +47,7 @@ export default function ThemeViewScreen() {
     );
   }
 
-  const allSnippets = snippetsQuery.data ?? [];
-  const themeSnippets = allSnippets.filter((s: any) => s.themeId === theme.id);
+  const scenarios = scenariosQuery.data ?? [];
 
   return (
     <div className="px-6 lg:px-8 py-6 max-w-7xl">
@@ -60,63 +61,68 @@ export default function ThemeViewScreen() {
             <p className="mt-2 text-sm text-muted-foreground max-w-3xl">
               {theme.description}
             </p>
-      
           ) : null}
         </div>
-        <RefreshSynopsisButton themeId={theme.id}/>
 
-        <div className="text-right text-sm text-muted-foreground">
-          <div>Synopsis updated: {fmtDate(theme.synopsisUpdatedAt)}</div>
-          <div>Version: {theme.synopsisVersion ?? 0}</div>
+        <div className="flex items-center gap-3">
+          <Button
+            size="sm"
+            className="gap-1.5"
+            onClick={() => setLocation(`/horizon/scenarios/new?themeId=${id}`)}
+          >
+            <Plus className="h-4 w-4" />
+            Capture Scenario
+          </Button>
+          <RefreshSynopsisButton themeId={theme.id} />
+          <div className="text-right text-sm text-muted-foreground">
+            <div>Synopsis updated: {fmtDate(theme.synopsisUpdatedAt)}</div>
+            <div>Version: {theme.synopsisVersion ?? 0}</div>
+          </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
         <div className="lg:col-span-2 rounded-md border p-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-medium">Synopsis</h2>
-           
-          </div>
-
+          <h2 className="text-xl font-medium">Synopsis</h2>
           <div className="mt-3 text-sm whitespace-pre-wrap">
             {theme.synopsis?.trim()
-              ? JSON.parse(theme.synopsis ?? "{}").synopsis 
-              : "No synopsis yet. "}
+              ? JSON.parse(theme.synopsis ?? "{}").synopsis
+              : "No synopsis yet."}
           </div>
         </div>
 
         <div className="rounded-md border p-4">
-          <h2 className="text-xl font-medium">Snippets</h2>
+          <h2 className="text-xl font-medium">Scenarios</h2>
           <div className="mt-2 text-sm text-muted-foreground">
-            {themeSnippets.length} in this theme
+            {scenarios.length} in this theme
           </div>
 
           <div className="mt-4 space-y-3">
-            {themeSnippets.length === 0 ? (
-              <div className="text-sm text-muted-foreground">No snippets assigned yet.</div>
+            {scenariosQuery.isLoading ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Loading…
+              </div>
+            ) : scenarios.length === 0 ? (
+              <div className="text-sm text-muted-foreground">
+                No scenarios yet. Use "Capture Scenario" to add one.
+              </div>
             ) : (
-              themeSnippets
-                .slice()
-                .sort((a: any, b: any) => +new Date(b.createdAt) - +new Date(a.createdAt))
-                .slice(0, 25)
-                .map((s: any) => (
-                  <div key={s.id} className="text-sm">
-                    <Link href={`/snippet/${s.id}`} className="underline">
-                      {String(s.content ?? "").slice(0, 70) || "(empty)"}…
-                    </Link>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {Array.isArray(s.tags) ? s.tags.join(", ") : ""}
-                    </div>
-                  </div>
-                ))
+              scenarios.map((s) => (
+                <div key={s.id} className="flex items-center justify-between gap-2">
+                  <Link
+                    href={`/horizon/scenarios/${s.id}`}
+                    className="text-sm underline truncate"
+                  >
+                    {s.name}
+                  </Link>
+                  <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
+                    {s.indicatorCount} indicator{s.indicatorCount !== 1 ? "s" : ""}
+                  </span>
+                </div>
+              ))
             )}
           </div>
-
-          {themeSnippets.length > 25 ? (
-            <div className="mt-4 text-xs text-muted-foreground">
-              Showing latest 25. (We can add pagination/filtering next.)
-            </div>
-          ) : null}
         </div>
       </div>
     </div>

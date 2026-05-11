@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, sql, getTableColumns } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "../trpc";
 import { db } from "../db";
@@ -33,9 +33,14 @@ export const scenariosRouter = router({
         : eq(scenarios.analystGroupId, groupId);
 
       return db
-        .select()
+        .select({
+          ...getTableColumns(scenarios),
+          indicatorCount: sql<number>`cast(count(${scenarioIndicatorMap.indicatorId}) as int)`,
+        })
         .from(scenarios)
+        .leftJoin(scenarioIndicatorMap, eq(scenarioIndicatorMap.scenarioId, scenarios.id))
         .where(conditions)
+        .groupBy(scenarios.id)
         .orderBy(desc(scenarios.updatedAt));
     }),
 
