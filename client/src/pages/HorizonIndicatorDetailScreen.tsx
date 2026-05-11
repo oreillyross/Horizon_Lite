@@ -611,19 +611,12 @@ export default function HorizonIndicatorDetailScreen() {
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Trend */}
         <div className="lg:col-span-2">
-          <SectionCard
-            title="Trend"
-            right={
-              <span className="text-sm text-muted-foreground">
-                (Chart in V1.1)
-              </span>
-            }
-          >
+          <SectionCard title="Trend">
             {q.isLoading ? (
               <Skeleton className="h-40 w-full" />
             ) : d?.trend?.length ? (
               <div className="rounded-md border bg-muted p-4 text-sm text-muted-foreground">
-                {d.trend.length} points loaded. Render a line chart next.
+                {d.trend.length} data point{d.trend.length !== 1 ? "s" : ""} recorded.
               </div>
             ) : (
               <EmptyBox
