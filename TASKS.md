@@ -98,9 +98,9 @@ indicators, and see which scenarios moved — without leaving the app.
 
 ### Scenario warmth on the dashboard
 
-- [ ] Add a `getScenarioWarmth` query to `horizon.router.ts`: for each scenario, sum `strength × recency_weight` of all approved `signalEvents` linked via `scenarioIndicatorMap` within the last 30 days; return a `delta` (positive = warmer, negative = colder) per scenario
-- [ ] Display a warmth indicator (▲ / ▼ / —) beside each scenario in `HorizonScenariosListScreen` and on `HorizonOverviewScreen`
-- [ ] Add a "Recently moved" section to `HorizonOverviewScreen` showing the top 3 warmest and top 3 coldest scenarios with their delta value
+- [x] Add a `getScenarioWarmth` query to `horizon.router.ts`: for each scenario, sum `strength × recency_weight` of all approved `signalEvents` linked via `scenarioIndicatorMap` within the last 30 days; return a `delta` (positive = warmer, negative = colder) per scenario
+- [x] Display a warmth indicator (▲ / ▼ / —) beside each scenario in `HorizonScenariosListScreen` and on `HorizonOverviewScreen`
+- [x] Add a "Recently moved" section to `HorizonOverviewScreen` showing the top 3 warmest and top 3 coldest scenarios with their delta value
 
 ---
 
