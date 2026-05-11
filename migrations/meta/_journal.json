@@ -141,6 +141,13 @@
       "when": 1778494467743,
       "tag": "0019_melted_rattler",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1778498971240,
+      "tag": "0020_lumpy_kate_bishop",
+      "breakpoints": true
     }
   ]
 }

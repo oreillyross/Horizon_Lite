@@ -44,11 +44,11 @@ The create-scenario mutation errors out. Scenario creation must also support lin
 
 The create-indicator mutation errors out. Indicators must be linkable to a scenario at creation time.
 
-- [ ] **4.1** Debug and fix the tRPC `horizon.indicators.create` mutation — same diagnostic approach as task 2.1.
-- [ ] **4.2** Confirm `scenarioId` foreign key exists on the indicators table; if not, add it, generate and apply migration.
-- [ ] **4.3** Add a "Linked Scenario" dropdown to `HorizonIndicatorsNewScreen` populated by `horizon.scenarios.list`.
-- [ ] **4.4** When `HorizonIndicatorsNewScreen` is reached via the "Add Indicator" button from the Scenario Detail Screen (task 3.4), pre-select that scenario and make the field read-only.
-- [ ] **4.5** Verify `HorizonIndicatorsListScreen` shows the linked scenario name for each indicator.
+- [x] **4.1** Debug and fix the tRPC `horizon.indicators.create` mutation — same diagnostic approach as task 2.1.
+- [x] **4.2** Confirm `scenarioId` foreign key exists on the indicators table; if not, add it, generate and apply migration.
+- [x] **4.3** Add a "Linked Scenario" dropdown to `HorizonIndicatorsNewScreen` populated by `horizon.scenarios.list`.
+- [x] **4.4** When `HorizonIndicatorsNewScreen` is reached via the "Add Indicator" button from the Scenario Detail Screen (task 3.4), pre-select that scenario and make the field read-only.
+- [x] **4.5** Verify `HorizonIndicatorsListScreen` shows the linked scenario name for each indicator.
 
 ---
 

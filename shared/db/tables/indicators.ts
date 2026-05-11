@@ -1,7 +1,10 @@
 import { pgTable, text, timestamp, doublePrecision, integer, uuid } from "drizzle-orm/pg-core";
+import { scenarios } from "./scenarios";
 
 export const indicators = pgTable("indicators", {
   id: uuid("id").defaultRandom().primaryKey(),
+
+  scenarioId: uuid("scenario_id").references(() => scenarios.id, { onDelete: "set null" }),
 
   name: text("name").notNull(),
 
