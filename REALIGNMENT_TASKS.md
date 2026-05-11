@@ -10,11 +10,11 @@
 
 The ThemeViewScreen currently shows snippets. It must show the analyst's reasoning chain: linked scenarios and indicator counts, not raw snippet cards.
 
-- [ ] **1.1** Remove the snippets section from `ThemeViewScreen`.
-- [ ] **1.2** Fetch and display linked scenarios for the theme (scenario name, probability tag if present, indicator count). Each scenario row must be a hyperlink to its detail screen.
-- [ ] **1.3** Display aggregate indicator count per scenario as a secondary stat alongside the scenario name.
-- [ ] **1.4** Add a "Capture Scenario" button (primary CTA) on `ThemeViewScreen` that navigates to `HorizonScenarioNewScreen` with the current `themeId` pre-filled.
-- [ ] **1.5** Verify the Synopsis + Refresh Synopsis + "Synopsis updated" section is preserved and unchanged.
+- [x] **1.1** Remove the snippets section from `ThemeViewScreen`.
+- [x] **1.2** Fetch and display linked scenarios for the theme (scenario name, probability tag if present, indicator count). Each scenario row must be a hyperlink to its detail screen.
+- [x] **1.3** Display aggregate indicator count per scenario as a secondary stat alongside the scenario name.
+- [x] **1.4** Add a "Capture Scenario" button (primary CTA) on `ThemeViewScreen` that navigates to `HorizonScenarioNewScreen` with the current `themeId` pre-filled.
+- [x] **1.5** Verify the Synopsis + Refresh Synopsis + "Synopsis updated" section is preserved and unchanged.
 
 ---
 
