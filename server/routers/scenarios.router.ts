@@ -3,7 +3,7 @@ import { eq, and, desc, sql, getTableColumns } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "../trpc";
 import { db } from "../db";
-import { scenarios, scenarioIndicatorMap, indicators } from "@shared/db";
+import { scenarios, scenarioIndicatorMap, indicators, themes } from "@shared/db";
 import {
   createScenarioInputSchema,
   updateScenarioInputSchema,
@@ -36,11 +36,13 @@ export const scenariosRouter = router({
         .select({
           ...getTableColumns(scenarios),
           indicatorCount: sql<number>`cast(count(${scenarioIndicatorMap.indicatorId}) as int)`,
+          themeName: themes.name,
         })
         .from(scenarios)
         .leftJoin(scenarioIndicatorMap, eq(scenarioIndicatorMap.scenarioId, scenarios.id))
+        .leftJoin(themes, eq(themes.id, scenarios.themeId))
         .where(conditions)
-        .groupBy(scenarios.id)
+        .groupBy(scenarios.id, themes.name)
         .orderBy(desc(scenarios.updatedAt));
     }),
 
@@ -65,7 +67,7 @@ export const scenariosRouter = router({
       .insert(scenarios)
       .values({
         analystGroupId: groupId,
-        themeId: input.themeId,
+        themeId: input.themeId ?? null,
         name: input.name.trim(),
         description: input.description.trim(),
       })

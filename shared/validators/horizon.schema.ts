@@ -123,8 +123,8 @@ export const OverviewDTOSchema = z.object({
   scenarios: z.array(
     z.object({
       id: IdSchema,
-      themeId: IdSchema,
-      themeName: z.string().min(1),
+      themeId: IdSchema.nullable(),
+      themeName: z.string().min(1).nullable(),
       name: z.string().min(1),
       description: z.string(),
     })

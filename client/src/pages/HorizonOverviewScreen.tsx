@@ -30,8 +30,8 @@ function ScenarioCard({
 }: {
   scenario: {
     id: string;
-    themeId: string;
-    themeName: string;
+    themeId: string | null;
+    themeName: string | null;
     name: string;
     description: string;
   };

@@ -22,11 +22,11 @@ The ThemeViewScreen currently shows snippets. It must show the analyst's reasoni
 
 The create-scenario mutation errors out. Scenario creation must also support linking a theme.
 
-- [ ] **2.1** Debug and fix the tRPC `horizon.scenarios.create` mutation — identify the root cause (schema mismatch, missing field, Zod validation failure, DB constraint) and correct it.
-- [ ] **2.2** Add a `themeId` field to the scenario schema (`shared/db/tables`) if not already present; generate and apply a migration (`npm run db:generate && npm run db:migrate`).
-- [ ] **2.3** Add a "Linked Theme" dropdown to `HorizonScenarioNewScreen` populated by `horizon.themes.list`. Field is optional so standalone scenario creation still works.
-- [ ] **2.4** When `HorizonScenarioNewScreen` is reached via the "Capture Scenario" button added in task 1.4 (i.e. `themeId` is in the route params or query), pre-select that theme in the dropdown and make the field read-only.
-- [ ] **2.5** Confirm `HorizonScenarioListScreen` displays the linked theme name alongside each scenario row.
+- [x] **2.1** Debug and fix the tRPC `horizon.scenarios.create` mutation — identify the root cause (schema mismatch, missing field, Zod validation failure, DB constraint) and correct it.
+- [x] **2.2** Add a `themeId` field to the scenario schema (`shared/db/tables`) if not already present; generate and apply a migration (`npm run db:generate && npm run db:migrate`).
+- [x] **2.3** Add a "Linked Theme" dropdown to `HorizonScenarioNewScreen` populated by `horizon.themes.list`. Field is optional so standalone scenario creation still works.
+- [x] **2.4** When `HorizonScenarioNewScreen` is reached via the "Capture Scenario" button added in task 1.4 (i.e. `themeId` is in the route params or query), pre-select that theme in the dropdown and make the field read-only.
+- [x] **2.5** Confirm `HorizonScenarioListScreen` displays the linked theme name alongside each scenario row.
 
 ---
 
