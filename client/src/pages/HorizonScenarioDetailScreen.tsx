@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/command";
 import { Loader2, Trash2, Plus, X, Link2, ExternalLink } from "lucide-react";
 import { updateScenarioInputSchema, type UpdateScenarioInput } from "@shared";
+import { indicatorStatusClass } from "@/components/IndicatorPill";
 
 function Skeleton({ className }: { className?: string }) {
   return <div className={`animate-pulse rounded-md bg-muted ${className ?? ""}`} />;
@@ -435,15 +436,7 @@ export default function HorizonScenarioDetailScreen() {
                       <span>·</span>
                       <span>{link.timeWeight}</span>
                       <span>·</span>
-                      <span
-                        className={
-                          link.status === "triggered"
-                            ? "text-destructive font-medium"
-                            : link.status === "watching"
-                              ? "text-yellow-600 dark:text-yellow-400 font-medium"
-                              : "text-muted-foreground"
-                        }
-                      >
+                      <span className={indicatorStatusClass(link.status)}>
                         {link.status ?? "normal"}
                       </span>
                     </div>

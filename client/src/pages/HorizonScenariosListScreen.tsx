@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { formatRelativeTime } from "@/lib/formatters";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import {
@@ -48,14 +49,6 @@ function SkeletonRow() {
   );
 }
 
-function relativeTime(date: Date | string): string {
-  const d = typeof date === "string" ? new Date(date) : date;
-  const secs = Math.floor((Date.now() - d.getTime()) / 1000);
-  if (secs < 60) return "just now";
-  if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
-  if (secs < 86400) return `${Math.floor(secs / 3600)}h ago`;
-  return `${Math.floor(secs / 86400)}d ago`;
-}
 
 export default function HorizonScenariosListScreen() {
   const [, setLocation] = useLocation();
@@ -144,7 +137,7 @@ export default function HorizonScenariosListScreen() {
                     <WarmthBadge delta={warmthMap.get(scenario.id) ?? 0} />
                   </td>
                   <td className="px-4 py-3 text-muted-foreground tabular-nums">
-                    {relativeTime(scenario.updatedAt)}
+                    {formatRelativeTime(scenario.updatedAt)}
                   </td>
                   <td
                     className="px-4 py-3"

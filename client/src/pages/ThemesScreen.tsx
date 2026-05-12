@@ -1,12 +1,7 @@
 import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
 import { Loader2 } from "lucide-react";
-
-function fmtDate(d?: Date | null) {
-  if (!d) return "—";
-  const dt = typeof d === "string" ? new Date(d) : d;
-  return isNaN(dt.getTime()) ? "—" : dt.toLocaleString();
-}
+import { formatDateTime } from "@/lib/formatters";
 
 export default function ThemesScreen() {
   const { data, isLoading, isError, error } = trpc.themes.getThemes.useQuery();
@@ -71,7 +66,7 @@ export default function ThemesScreen() {
                     ) : null}
                   </td>
                   <td className="px-4 py-3 tabular-nums">{t.snippetCount}</td>
-                  <td className="px-4 py-3">{fmtDate(t.synopsisUpdatedAt)}</td>
+                  <td className="px-4 py-3">{formatDateTime(t.synopsisUpdatedAt)}</td>
                   <td className="px-4 py-3 tabular-nums">{t.synopsisVersion ?? 0}</td>
                 </tr>
               ))

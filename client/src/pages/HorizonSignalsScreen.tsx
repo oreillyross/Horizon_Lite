@@ -3,29 +3,8 @@ import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
 import { Loader2, Activity, Plus } from "lucide-react";
 import type { IndicatorStatus, IndicatorCategory } from "@shared";
-
-function Pill({
-  children,
-  tone = "default",
-}: {
-  children: React.ReactNode;
-  tone?: "default" | "normal" | "watching" | "triggered";
-}) {
-  const cls =
-    tone === "triggered"
-      ? "bg-amber-50 text-amber-700 border-amber-200"
-      : tone === "watching"
-      ? "bg-slate-50 text-slate-700 border-slate-200"
-      : tone === "normal"
-      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-      : "bg-muted text-foreground border-border";
-
-  return (
-    <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs ${cls}`}>
-      {children}
-    </span>
-  );
-}
+import { IndicatorPill } from "@/components/IndicatorPill";
+import { formatDateTime } from "@/lib/formatters";
 
 function Skeleton({ className }: { className?: string }) {
   return <div className={`animate-pulse rounded-md bg-muted ${className ?? ""}`} />;
@@ -238,7 +217,7 @@ export default function HorizonSignalsScreen() {
                       </td>
                       <td className="py-3 px-4 text-muted-foreground">{r.category}</td>
                       <td className="py-3 px-4">
-                        <Pill tone={r.status as any}>{r.status}</Pill>
+                        <IndicatorPill tone={r.status as any}>{r.status}</IndicatorPill>
                       </td>
                       <td className="py-3 px-4">
                         <span className="inline-flex items-center justify-center rounded-full bg-primary/10 text-primary border border-primary/20 w-7 h-7 text-xs font-semibold tabular-nums">
@@ -255,7 +234,7 @@ export default function HorizonSignalsScreen() {
                         {r.currentValue.toFixed(1)} / {r.baselineValue.toFixed(1)}
                       </td>
                       <td className="py-3 px-4 text-muted-foreground tabular-nums">
-                        {r.lastTriggeredAt ? new Date(r.lastTriggeredAt).toLocaleString() : "—"}
+                        {formatDateTime(r.lastTriggeredAt)}
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex flex-wrap gap-2">
