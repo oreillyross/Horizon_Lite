@@ -37,6 +37,8 @@ The next step would be to run twice a day an automated GDELT pull, and ingestion
 
 MOST IMPORTANT SCREEN.
 
+ALREADY EXISTS: Claude make sure to look at these existing components. The IntelFeed.tsx has a infinite card scroll and each article has a webcut link, reusue this feature so the analyst can click on webcut. Then navigate to the Webcutscreen.tsx feature. This webcutscreen needs to meet the below spec.
+
 Clean workflow:
 
 article text
