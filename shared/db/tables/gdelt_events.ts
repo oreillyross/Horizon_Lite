@@ -7,7 +7,6 @@ import {
   varchar,
   index,
 } from "drizzle-orm/pg-core";
-import { eventCodes } from "@shared/db";
 
 export const gdeltEvents = pgTable(
   "gdelt_events",
@@ -22,8 +21,7 @@ export const gdeltEvents = pgTable(
     actor2Name: text("actor2_name"),
 
     eventCode: varchar("event_code", { length: 4 }),
-    
-     
+
     quadClass: integer("quad_class"),
 
     goldstein: doublePrecision("goldstein"),
@@ -40,6 +38,15 @@ export const gdeltEvents = pgTable(
 
     sourceUrl: text("source_url"),
 
+    // Analyst-facing triage fields
+    title: text("title"),
+    sourceName: text("source_name"),
+    // new | flagged | reviewed | skipped — set to 'new' on ingest; analyst changes via triage UI
+    status: text("status").notNull().default("new"),
+
+    ingestedAt: timestamp("ingested_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),

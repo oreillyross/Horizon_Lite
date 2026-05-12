@@ -46,6 +46,8 @@ export function log(message: string, source = "express") {
   console.log(`${formattedTime} [${source}] ${message}`);
 }
 
+// Cron schedule: twice daily at 06:00 UTC and 18:00 UTC.
+// Hook for external schedulers — call with X-Job-Secret header matching JOB_SECRET env var.
 app.post("/internal/jobs/gdelt", async (req, res) => {
   const jobSecretHeader = req.headers["x-job-secret"];
   const expectedSecret = process.env.JOB_SECRET;

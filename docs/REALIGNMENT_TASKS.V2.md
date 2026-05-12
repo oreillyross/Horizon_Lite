@@ -42,18 +42,18 @@ Do not introduce any of the following at any point during this realignment:
 Set up the scheduled GDELT pull and raw-event storage so the system has a
 live feed of pre-filtered articles to review. No analyst-facing UI yet.
 
-- [ ] **1.1** Create a `gdelt_events` database table with columns:
+- [x] **1.1** Create a `gdelt_events` database table with columns:
   `id`, `gdelt_event_id`, `url`, `title`, `pub_date`, `country_code`,
   `event_root_code`, `goldstein_scale`, `num_mentions`, `source_name`,
   `ingested_at`, `status` (`new` | `flagged` | `reviewed` | `skipped`).
   Run `npm run db:generate && npm run db:migrate`.
 
-- [ ] **1.2** Write `server/jobs/gdeltIngest.ts` — fetches the latest GDELT
+- [x] **1.2** Write `server/jobs/gdeltIngest.ts` — fetches the latest GDELT
   GKG/events CSV endpoint, parses rows, deduplicates against existing
   `gdelt_event_id` values, and bulk-inserts new rows with `status = 'new'`.
   No OpenAI calls. No side-effects beyond DB writes.
 
-- [ ] **1.3** Add a `POST /internal/jobs/gdelt` Express route (guarded by
+- [x] **1.3** Add a `POST /internal/jobs/gdelt` Express route (guarded by
   `X-Job-Secret` header matching `process.env.JOB_SECRET`) that triggers
   `gdeltIngest.ts`. This is the hook for external cron schedulers.
 
