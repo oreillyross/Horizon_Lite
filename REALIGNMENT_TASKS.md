@@ -63,10 +63,10 @@ The create-indicator mutation errors out. Indicators must be linkable to a scena
 
 ## Architecture Cleanup (after UX pass)
 
-- [ ] **6.1** Grep for any raw `fetch` calls on the client — replace with tRPC hooks.
-- [ ] **6.2** Identify and remove dead/experimental code files (components, utilities, router procedures) that are no longer referenced.
-- [ ] **6.3** Consolidate any duplicated utility functions (date formatting, status labels, colour mapping) into a single shared location.
-- [ ] **6.4** Review the tRPC router — remove any procedures not called by any client component.
+- [x] **6.1** Grep for any raw `fetch` calls on the client — replace with tRPC hooks.
+- [x] **6.2** Identify and remove dead/experimental code files (components, utilities, router procedures) that are no longer referenced.
+- [x] **6.3** Consolidate any duplicated utility functions (date formatting, status labels, colour mapping) into a single shared location.
+- [x] **6.4** Review the tRPC router — remove any procedures not called by any client component.
 
 ---
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { EventDetailModal } from "@/components/intelfeed/EventDetailModal";
+import { formatDateTime } from "@/lib/formatters";
 
 type Props = {
   doc: {
@@ -56,7 +57,7 @@ export function FeedCard({ doc }: Props) {
       <div className="border rounded-lg p-4 space-y-3">
         <div className="flex justify-between text-sm text-gray-500">
           <span>{doc.domain}</span>
-          <span>{new Date(doc.published_at).toLocaleString()}</span>
+          <span>{formatDateTime(doc.published_at)}</span>
         </div>
 
         <h3 className="text-lg font-semibold">{doc.title}</h3>
