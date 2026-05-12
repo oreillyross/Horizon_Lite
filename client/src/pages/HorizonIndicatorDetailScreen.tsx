@@ -22,31 +22,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Check, Loader2, Pencil, Trash2, X } from "lucide-react";
 import { createIndicatorInputSchema, type CreateIndicatorInput } from "@shared";
-
-function Pill({
-  children,
-  tone = "default",
-}: {
-  children: React.ReactNode;
-  tone?: "default" | "normal" | "watching" | "triggered";
-}) {
-  const cls =
-    tone === "triggered"
-      ? "bg-amber-50 text-amber-700 border-amber-200"
-      : tone === "watching"
-        ? "bg-slate-50 text-slate-700 border-slate-200"
-        : tone === "normal"
-          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-          : "bg-muted text-foreground border-border";
-
-  return (
-    <span
-      className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs ${cls}`}
-    >
-      {children}
-    </span>
-  );
-}
+import { IndicatorPill } from "@/components/IndicatorPill";
+import { formatDate, formatDateTime } from "@/lib/formatters";
 
 function Skeleton({ className }: { className?: string }) {
   return (
@@ -157,7 +134,7 @@ function SuggestionsPanel({ indicatorId }: { indicatorId: string }) {
                     <span className="font-mono tabular-nums">
                       score {event.score.toFixed(2)}
                     </span>
-                    <span>{new Date(event.createdAt).toLocaleDateString()}</span>
+                    <span>{formatDate(event.createdAt)}</span>
                   </div>
                   {event.sourceUrl && (
                     <a
@@ -506,7 +483,7 @@ export default function HorizonIndicatorDetailScreen() {
             </>
           ) : d ? (
             <>
-              <Pill tone={d.indicator.status as any}>{d.indicator.status}</Pill>
+              <IndicatorPill tone={d.indicator.status as any}>{d.indicator.status}</IndicatorPill>
 
               <div className="rounded-lg border bg-background px-4 py-2 shadow-sm">
                 <div className="text-xs text-muted-foreground">Acceleration</div>
@@ -695,7 +672,7 @@ export default function HorizonIndicatorDetailScreen() {
                     className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
                   >
                     <div className="text-muted-foreground tabular-nums">
-                      {new Date(t.at).toLocaleString()}
+                      {formatDateTime(t.at)}
                     </div>
                     <div className="font-mono tabular-nums">
                       {t.value.toFixed(2)}
@@ -759,7 +736,7 @@ export default function HorizonIndicatorDetailScreen() {
                           {e.geo?.countryCode ?? e.geo?.regionLabel ?? "—"}
                         </td>
                         <td className="py-3 pr-4 text-muted-foreground tabular-nums">
-                          {new Date(e.publishedAt).toLocaleString()}
+                          {formatDateTime(e.publishedAt)}
                         </td>
                         <td className="py-3 font-mono tabular-nums">
                           {e.relevanceScore.toFixed(2)}
