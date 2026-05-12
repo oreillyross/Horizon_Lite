@@ -148,6 +148,13 @@
       "when": 1778498971240,
       "tag": "0020_lumpy_kate_bishop",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1747267200000,
+      "tag": "0021_gdelt_events_triage_columns",
+      "breakpoints": true
     }
   ]
 }

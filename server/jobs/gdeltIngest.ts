@@ -88,6 +88,15 @@ function parseYmdToUtc(y: string | undefined): Date | null {
 // 56 ActionGeo_Lat
 // 57 ActionGeo_Long
 // 60 SOURCEURL
+function extractDomain(url: string | null): string | null {
+  if (!url) return null;
+  try {
+    return new URL(url).hostname.replace(/^www\./, "") || null;
+  } catch {
+    return null;
+  }
+}
+
 function parseExportRow(cols: string[]) {
   const globalEventId = cols[0]?.trim();
   if (!globalEventId) return null;
@@ -113,6 +122,7 @@ function parseExportRow(cols: string[]) {
   const actionGeoLon = cols[57] ? Number(cols[57]) : null;
 
   const sourceUrl = cols[60]?.trim() || null;
+  const sourceName = extractDomain(sourceUrl);
 
   return {
     globalEventId,
@@ -131,6 +141,7 @@ function parseExportRow(cols: string[]) {
     actionGeoLat,
     actionGeoLon,
     sourceUrl,
+    sourceName,
   };
 }
 
@@ -287,11 +298,14 @@ export async function ingestGdelt() {
         .insert(gdeltEvents)
         .values({
           ...parsed,
+          status: "new",
+          ingestedAt: new Date(),
           updatedAt: new Date(),
         })
         .onConflictDoUpdate({
           target: gdeltEvents.globalEventId,
           set: {
+            // Update factual event data but preserve analyst's triage status
             eventTime: parsed.eventTime ?? sql`excluded.event_time`,
             actor1Name: parsed.actor1Name ?? sql`excluded.actor1_name`,
             actor2Name: parsed.actor2Name ?? sql`excluded.actor2_name`,
@@ -310,7 +324,9 @@ export async function ingestGdelt() {
             actionGeoLat: parsed.actionGeoLat ?? sql`excluded.action_geo_lat`,
             actionGeoLon: parsed.actionGeoLon ?? sql`excluded.action_geo_lon`,
             sourceUrl: parsed.sourceUrl ?? sql`excluded.source_url`,
+            sourceName: parsed.sourceName ?? sql`excluded.source_name`,
             updatedAt: new Date(),
+            // status intentionally omitted — analyst triage state must not be overwritten
           },
         });
 
