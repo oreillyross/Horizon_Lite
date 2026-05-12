@@ -83,7 +83,17 @@ export default function ThemeViewScreen() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
         <div className="lg:col-span-2 rounded-md border p-4">
-          <h2 className="text-xl font-medium">Synopsis</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-medium">Synopsis</h2>
+            <span className="rounded-full bg-violet-100 px-2.5 py-0.5 text-xs font-medium text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">
+              AI suggestion — analyst reviews
+            </span>
+            {theme.synopsisModel && (
+              <span className="text-xs text-muted-foreground font-mono">
+                {theme.synopsisModel}
+              </span>
+            )}
+          </div>
           <div className="mt-3 text-sm whitespace-pre-wrap">
             {theme.synopsis?.trim()
               ? JSON.parse(theme.synopsis ?? "{}").synopsis

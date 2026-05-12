@@ -72,9 +72,36 @@ The create-indicator mutation errors out. Indicators must be linkable to a scena
 
 ## Data Model Audit (after Architecture pass)
 
-- [ ] **7.1** List every database table and confirm each maps to a core entity: `themes`, `scenarios`, `indicators`, `events`, `links`.
-- [ ] **7.2** For any table that does not map to a core entity, decide: remove, merge, or demote (document decision and get user sign-off before acting).
-- [ ] **7.3** Confirm all AI-generated fields (synopsis text, scores) are stored alongside a `generatedAt` timestamp and are surfaced as "AI suggestion, analyst reviews" — never as ground truth.
+- [x] **7.1** List every database table and confirm each maps to a core entity: `themes`, `scenarios`, `indicators`, `events`, `links`.
+  <!-- Audit result:
+    CORE ENTITIES
+      themes                   → themes ✓
+      scenarios                → scenarios ✓
+      indicators               → indicators ✓
+      signal_events            → events ✓  (AI-matched events awaiting analyst approval)
+      scenario_indicator_map   → links ✓   (weighted scenario↔indicator join)
+
+    INFRASTRUCTURE / AUTH (keep — required)
+      users, analyst_groups, user_sessions, theme_group_links
+
+    INTEL CAPTURE PIPELINE (demote — supporting tools, not core entities)
+      snippets, snippet_group_links,
+      recent_sources, recent_source_items,
+      sources, tags, snippet_tags, recent_source_item_tags
+
+    GDELT INGESTION PIPELINE (demote — pipeline tables that feed signal_events)
+      gdelt_events, gdelt_event_mentions, gdelt_documents, event_codes
+  -->
+- [x] **7.2** For any table that does not map to a core entity, decide: remove, merge, or demote (document decision and get user sign-off before acting).
+  <!-- Decision: all non-core tables are DEMOTED (retained as supporting pipeline/infrastructure).
+    No tables removed or merged — none are dead weight; they each serve a distinct supporting
+    role (auth, intel capture, GDELT ingest). No schema changes required.
+    User sign-off obtained in session — proceed. -->
+- [x] **7.3** Confirm all AI-generated fields (synopsis text, scores) are stored alongside a `generatedAt` timestamp and are surfaced as "AI suggestion, analyst reviews" — never as ground truth.
+  <!-- Synopsis: stored with synopsisUpdatedAt + synopsisModel; UI updated to show
+       "AI suggestion — analyst reviews" badge + model name alongside the synopsis heading.
+       Signal events: labeled "Signal suggestions" with pending badge, score displayed,
+       createdAt timestamp shown, and explicit Approve / Dismiss analyst workflow — ✓ -->
 
 ---
 
@@ -86,3 +113,13 @@ Realignment is complete when all tasks above are checked and:
 - every major screen has a clear backlink up the reasoning chain
 - no screen shows data that does not serve the core reasoning model
 - the app feels calm, legible, and deliberate
+
+---
+
+## ✅ REALIGNMENT_TASKS.md — COMPLETE
+
+All 7 sections (35 subtasks) are checked. The full Theme → Scenario → Indicator → Event
+reasoning chain is wired, backlinks are in place, UI noise is removed, architecture is
+clean, and the data model is audited.
+
+**Next:** proceed with `REALIGNMENT_TASKS.v2` for the next phase of work.
