@@ -145,6 +145,27 @@ npm run jobs:generate-signals # Transform events into signals
 
 ---
 
+## Scheduled Jobs
+
+Horizon Lite exposes a single authenticated HTTP endpoint for external cron schedulers:
+
+| Job | Endpoint | Schedule |
+|-----|----------|----------|
+| GDELT ingestion + signal generation | `POST /internal/jobs/gdelt` | Twice daily — 06:00 UTC and 18:00 UTC |
+
+**Authentication:** the caller must send the `X-Job-Secret` header with a value matching the `JOB_SECRET` environment variable. Requests without a valid secret receive `401 Unauthorized`.
+
+**Example cron (cURL):**
+```bash
+# 06:00 and 18:00 UTC daily
+0 6,18 * * * curl -s -X POST https://your-host/internal/jobs/gdelt \
+  -H "X-Job-Secret: $JOB_SECRET"
+```
+
+PostgreSQL advisory locks prevent concurrent runs — if a job is already executing when the scheduler fires, the endpoint returns `409 Conflict` and the duplicate is safely discarded.
+
+---
+
 ## 🔐 Authentication & Sessions
 
 - **Passport.js** strategies for flexible auth (local, OAuth, etc.)
