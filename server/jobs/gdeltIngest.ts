@@ -88,7 +88,7 @@ function parseYmdToUtc(y: string | undefined): Date | null {
 // 56 ActionGeo_Lat
 // 57 ActionGeo_Long
 // 60 SOURCEURL
-function extractDomain(url: string | null): string | null {
+export function extractDomain(url: string | null): string | null {
   if (!url) return null;
   try {
     return new URL(url).hostname.replace(/^www\./, "") || null;
@@ -97,7 +97,7 @@ function extractDomain(url: string | null): string | null {
   }
 }
 
-function parseExportRow(cols: string[]) {
+export function parseExportRow(cols: string[]) {
   const globalEventId = cols[0]?.trim();
   if (!globalEventId) return null;
 
@@ -152,7 +152,7 @@ function parseExportRow(cols: string[]) {
 // 5 MentionIdentifier (url)
 // 11 Confidence
 // 13 MentionDocTone
-function parseMentionsRow(cols: string[]) {
+export function parseMentionsRow(cols: string[]) {
   const globalEventId = cols[0]?.trim();
   const mentionTime = parseYmdToUtc(cols[2]?.trim());
   const domain = cols[4]?.trim() || null;
@@ -225,7 +225,7 @@ function extractTag(extras: string | undefined, tag: string): string | null {
 // 15 V2Tone
 // 18 SharingImage
 // 26 Extras (XML incl PAGE_TITLE, PAGE_PRECISEPUBTIMESTAMP)
-function parseGkgRow(cols: string[]) {
+export function parseGkgRow(cols: string[]) {
   const domain = cols[3]?.trim() || null;
   const url = cols[4]?.trim();
   if (!url) return null;

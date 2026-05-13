@@ -57,11 +57,11 @@ live feed of pre-filtered articles to review. No analyst-facing UI yet.
   `X-Job-Secret` header matching `process.env.JOB_SECRET`) that triggers
   `gdeltIngest.ts`. This is the hook for external cron schedulers.
 
-- [ ] **1.4** Write a Vitest unit test for the GDELT CSV parser in
+- [x] **1.4** Write a Vitest unit test for the GDELT CSV parser in
   `gdeltIngest.ts` using a fixture file — at minimum: deduplication logic
   and correct `status` assignment.
 
-- [ ] **1.5** Document the cron schedule (twice daily: 06:00 UTC, 18:00 UTC)
+- [x] **1.5** Document the cron schedule (twice daily: 06:00 UTC, 18:00 UTC)
   as a comment in the route file and in a brief note in `README.md` under
   a new "Scheduled Jobs" section.
 
