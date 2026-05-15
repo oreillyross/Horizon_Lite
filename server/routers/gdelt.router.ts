@@ -2,6 +2,7 @@ import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
 import { db } from "../db";
 import { sql } from "drizzle-orm";
+import { fetchReadable } from "../utils/webcut";
 
 type TriageRow = {
   global_event_id: string;
@@ -13,16 +14,19 @@ type TriageRow = {
   status: string;
 };
 
+const triageStatusSchema = z.enum(["new", "flagged", "skipped", "reviewed"]);
+
 export const gdeltRouter = router({
   list: protectedProcedure
     .input(
       z.object({
         limit: z.number().min(1).max(100).default(30),
         cursor: z.string().optional(),
+        status: triageStatusSchema.optional().default("new"),
       }),
     )
     .query(async ({ input }) => {
-      const { limit, cursor } = input;
+      const { limit, cursor, status } = input;
       const limitPlusOne = limit + 1;
 
       let result;
@@ -36,7 +40,7 @@ export const gdeltRouter = router({
           SELECT global_event_id, title, source_name, ingested_at,
                  action_geo_country_code, source_url, status
           FROM gdelt_events
-          WHERE status = 'new'
+          WHERE status = ${status}
             AND (ingested_at, global_event_id) < (${cursorTime}::timestamptz, ${cursorId})
           ORDER BY ingested_at DESC, global_event_id DESC
           LIMIT ${limitPlusOne}
@@ -46,7 +50,7 @@ export const gdeltRouter = router({
           SELECT global_event_id, title, source_name, ingested_at,
                  action_geo_country_code, source_url, status
           FROM gdelt_events
-          WHERE status = 'new'
+          WHERE status = ${status}
           ORDER BY ingested_at DESC, global_event_id DESC
           LIMIT ${limitPlusOne}
         `);
@@ -99,4 +103,34 @@ export const gdeltRouter = router({
     const row = result.rows[0] as { count: number };
     return { count: row.count ?? 0 };
   }),
+
+  getEvent: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ input }) => {
+      const result = await db.execute(sql`
+        SELECT global_event_id, title, source_name, ingested_at,
+               action_geo_country_code, source_url, status
+        FROM gdelt_events
+        WHERE global_event_id = ${input.id}
+        LIMIT 1
+      `);
+      const row = result.rows[0] as TriageRow | undefined;
+      if (!row) return null;
+      return {
+        globalEventId: row.global_event_id,
+        title: row.title,
+        sourceName: row.source_name,
+        ingestedAt: row.ingested_at,
+        countryCode: row.action_geo_country_code,
+        sourceUrl: row.source_url,
+        status: row.status,
+      };
+    }),
+
+  webcut: protectedProcedure
+    .input(z.object({ url: z.string().url() }))
+    .query(async ({ input }) => {
+      const result = await fetchReadable(input.url);
+      return { text: result.textContent, title: result.title };
+    }),
 });
