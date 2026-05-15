@@ -138,17 +138,17 @@ reading surface — source HTML stripped to text only, no images, no nav chrome.
 The analyst selects text in the Webcut view and saves it as a snippet linked
 to an indicator. This is the core data-capture moment.
 
-- [ ] **4.1** Confirm the `snippets` table has columns: `id`, `quote` (text),
+- [x] **4.1** Confirm the `snippets` table has columns: `id`, `quote` (text),
   `source_url`, `pub_date`, `indicator_id` (FK), `analyst_notes`, `created_at`.
   If any column is missing, add it, generate and apply a migration.
 
-- [ ] **4.2** In `HorizonWebcutScreen`, detect browser text selection
+- [x] **4.2** In `HorizonWebcutScreen`, detect browser text selection
   (`document.addEventListener('mouseup', ...)` or equivalent React pattern).
   When the user releases the mouse after selecting text, show a small
   floating **"Create Snippet"** button anchored near the selection — no
   modal yet, just the button.
 
-- [ ] **4.3** Clicking **Create Snippet** opens an inline panel (not a full
+- [x] **4.3** Clicking **Create Snippet** opens an inline panel (not a full
   modal) at the bottom of the screen containing:
   - Read-only **Quote** field pre-populated with the selected text.
   - Read-only **Source URL** pre-populated from the current event URL.
@@ -156,11 +156,11 @@ to an indicator. This is the core data-capture moment.
   - **Analyst Notes** textarea (optional).
   - **Save** and **Cancel** buttons.
 
-- [ ] **4.4** Add a `horizon.snippets.create` tRPC mutation (or confirm it
+- [x] **4.4** Add a `horizon.snippets.create` tRPC mutation (or confirm it
   exists and works). On save: insert the snippet row and show a brief
   inline success toast. The panel closes automatically.
 
-- [ ] **4.5** After a successful snippet save, display a count of snippets
+- [x] **4.5** After a successful snippet save, display a count of snippets
   created during this reading session at the top of `HorizonWebcutScreen`
   (e.g. "3 snippets captured this session"). Resets on page leave.
 

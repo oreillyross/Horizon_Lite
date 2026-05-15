@@ -13,6 +13,7 @@ import { updatesRouter } from "./updates.router";
 import { reportsRouter } from "./reports.router";
 import { intelRouter } from "./intelRouter";
 import { gdeltRouter } from "./gdelt.router";
+import { horizonSnippetsRouter } from "./horizonSnippets.router";
 
 export const appRouter = router({
   themes: themesRouter,
@@ -29,6 +30,7 @@ export const appRouter = router({
     updates: updatesRouter,
     reports: reportsRouter,
     gdelt: gdeltRouter,
+    snippets: horizonSnippetsRouter,
   }),
 
   ...healthRouter._def.record,
