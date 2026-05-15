@@ -172,27 +172,27 @@ After the snippet text is selected, use the LLM to suggest the most relevant
 indicator. The analyst can accept in one click or override manually. This is
 a convenience feature — the system must work fully without it.
 
-- [ ] **5.1** Add a server-side function `server/lib/suggestIndicator.ts`
+- [x] **5.1** Add a server-side function `server/lib/suggestIndicator.ts`
   that accepts `{ quote: string, indicators: Indicator[] }` and calls the
   OpenAI API with a minimal prompt asking it to return the single most
   relevant `indicator_id` from the list. If `OPENAI_API_KEY` is not set,
   return `null` immediately.
 
-- [ ] **5.2** Add a `horizon.snippets.suggestIndicator` tRPC query that
+- [x] **5.2** Add a `horizon.snippets.suggestIndicator` tRPC query that
   accepts `{ quote: string }`, fetches the indicator list server-side,
   calls `suggestIndicator`, and returns `{ suggestedIndicatorId: string | null }`.
 
-- [ ] **5.3** In the snippet capture panel (Phase 4.3): after the quote is
+- [x] **5.3** In the snippet capture panel (Phase 4.3): after the quote is
   populated, fire `horizon.snippets.suggestIndicator` in the background.
   When it resolves, pre-select the suggested indicator in the dropdown and
   add a subtle "AI suggestion" label beside it.
 
-- [ ] **5.4** The analyst can change the dropdown at any time — the AI
+- [x] **5.4** The analyst can change the dropdown at any time — the AI
   suggestion is never locked in. If the API call is still loading when
   the analyst saves, save with whatever indicator is selected (do not block
   on the AI response).
 
-- [ ] **5.5** Store a `ai_suggested_indicator_id` column on the `snippets`
+- [x] **5.5** Store a `ai_suggested_indicator_id` column on the `snippets`
   table (nullable) so future analysis can measure suggestion accuracy.
   Generate and apply migration.
 
