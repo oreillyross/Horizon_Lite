@@ -232,57 +232,19 @@ export const intelRouter = router({
         event_code_name: string | null;
       };
 
+      const { s: cursorMentions, u: cursorId } = cursor
+        ? (JSON.parse(Buffer.from(cursor, "base64").toString("utf8")) as { s: string; u: string })
+        : { s: null, u: null };
+
+      const cursorClause =
+        cursorMentions && cursorId
+          ? sql`AND (e.num_mentions, e.global_event_id) < (${cursorMentions}::int, ${cursorId})`
+          : sql``;
+
       let result;
 
       if (q && q.trim().length >= 2) {
         const like = `%${q.trim()}%`;
-        if (cursor) {
-          const { s: cursorMentions, u: cursorId } = JSON.parse(
-            Buffer.from(cursor, "base64").toString("utf8"),
-          ) as { s: string; u: string };
-
-          result = await db.execute(sql`
-            SELECT
-              e.global_event_id, e.event_time, e.actor1_name, e.actor2_name,
-              e.event_code, e.num_mentions, e.num_sources, e.avg_tone,
-              e.action_geo_fullname, e.goldstein, e.num_articles,
-              ec.name AS event_code_name
-            FROM gdelt_events e
-            LEFT JOIN event_codes ec ON ec.code = e.event_code
-            WHERE e.num_mentions >= 1
-              AND (
-                e.actor1_name ILIKE ${like}
-                OR e.actor2_name ILIKE ${like}
-                OR e.action_geo_fullname ILIKE ${like}
-              )
-              AND (e.num_mentions, e.global_event_id) < (${cursorMentions}::int, ${cursorId})
-            ORDER BY e.num_mentions DESC NULLS LAST, e.global_event_id DESC
-            LIMIT ${limitPlusOne}
-          `);
-        } else {
-          result = await db.execute(sql`
-            SELECT
-              e.global_event_id, e.event_time, e.actor1_name, e.actor2_name,
-              e.event_code, e.num_mentions, e.num_sources, e.avg_tone,
-              e.action_geo_fullname, e.goldstein, e.num_articles,
-              ec.name AS event_code_name
-            FROM gdelt_events e
-            LEFT JOIN event_codes ec ON ec.code = e.event_code
-            WHERE e.num_mentions >= 1
-              AND (
-                e.actor1_name ILIKE ${like}
-                OR e.actor2_name ILIKE ${like}
-                OR e.action_geo_fullname ILIKE ${like}
-              )
-            ORDER BY e.num_mentions DESC NULLS LAST, e.global_event_id DESC
-            LIMIT ${limitPlusOne}
-          `);
-        }
-      } else if (cursor) {
-        const { s: cursorMentions, u: cursorId } = JSON.parse(
-          Buffer.from(cursor, "base64").toString("utf8"),
-        ) as { s: string; u: string };
-
         result = await db.execute(sql`
           SELECT
             e.global_event_id, e.event_time, e.actor1_name, e.actor2_name,
@@ -292,7 +254,12 @@ export const intelRouter = router({
           FROM gdelt_events e
           LEFT JOIN event_codes ec ON ec.code = e.event_code
           WHERE e.num_mentions >= 1
-            AND (e.num_mentions, e.global_event_id) < (${cursorMentions}::int, ${cursorId})
+            AND (
+              e.actor1_name ILIKE ${like}
+              OR e.actor2_name ILIKE ${like}
+              OR e.action_geo_fullname ILIKE ${like}
+            )
+            ${cursorClause}
           ORDER BY e.num_mentions DESC NULLS LAST, e.global_event_id DESC
           LIMIT ${limitPlusOne}
         `);
@@ -306,6 +273,7 @@ export const intelRouter = router({
           FROM gdelt_events e
           LEFT JOIN event_codes ec ON ec.code = e.event_code
           WHERE e.num_mentions >= 1
+            ${cursorClause}
           ORDER BY e.num_mentions DESC NULLS LAST, e.global_event_id DESC
           LIMIT ${limitPlusOne}
         `);
