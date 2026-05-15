@@ -74,30 +74,30 @@ Give the analyst a fast one-pass review surface to flag or skip raw GDELT
 events before doing deep reading. Speed is the design goal: keyboard-friendly,
 no modals, minimal clicks.
 
-- [ ] **2.1** Add a `horizon.gdelt.list` tRPC query that returns paginated
+- [x] **2.1** Add a `horizon.gdelt.list` tRPC query that returns paginated
   `gdelt_events` rows filtered to `status = 'new'`, ordered by
   `pub_date DESC`. Accept optional `limit` / `cursor` inputs for cursor
   pagination.
 
-- [ ] **2.2** Add a `horizon.gdelt.setStatus` tRPC mutation that accepts
+- [x] **2.2** Add a `horizon.gdelt.setStatus` tRPC mutation that accepts
   `{ id, status: 'flagged' | 'skipped' }` and updates the row. No bulk
   mutations yet.
 
-- [ ] **2.3** Create `client/src/pages/HorizonGdeltTriageScreen.tsx`.
+- [x] **2.3** Create `client/src/pages/HorizonGdeltTriageScreen.tsx`.
   Layout: a scrollable list of event cards showing `title`, `source_name`,
   `pub_date`, `country_code`, and a truncated URL. Each card has two
   inline action buttons: **Flag** and **Skip**.
 
-- [ ] **2.4** Clicking **Flag** calls `horizon.gdelt.setStatus` with
+- [x] **2.4** Clicking **Flag** calls `horizon.gdelt.setStatus` with
   `status = 'flagged'` and optimistically removes the card from the
   `new` list. Clicking **Skip** does the same with `status = 'skipped'`.
   No confirmation dialogs.
 
-- [ ] **2.5** Add a count badge in the sidebar navigation item for the
+- [x] **2.5** Add a count badge in the sidebar navigation item for the
   triage screen showing the number of `status = 'new'` events. Invalidate
   on mutation.
 
-- [ ] **2.6** Wire the route `/horizon/gdelt/triage` in `client/src/App.tsx`
+- [x] **2.6** Wire the route `/horizon/gdelt/triage` in `client/src/App.tsx`
   and add it to the Horizon sidebar nav.
 
 ---

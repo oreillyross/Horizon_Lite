@@ -27,6 +27,7 @@ import HorizonUpdatesScreen from "@/pages/HorizonUpdatesScreen";
 import HorizonReportsScreen from "@/pages/HorizonReportsScreen"
 import IntelFeed from "@/pages/IntelFeed"
 import IntelEventsPage from "@/pages/IntelEventsPage"
+import HorizonGdeltTriageScreen from "@/pages/HorizonGdeltTriageScreen"
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -108,6 +109,12 @@ function Router() {
       <Route path="/intel/events">
         <RequireAuth>
           <IntelEventsPage />
+        </RequireAuth>
+      </Route>
+
+      <Route path="/horizon/gdelt/triage">
+        <RequireAuth>
+          <HorizonGdeltTriageScreen />
         </RequireAuth>
       </Route>
 
