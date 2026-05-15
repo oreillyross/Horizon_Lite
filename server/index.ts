@@ -6,6 +6,7 @@ import { sessionMiddleware } from "./session";
 import { ingestGdelt } from "./jobs/gdeltIngest";
 import { generateSignals } from "./jobs/generateSignals";
 import { runLifecycleManager } from "./jobs/lifecycleManager";
+import { fetchReadable } from "./utils/webcut";
 import { db } from "./db";
 import { sql } from "drizzle-orm";
 import cron from "node-cron";
@@ -32,6 +33,23 @@ app.use(express.urlencoded({ extended: false }));
 app.set("trust proxy", 1);
 
 app.use(sessionMiddleware());
+
+// POST /api/webcut — server-side article fetch and text extraction.
+// Accepts { url } and returns { text } (plain text, block-level nodes only).
+app.post("/api/webcut", async (req, res) => {
+  const { url } = req.body as { url?: unknown };
+  if (typeof url !== "string" || !url) {
+    return res.status(400).json({ error: "url is required" });
+  }
+  try {
+    const result = await fetchReadable(url);
+    return res.json({ text: result.textContent, title: result.title });
+  } catch (err) {
+    return res
+      .status(422)
+      .json({ error: err instanceof Error ? err.message : "Failed to fetch article" });
+  }
+});
 
 const GDELT_JOB_LOCK_ID = 987654321;
 

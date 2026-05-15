@@ -4,7 +4,7 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
-import { Flag, SkipForward, Loader2, Inbox } from "lucide-react";
+import { Flag, SkipForward, Loader2, Inbox, BookOpen } from "lucide-react";
 
 type TriageItem = {
   globalEventId: string;
@@ -42,7 +42,7 @@ function formatDate(iso: string): string {
   }
 }
 
-function EventCard({
+function NewEventCard({
   item,
   onFlag,
   onSkip,
@@ -54,8 +54,11 @@ function EventCard({
   isPending: boolean;
 }) {
   return (
-    <div className="flex items-start gap-4 rounded-lg border bg-card px-4 py-3 transition-opacity data-[pending=true]:opacity-50">
-      <div className="min-w-0 flex-1" data-pending={isPending}>
+    <div
+      className="flex items-start gap-4 rounded-lg border bg-card px-4 py-3 transition-opacity"
+      style={{ opacity: isPending ? 0.5 : 1 }}
+    >
+      <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <span className="truncate font-medium text-sm text-foreground">
             {item.title ?? "(untitled)"}
@@ -100,20 +103,66 @@ function EventCard({
   );
 }
 
+function FlaggedEventCard({ item }: { item: TriageItem }) {
+  return (
+    <div className="flex items-start gap-4 rounded-lg border border-emerald-200 bg-emerald-50/40 dark:border-emerald-800 dark:bg-emerald-950/20 px-4 py-3">
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href={`/horizon/gdelt/read/${item.globalEventId}`}
+            className="truncate font-medium text-sm text-foreground hover:underline"
+          >
+            {item.title ?? "(untitled)"}
+          </Link>
+          {item.countryCode && (
+            <Badge variant="outline" className="shrink-0 text-xs">
+              {item.countryCode}
+            </Badge>
+          )}
+          <Badge className="shrink-0 text-xs bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900 dark:text-emerald-300">
+            flagged
+          </Badge>
+        </div>
+        <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
+          {item.sourceName && <span>{item.sourceName}</span>}
+          <span>{formatDate(item.ingestedAt)}</span>
+          <span className="truncate font-mono">{truncateUrl(item.sourceUrl)}</span>
+        </div>
+      </div>
+      <Link href={`/horizon/gdelt/read/${item.globalEventId}`}>
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 gap-1 text-xs shrink-0"
+          aria-label="Read article"
+        >
+          <BookOpen className="h-3.5 w-3.5" />
+          Read
+        </Button>
+      </Link>
+    </div>
+  );
+}
+
 export default function HorizonGdeltTriageScreen() {
   const utils = trpc.useUtils();
 
-  const query = trpc.horizon.gdelt.list.useInfiniteQuery(
-    { limit: 30 },
+  const newQuery = trpc.horizon.gdelt.list.useInfiniteQuery(
+    { limit: 30, status: "new" },
+    { getNextPageParam: (last) => last.nextCursor ?? undefined },
+  );
+
+  const flaggedQuery = trpc.horizon.gdelt.list.useInfiniteQuery(
+    { limit: 20, status: "flagged" },
     { getNextPageParam: (last) => last.nextCursor ?? undefined },
   );
 
   const setStatus = trpc.horizon.gdelt.setStatus.useMutation({
-    onMutate: async ({ id, status }) => {
-      await utils.horizon.gdelt.list.cancel();
-      const prev = utils.horizon.gdelt.list.getInfiniteData({ limit: 30 });
+    onMutate: async ({ id }) => {
+      await utils.horizon.gdelt.list.cancel({ limit: 30, status: "new" });
+      const prev = utils.horizon.gdelt.list.getInfiniteData({ limit: 30, status: "new" });
 
-      utils.horizon.gdelt.list.setInfiniteData({ limit: 30 }, (old) => {
+      utils.horizon.gdelt.list.setInfiniteData({ limit: 30, status: "new" }, (old) => {
         if (!old) return old;
         return {
           ...old,
@@ -124,33 +173,40 @@ export default function HorizonGdeltTriageScreen() {
         };
       });
 
-      return { prev, id, status };
+      return { prev };
     },
     onError: (_err, _vars, ctx) => {
       if (ctx?.prev) {
-        utils.horizon.gdelt.list.setInfiniteData({ limit: 30 }, ctx.prev);
+        utils.horizon.gdelt.list.setInfiniteData({ limit: 30, status: "new" }, ctx.prev);
       }
     },
     onSettled: () => {
       void utils.horizon.gdelt.countNew.invalidate();
-      void utils.horizon.gdelt.list.invalidate();
+      void utils.horizon.gdelt.list.invalidate({ limit: 30, status: "new" });
+      void utils.horizon.gdelt.list.invalidate({ limit: 20, status: "flagged" });
     },
   });
 
-  const { ref: sentinelRef, inView } = useInView({ threshold: 0 });
+  const { ref: newSentinelRef, inView: newInView } = useInView({ threshold: 0 });
+  const { ref: flaggedSentinelRef, inView: flaggedInView } = useInView({ threshold: 0 });
 
   useEffect(() => {
-    if (inView && query.hasNextPage && !query.isFetchingNextPage) {
-      void query.fetchNextPage();
+    if (newInView && newQuery.hasNextPage && !newQuery.isFetchingNextPage) {
+      void newQuery.fetchNextPage();
     }
-  }, [inView, query.hasNextPage, query.isFetchingNextPage]);
+  }, [newInView, newQuery.hasNextPage, newQuery.isFetchingNextPage]);
 
-  const allItems = query.data?.pages.flatMap((p) => p.items) ?? [];
-  const pendingIds = new Set(
-    setStatus.isPending && setStatus.variables
-      ? [setStatus.variables.id]
-      : [],
-  );
+  useEffect(() => {
+    if (flaggedInView && flaggedQuery.hasNextPage && !flaggedQuery.isFetchingNextPage) {
+      void flaggedQuery.fetchNextPage();
+    }
+  }, [flaggedInView, flaggedQuery.hasNextPage, flaggedQuery.isFetchingNextPage]);
+
+  const newItems = newQuery.data?.pages.flatMap((p) => p.items) ?? [];
+  const flaggedItems = flaggedQuery.data?.pages.flatMap((p) => p.items) ?? [];
+
+  const pendingId =
+    setStatus.isPending && setStatus.variables ? setStatus.variables.id : null;
 
   return (
     <div className="mx-auto max-w-4xl px-6 lg:px-8 py-8">
@@ -168,52 +224,87 @@ export default function HorizonGdeltTriageScreen() {
         </div>
       </div>
 
-      {query.isLoading && (
-        <div className="flex items-center justify-center py-16 text-muted-foreground">
-          <Loader2 className="h-5 w-5 animate-spin mr-2" />
-          Loading events…
-        </div>
-      )}
+      {/* New events */}
+      <section className="mb-10">
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          New
+        </h2>
 
-      {query.isError && (
-        <div className="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-          Failed to load events.{" "}
-          <button onClick={() => query.refetch()} className="underline">
-            Retry
-          </button>
-        </div>
-      )}
-
-      {!query.isLoading && !query.isError && allItems.length === 0 && (
-        <div className="flex flex-col items-center justify-center gap-3 py-20 text-muted-foreground">
-          <Inbox className="h-10 w-10 opacity-40" />
-          <p className="text-sm">No new events to triage.</p>
-        </div>
-      )}
-
-      {allItems.length > 0 && (
-        <div className="flex flex-col gap-2">
-          {allItems.map((item) => (
-            <EventCard
-              key={item.globalEventId}
-              item={item}
-              isPending={pendingIds.has(item.globalEventId)}
-              onFlag={() =>
-                setStatus.mutate({ id: item.globalEventId, status: "flagged" })
-              }
-              onSkip={() =>
-                setStatus.mutate({ id: item.globalEventId, status: "skipped" })
-              }
-            />
-          ))}
-        </div>
-      )}
-
-      <div ref={sentinelRef} className="py-4 flex justify-center">
-        {query.isFetchingNextPage && (
-          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+        {newQuery.isLoading && (
+          <div className="flex items-center justify-center py-12 text-muted-foreground">
+            <Loader2 className="h-5 w-5 animate-spin mr-2" />
+            Loading events…
+          </div>
         )}
-      </div>
+
+        {newQuery.isError && (
+          <div className="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            Failed to load events.{" "}
+            <button onClick={() => newQuery.refetch()} className="underline">
+              Retry
+            </button>
+          </div>
+        )}
+
+        {!newQuery.isLoading && !newQuery.isError && newItems.length === 0 && (
+          <div className="flex flex-col items-center justify-center gap-3 py-14 text-muted-foreground">
+            <Inbox className="h-8 w-8 opacity-40" />
+            <p className="text-sm">No new events to triage.</p>
+          </div>
+        )}
+
+        {newItems.length > 0 && (
+          <div className="flex flex-col gap-2">
+            {newItems.map((item) => (
+              <NewEventCard
+                key={item.globalEventId}
+                item={item}
+                isPending={pendingId === item.globalEventId}
+                onFlag={() =>
+                  setStatus.mutate({ id: item.globalEventId, status: "flagged" })
+                }
+                onSkip={() =>
+                  setStatus.mutate({ id: item.globalEventId, status: "skipped" })
+                }
+              />
+            ))}
+          </div>
+        )}
+
+        <div ref={newSentinelRef} className="py-2 flex justify-center">
+          {newQuery.isFetchingNextPage && (
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          )}
+        </div>
+      </section>
+
+      {/* Flagged events */}
+      {(flaggedItems.length > 0 || flaggedQuery.isLoading) && (
+        <section>
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Flagged — ready to read
+          </h2>
+
+          {flaggedQuery.isLoading && (
+            <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading…
+            </div>
+          )}
+
+          <div className="flex flex-col gap-2">
+            {flaggedItems.map((item) => (
+              <FlaggedEventCard key={item.globalEventId} item={item} />
+            ))}
+          </div>
+
+          <div ref={flaggedSentinelRef} className="py-2 flex justify-center">
+            {flaggedQuery.isFetchingNextPage && (
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            )}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

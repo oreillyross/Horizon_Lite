@@ -107,27 +107,27 @@ no modals, minimal clicks.
 When an analyst clicks a flagged event they need a clean, distraction-free
 reading surface — source HTML stripped to text only, no images, no nav chrome.
 
-- [ ] **3.1** Add a server-side `POST /api/webcut` Express route (not tRPC —
+- [x] **3.1** Add a server-side `POST /api/webcut` Express route (not tRPC —
   this does an outbound HTTP fetch). Accepts `{ url: string }` in the
   request body. Fetches the URL server-side, uses a lightweight HTML parser
   (e.g. `node-html-parser` or `cheerio` — check `package.json` first; only
   add a package if none exists) to strip everything except block-level text
   nodes (`p`, `h1`–`h4`, `li`, `blockquote`). Returns `{ text: string }`.
 
-- [ ] **3.2** Add a `horizon.gdelt.webcut` tRPC query that proxies to the
+- [x] **3.2** Add a `horizon.gdelt.webcut` tRPC query that proxies to the
   `/api/webcut` route internally and returns the stripped text. This keeps
   the client on tRPC hooks only.
 
-- [ ] **3.3** Create `client/src/pages/HorizonWebcutScreen.tsx`. Route:
+- [x] **3.3** Create `client/src/pages/HorizonWebcutScreen.tsx`. Route:
   `/horizon/gdelt/read/:eventId`. On mount: fetch the `gdelt_events` row
   by `eventId`, then call `horizon.gdelt.webcut` with the stored URL.
   Display the stripped article text in a readable single-column layout
   (max-width ~72ch, generous line height).
 
-- [ ] **3.4** Add a back-link breadcrumb to the Triage Screen at the top
+- [x] **3.4** Add a back-link breadcrumb to the Triage Screen at the top
   of `HorizonWebcutScreen`.
 
-- [ ] **3.5** Make flagged event rows in the Triage Screen link to
+- [x] **3.5** Make flagged event rows in the Triage Screen link to
   `/horizon/gdelt/read/:eventId` so the analyst can open an article
   directly from the queue.
 
