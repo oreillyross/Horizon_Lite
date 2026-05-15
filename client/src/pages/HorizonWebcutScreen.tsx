@@ -2,8 +2,9 @@ import { useRoute, Link } from "wouter";
 import { useRef, useState, useEffect, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, AlertTriangle, ArrowLeft, ExternalLink, Scissors, X } from "lucide-react";
+import { Loader2, AlertTriangle, ArrowLeft, ExternalLink, Scissors, X, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -42,6 +43,26 @@ export default function HorizonWebcutScreen() {
   const [indicatorId, setIndicatorId] = useState<string>("");
   const [analystNotes, setAnalystNotes] = useState("");
   const [sessionCount, setSessionCount] = useState(0);
+  // Track whether the analyst has manually touched the indicator dropdown
+  const userChangedIndicator = useRef(false);
+
+  // --- AI indicator suggestion ---
+  const suggestQuery = trpc.horizon.snippets.suggestIndicator.useQuery(
+    { quote: panel?.quote ?? "" },
+    { enabled: !!panel?.quote, retry: false, staleTime: Infinity },
+  );
+
+  // Apply AI suggestion only if analyst hasn't manually chosen
+  useEffect(() => {
+    if (suggestQuery.data?.suggestedIndicatorId && !userChangedIndicator.current) {
+      setIndicatorId(suggestQuery.data.suggestedIndicatorId);
+    }
+  }, [suggestQuery.data]);
+
+  const showAiBadge =
+    !!suggestQuery.data?.suggestedIndicatorId &&
+    indicatorId === suggestQuery.data.suggestedIndicatorId &&
+    !userChangedIndicator.current;
 
   const createSnippet = trpc.horizon.snippets.create.useMutation({
     onSuccess: () => {
@@ -49,6 +70,7 @@ export default function HorizonWebcutScreen() {
       setPanel(null);
       setIndicatorId("");
       setAnalystNotes("");
+      userChangedIndicator.current = false;
       toast({ title: "Snippet captured" });
     },
     onError: (err) => {
@@ -78,6 +100,8 @@ export default function HorizonWebcutScreen() {
 
   function openPanel() {
     if (!floatingBtn) return;
+    userChangedIndicator.current = false;
+    setIndicatorId("");
     setPanel({ quote: floatingBtn.text });
     setFloatingBtn(null);
     window.getSelection()?.removeAllRanges();
@@ -87,6 +111,7 @@ export default function HorizonWebcutScreen() {
     setPanel(null);
     setIndicatorId("");
     setAnalystNotes("");
+    userChangedIndicator.current = false;
   }
 
   function saveSnippet() {
@@ -99,6 +124,7 @@ export default function HorizonWebcutScreen() {
         : undefined,
       indicatorId: indicatorId || undefined,
       analystNotes: analystNotes || undefined,
+      aiSuggestedIndicatorId: suggestQuery.data?.suggestedIndicatorId ?? undefined,
     });
   }
 
@@ -259,11 +285,29 @@ export default function HorizonWebcutScreen() {
 
               {/* Indicator dropdown */}
               <div>
-                <Label className="text-xs text-muted-foreground mb-1 block">Linked Indicator</Label>
-                <Select value={indicatorId} onValueChange={setIndicatorId}>
+                <div className="flex items-center gap-2 mb-1">
+                  <Label className="text-xs text-muted-foreground">Linked Indicator</Label>
+                  {showAiBadge && (
+                    <Badge
+                      variant="outline"
+                      className="text-xs gap-1 border-violet-300 text-violet-600 dark:border-violet-700 dark:text-violet-400 py-0"
+                    >
+                      <Sparkles className="h-3 w-3" />
+                      AI suggestion
+                    </Badge>
+                  )}
+                </div>
+                <Select
+                  value={indicatorId}
+                  onValueChange={(val) => {
+                    userChangedIndicator.current = true;
+                    setIndicatorId(val);
+                  }}
+                >
                   <SelectTrigger className="h-8 text-sm">
                     <SelectValue placeholder={
                       indicatorsQuery.isLoading ? "Loading…" :
+                      suggestQuery.isLoading ? "AI suggesting…" :
                       indicators.length === 0 ? "No indicators" :
                       "Select indicator"
                     } />

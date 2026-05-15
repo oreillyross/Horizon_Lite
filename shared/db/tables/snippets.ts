@@ -20,6 +20,9 @@ export const snippets = pgTable("snippets", {
   pubDate: timestamp("pub_date"),
   indicatorId: uuid("indicator_id").references(() => indicators.id, { onDelete: "set null" }),
   analystNotes: text("analyst_notes"),
+
+  // Phase 5: AI suggestion tracking
+  aiSuggestedIndicatorId: uuid("ai_suggested_indicator_id").references(() => indicators.id, { onDelete: "set null" }),
 });
 
 export type SnippetRow = typeof snippets.$inferSelect;

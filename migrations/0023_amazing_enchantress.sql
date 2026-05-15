@@ -1,0 +1,2 @@
+ALTER TABLE "snippets" ADD COLUMN "ai_suggested_indicator_id" uuid;--> statement-breakpoint
+ALTER TABLE "snippets" ADD CONSTRAINT "snippets_ai_suggested_indicator_id_indicators_id_fk" FOREIGN KEY ("ai_suggested_indicator_id") REFERENCES "public"."indicators"("id") ON DELETE set null ON UPDATE no action;
