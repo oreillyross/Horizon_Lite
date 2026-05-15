@@ -29,32 +29,19 @@ export const gdeltRouter = router({
       const { limit, cursor, status } = input;
       const limitPlusOne = limit + 1;
 
-      let result;
+      const { t: cursorTime, u: cursorId } = cursor
+        ? (JSON.parse(Buffer.from(cursor, "base64").toString("utf8")) as { t: string; u: string })
+        : { t: null, u: null };
 
-      if (cursor) {
-        const { t: cursorTime, u: cursorId } = JSON.parse(
-          Buffer.from(cursor, "base64").toString("utf8"),
-        ) as { t: string; u: string };
-
-        result = await db.execute(sql`
-          SELECT global_event_id, title, source_name, ingested_at,
-                 action_geo_country_code, source_url, status
-          FROM gdelt_events
-          WHERE status = ${status}
-            AND (ingested_at, global_event_id) < (${cursorTime}::timestamptz, ${cursorId})
-          ORDER BY ingested_at DESC, global_event_id DESC
-          LIMIT ${limitPlusOne}
-        `);
-      } else {
-        result = await db.execute(sql`
-          SELECT global_event_id, title, source_name, ingested_at,
-                 action_geo_country_code, source_url, status
-          FROM gdelt_events
-          WHERE status = ${status}
-          ORDER BY ingested_at DESC, global_event_id DESC
-          LIMIT ${limitPlusOne}
-        `);
-      }
+      const result = await db.execute(sql`
+        SELECT global_event_id, title, source_name, ingested_at,
+               action_geo_country_code, source_url, status
+        FROM gdelt_events
+        WHERE status = ${status}
+          ${cursorTime && cursorId ? sql`AND (ingested_at, global_event_id) < (${cursorTime}::timestamptz, ${cursorId})` : sql``}
+        ORDER BY ingested_at DESC, global_event_id DESC
+        LIMIT ${limitPlusOne}
+      `);
 
       const rows = result.rows as TriageRow[];
       let nextCursor: string | undefined;
