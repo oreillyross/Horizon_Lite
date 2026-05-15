@@ -12,6 +12,7 @@ import { signalsRouter } from "./signals.router";
 import { updatesRouter } from "./updates.router";
 import { reportsRouter } from "./reports.router";
 import { intelRouter } from "./intelRouter";
+import { gdeltRouter } from "./gdelt.router";
 
 export const appRouter = router({
   themes: themesRouter,
@@ -27,6 +28,7 @@ export const appRouter = router({
     signals: signalsRouter,
     updates: updatesRouter,
     reports: reportsRouter,
+    gdelt: gdeltRouter,
   }),
 
   ...healthRouter._def.record,
