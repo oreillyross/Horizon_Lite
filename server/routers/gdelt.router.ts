@@ -10,8 +10,13 @@ type TriageRow = {
   source_name: string | null;
   ingested_at: string;
   action_geo_country_code: string | null;
+  action_geo_fullname: string | null;
   source_url: string | null;
   status: string;
+  actor1_name: string | null;
+  actor2_name: string | null;
+  num_mentions: number | null;
+  goldstein: number | null;
 };
 
 const triageStatusSchema = z.enum(["new", "flagged", "skipped", "reviewed"]);
@@ -35,7 +40,10 @@ export const gdeltRouter = router({
 
       const result = await db.execute(sql`
         SELECT global_event_id, title, source_name, ingested_at,
-               action_geo_country_code, source_url, status
+               action_geo_country_code, action_geo_fullname,
+               source_url, status,
+               actor1_name, actor2_name,
+               num_mentions, goldstein
         FROM gdelt_events
         WHERE status = ${status}
           ${cursorTime && cursorId ? sql`AND (ingested_at, global_event_id) < (${cursorTime}::timestamptz, ${cursorId})` : sql``}
@@ -60,8 +68,13 @@ export const gdeltRouter = router({
           sourceName: r.source_name,
           ingestedAt: r.ingested_at,
           countryCode: r.action_geo_country_code,
+          geoFullname: r.action_geo_fullname,
           sourceUrl: r.source_url,
           status: r.status,
+          actor1Name: r.actor1_name,
+          actor2Name: r.actor2_name,
+          numMentions: r.num_mentions,
+          goldstein: r.goldstein,
         })),
         nextCursor,
       };
@@ -96,7 +109,10 @@ export const gdeltRouter = router({
     .query(async ({ input }) => {
       const result = await db.execute(sql`
         SELECT global_event_id, title, source_name, ingested_at,
-               action_geo_country_code, source_url, status
+               action_geo_country_code, action_geo_fullname,
+               source_url, status,
+               actor1_name, actor2_name,
+               num_mentions, goldstein
         FROM gdelt_events
         WHERE global_event_id = ${input.id}
         LIMIT 1
@@ -109,8 +125,13 @@ export const gdeltRouter = router({
         sourceName: row.source_name,
         ingestedAt: row.ingested_at,
         countryCode: row.action_geo_country_code,
+        geoFullname: row.action_geo_fullname,
         sourceUrl: row.source_url,
         status: row.status,
+        actor1Name: row.actor1_name,
+        actor2Name: row.actor2_name,
+        numMentions: row.num_mentions,
+        goldstein: row.goldstein,
       };
     }),
 

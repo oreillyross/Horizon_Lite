@@ -12,8 +12,13 @@ type TriageItem = {
   sourceName: string | null;
   ingestedAt: string;
   countryCode: string | null;
+  geoFullname: string | null;
   sourceUrl: string | null;
   status: string;
+  actor1Name: string | null;
+  actor2Name: string | null;
+  numMentions: number | null;
+  goldstein: number | null;
 };
 
 function truncateUrl(url: string | null): string {
@@ -42,6 +47,19 @@ function formatDate(iso: string): string {
   }
 }
 
+function displayTitle(item: TriageItem): string {
+  if (item.title) return item.title;
+  const actors = [item.actor1Name, item.actor2Name].filter(Boolean).join(" → ");
+  if (actors) return actors;
+  if (item.geoFullname) return item.geoFullname;
+  return truncateUrl(item.sourceUrl) || "—";
+}
+
+function formatGoldstein(g: number | null): string | null {
+  if (g == null) return null;
+  return (g >= 0 ? "+" : "") + g.toFixed(1);
+}
+
 function NewEventCard({
   item,
   onFlag,
@@ -53,6 +71,9 @@ function NewEventCard({
   onSkip: () => void;
   isPending: boolean;
 }) {
+  const goldsteinStr = formatGoldstein(item.goldstein);
+  const actorLine = [item.actor1Name, item.actor2Name].filter(Boolean).join(" → ");
+
   return (
     <div
       className="flex items-start gap-4 rounded-lg border bg-card px-4 py-3 transition-opacity"
@@ -61,7 +82,7 @@ function NewEventCard({
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <span className="truncate font-medium text-sm text-foreground">
-            {item.title ?? "(untitled)"}
+            {displayTitle(item)}
           </span>
           {item.countryCode && (
             <Badge variant="outline" className="shrink-0 text-xs">
@@ -70,8 +91,26 @@ function NewEventCard({
           )}
         </div>
         <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
+          {actorLine && <span className="font-medium text-foreground/70">{actorLine}</span>}
+          {item.geoFullname && !actorLine && <span>{item.geoFullname}</span>}
           {item.sourceName && <span>{item.sourceName}</span>}
           <span>{formatDate(item.ingestedAt)}</span>
+        </div>
+        <div className="mt-0.5 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
+          {item.numMentions != null && item.numMentions > 0 && (
+            <span>{item.numMentions.toLocaleString()} mentions</span>
+          )}
+          {goldsteinStr && (
+            <span
+              className={
+                item.goldstein != null && item.goldstein < 0
+                  ? "text-rose-600 dark:text-rose-400"
+                  : "text-emerald-600 dark:text-emerald-400"
+              }
+            >
+              Goldstein {goldsteinStr}
+            </span>
+          )}
           <span className="truncate font-mono">{truncateUrl(item.sourceUrl)}</span>
         </div>
       </div>
@@ -104,6 +143,8 @@ function NewEventCard({
 }
 
 function FlaggedEventCard({ item }: { item: TriageItem }) {
+  const actorLine = [item.actor1Name, item.actor2Name].filter(Boolean).join(" → ");
+
   return (
     <div className="flex items-start gap-4 rounded-lg border border-emerald-200 bg-emerald-50/40 dark:border-emerald-800 dark:bg-emerald-950/20 px-4 py-3">
       <div className="min-w-0 flex-1">
@@ -112,7 +153,7 @@ function FlaggedEventCard({ item }: { item: TriageItem }) {
             href={`/horizon/gdelt/read/${item.globalEventId}`}
             className="truncate font-medium text-sm text-foreground hover:underline"
           >
-            {item.title ?? "(untitled)"}
+            {displayTitle(item)}
           </Link>
           {item.countryCode && (
             <Badge variant="outline" className="shrink-0 text-xs">
@@ -124,6 +165,8 @@ function FlaggedEventCard({ item }: { item: TriageItem }) {
           </Badge>
         </div>
         <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
+          {actorLine && <span className="font-medium text-foreground/70">{actorLine}</span>}
+          {item.geoFullname && !actorLine && <span>{item.geoFullname}</span>}
           {item.sourceName && <span>{item.sourceName}</span>}
           <span>{formatDate(item.ingestedAt)}</span>
           <span className="truncate font-mono">{truncateUrl(item.sourceUrl)}</span>
@@ -224,6 +267,34 @@ export default function HorizonGdeltTriageScreen() {
         </div>
       </div>
 
+      {/* Flagged events — shown first so the analyst can act on them immediately */}
+      {(flaggedItems.length > 0 || flaggedQuery.isLoading) && (
+        <section className="mb-10">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Flagged — ready to read
+          </h2>
+
+          {flaggedQuery.isLoading && (
+            <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading…
+            </div>
+          )}
+
+          <div className="flex flex-col gap-2">
+            {flaggedItems.map((item) => (
+              <FlaggedEventCard key={item.globalEventId} item={item} />
+            ))}
+          </div>
+
+          <div ref={flaggedSentinelRef} className="py-2 flex justify-center">
+            {flaggedQuery.isFetchingNextPage && (
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            )}
+          </div>
+        </section>
+      )}
+
       {/* New events */}
       <section className="mb-10">
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
@@ -277,34 +348,6 @@ export default function HorizonGdeltTriageScreen() {
           )}
         </div>
       </section>
-
-      {/* Flagged events */}
-      {(flaggedItems.length > 0 || flaggedQuery.isLoading) && (
-        <section>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            Flagged — ready to read
-          </h2>
-
-          {flaggedQuery.isLoading && (
-            <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Loading…
-            </div>
-          )}
-
-          <div className="flex flex-col gap-2">
-            {flaggedItems.map((item) => (
-              <FlaggedEventCard key={item.globalEventId} item={item} />
-            ))}
-          </div>
-
-          <div ref={flaggedSentinelRef} className="py-2 flex justify-center">
-            {flaggedQuery.isFetchingNextPage && (
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-            )}
-          </div>
-        </section>
-      )}
     </div>
   );
 }
