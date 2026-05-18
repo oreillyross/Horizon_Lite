@@ -27,7 +27,7 @@ export const themesRouter = router({
       return await themeStorage.createTheme(input);
     }),
 
-  deleteTheme: protectedProcedure
+  deleteTheme: publicProcedure
     .input(themeIdSchema)
     .mutation(async ({ input }) => {
       const deleted = await themeStorage.deleteTheme(input.id);
