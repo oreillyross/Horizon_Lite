@@ -30,6 +30,10 @@ export default function ThemesScreen() {
       toast({ title: "Theme deleted" });
       setPendingDeleteId(null);
     },
+    onError: (err) => {
+      toast({ title: "Delete failed", description: err.message, variant: "destructive" });
+      setPendingDeleteId(null);
+    },
   });
 
   if (isLoading) {
