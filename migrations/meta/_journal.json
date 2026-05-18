@@ -169,6 +169,13 @@
       "when": 1778849090545,
       "tag": "0023_amazing_enchantress",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1747699200000,
+      "tag": "0024_synopsis_context_hash",
+      "breakpoints": true
     }
   ]
 }

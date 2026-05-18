@@ -11,6 +11,7 @@ export const themes = pgTable(
     synopsisUpdatedAt: timestamp("synopsis_updated_at", { withTimezone: true }),
     synopsisModel: text("synopsis_model"),
     synopsisVersion: integer("synopsis_version").default(0).notNull(),
+    synopsisContextHash: text("synopsis_context_hash"),
 
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),

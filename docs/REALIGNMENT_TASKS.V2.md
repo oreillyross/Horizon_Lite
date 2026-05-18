@@ -204,28 +204,28 @@ Upgrade the existing synopsis generation to include structured evidence from
 snippets — weighted indicators, temporal context, competing scenarios. The
 analyst still triggers synopsis generation manually; it is never automatic.
 
-- [ ] **6.1** In `server/lib/generateSynopsis.ts` (or equivalent), extend the
+- [x] **6.1** In `server/lib/generateSynopsis.ts` (or equivalent), extend the
   prompt context to include:
   - The list of competing scenarios for the theme (name + description).
   - Per-scenario: indicator names, current strength/decay values.
   - Per-scenario: the 5 most recent snippets (quote + pub_date + analyst_notes).
   Guard each section so it degrades gracefully when data is absent.
 
-- [ ] **6.2** Ensure the assembled prompt context is assembled from DB queries
+- [x] **6.2** Ensure the assembled prompt context is assembled from DB queries
   only — no in-memory state, no globals. The function must be pure given
   a `themeId`.
 
-- [ ] **6.3** Add `synopsis_context_hash` (a hash of the input data used to
+- [x] **6.3** Add `synopsis_context_hash` (a hash of the input data used to
   generate the synopsis) to the theme synopsis storage so the UI can show
   "synopsis may be outdated" when the underlying data has changed since
   last generation.
 
-- [ ] **6.4** On `ThemeViewScreen`, show a subtle "Synopsis may be outdated"
+- [x] **6.4** On `ThemeViewScreen`, show a subtle "Synopsis may be outdated"
   notice when `synopsis_context_hash` does not match the current hash of
   live data. Do not auto-regenerate — show the Refresh Synopsis button and
   let the analyst decide.
 
-- [ ] **6.5** Write a Vitest test for the prompt-assembly function in 6.1:
+- [x] **6.5** Write a Vitest test for the prompt-assembly function in 6.1:
   confirm that missing scenarios, missing indicators, and missing snippets
   each produce a graceful (non-crashing) prompt string.
 

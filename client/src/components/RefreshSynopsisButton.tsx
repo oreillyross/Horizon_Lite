@@ -8,6 +8,7 @@ export function RefreshSynopsisButton({ themeId }: { themeId: string }) {
   const refresh = trpc.synopsis.refreshThemeSynopsis.useMutation({
     onSuccess: async () => {
       await utils.themes.getThemeById.invalidate({ id: themeId });
+      await utils.synopsis.getCurrentContextHash.invalidate({ themeId });
       await utils.snippets.getSnippets.invalidate();
     },
   });

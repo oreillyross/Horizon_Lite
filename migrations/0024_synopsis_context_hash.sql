@@ -1,0 +1,1 @@
+ALTER TABLE "themes" ADD COLUMN "synopsis_context_hash" text;

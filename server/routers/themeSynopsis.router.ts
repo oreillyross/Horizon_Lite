@@ -1,36 +1,39 @@
 import { z } from "zod";
 import { publicProcedure, router } from "../trpc";
-import { themeStorage, snippetStorage } from "../storage";
-import { generateThemeSynopsis } from "../llm/generateThemeSynopsis";
+import { themeStorage } from "../storage";
+import { generateThemeSynopsis, computeContextHash } from "../llm/generateThemeSynopsis";
+import { assembleThemeContext } from "../llm/assembleThemeContext";
 
 export const themeSynopsisRouter = router({
-  // ...existing procedures
-
   refreshThemeSynopsis: publicProcedure
     .input(z.object({ themeId: z.string().uuid() }))
     .mutation(async ({ input }) => {
-      const theme = await themeStorage.getThemeById(input.themeId);
-      if (!theme) throw new Error("Theme not found");
-
-      const snippets = await snippetStorage.getSnippetsByThemeId(input.themeId);
-      // ^ if you don’t have this helper yet, implement a storage method that filters by themeId.
+      const ctx = await assembleThemeContext(input.themeId);
+      const contextHash = computeContextHash(ctx);
 
       const { rawJson, model } = await generateThemeSynopsis({
-        theme: { id: theme.id, name: theme.name, description: theme.description ?? null },
-        snippets: snippets.map((s) => ({
+        theme: ctx.theme,
+        snippets: ctx.snippets.map((s) => ({
           id: s.id,
-          createdAt: s.createdAt,
-          tags: s.tags ?? [],
+          createdAt: new Date(s.createdAt),
+          tags: s.tags,
           content: s.content,
         })),
+        scenarios: ctx.scenarios,
       });
 
-      const updated = await themeStorage.updateThemeSynopsis({
+      return await themeStorage.updateThemeSynopsis({
         themeId: input.themeId,
-        synopsis: rawJson, // stored as JSON string
+        synopsis: rawJson,
         synopsisModel: model,
+        synopsisContextHash: contextHash,
       });
+    }),
 
-      return updated;
+  getCurrentContextHash: publicProcedure
+    .input(z.object({ themeId: z.string().uuid() }))
+    .query(async ({ input }) => {
+      const ctx = await assembleThemeContext(input.themeId);
+      return { hash: computeContextHash(ctx) };
     }),
 });

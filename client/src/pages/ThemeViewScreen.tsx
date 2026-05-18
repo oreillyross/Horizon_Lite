@@ -1,6 +1,6 @@
 import { trpc } from "@/lib/trpc";
 import { Link, useRoute, useLocation } from "wouter";
-import { Loader2, Plus } from "lucide-react";
+import { AlertTriangle, Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RefreshSynopsisButton } from "@/components/RefreshSynopsisButton";
 
@@ -21,6 +21,18 @@ export default function ThemeViewScreen() {
     { enabled: !!id },
   );
 
+  const theme = themeQuery.data;
+
+  const contextHashQuery = trpc.synopsis.getCurrentContextHash.useQuery(
+    { themeId: id },
+    { enabled: !!id && !!theme?.synopsisContextHash },
+  );
+
+  const synopsisIsOutdated =
+    !!theme?.synopsisContextHash &&
+    !!contextHashQuery.data?.hash &&
+    contextHashQuery.data.hash !== theme.synopsisContextHash;
+
   if (themeQuery.isLoading) {
     return (
       <div className="px-6 lg:px-8 py-6 flex items-center gap-2 text-sm text-muted-foreground">
@@ -38,7 +50,6 @@ export default function ThemeViewScreen() {
     );
   }
 
-  const theme = themeQuery.data;
   if (!theme) {
     return (
       <div className="px-6 lg:px-8 py-6 text-sm">
@@ -94,6 +105,12 @@ export default function ThemeViewScreen() {
               </span>
             )}
           </div>
+          {synopsisIsOutdated && (
+            <div className="mt-2 flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+              Synopsis may be outdated — underlying data has changed since last generation.
+            </div>
+          )}
           <div className="mt-3 text-sm whitespace-pre-wrap">
             {theme.synopsis?.trim()
               ? JSON.parse(theme.synopsis ?? "{}").synopsis
