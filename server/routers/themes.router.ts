@@ -27,6 +27,15 @@ export const themesRouter = router({
       return await themeStorage.createTheme(input);
     }),
 
+  deleteTheme: protectedProcedure
+    .input(themeIdSchema)
+    .mutation(async ({ input }) => {
+      const deleted = await themeStorage.deleteTheme(input.id);
+      if (!deleted) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Theme not found" });
+      }
+    }),
+
   // Horizon-facing procedure — scenario counts included
   list: protectedProcedure.query(async () => {
     return db
