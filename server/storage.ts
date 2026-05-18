@@ -41,6 +41,7 @@ export interface IThemeStorage {
     themeId: string;
     synopsis: string; // JSON string
     synopsisModel: string;
+    synopsisContextHash?: string;
   }): Promise<ThemeRow>;
 
   // OPTIONAL (dirty/version)
@@ -70,6 +71,7 @@ export class ThemeStorage implements IThemeStorage {
       themeId: string;
       synopsis: string; // JSON string
       synopsisModel: string;
+      synopsisContextHash?: string;
     }) {
       const now = new Date();
 
@@ -80,7 +82,8 @@ export class ThemeStorage implements IThemeStorage {
           synopsisModel: input.synopsisModel,
           synopsisUpdatedAt: now,
           synopsisVersion: sql`${themes.synopsisVersion} + 1`,
-          updatedAt: now, // if you track updatedAt (you do in orderBy)
+          synopsisContextHash: input.synopsisContextHash ?? null,
+          updatedAt: now,
         })
         .where(eq(themes.id, input.themeId))
         .returning();
