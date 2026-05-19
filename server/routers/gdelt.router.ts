@@ -84,7 +84,7 @@ export const gdeltRouter = router({
     .input(
       z.object({
         id: z.string(),
-        status: z.enum(["flagged", "skipped"]),
+        status: z.enum(["new", "flagged", "skipped"]),
       }),
     )
     .mutation(async ({ input }) => {
