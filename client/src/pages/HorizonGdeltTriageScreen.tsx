@@ -145,6 +145,12 @@ function NewEventCard({
 function FlaggedEventCard({ item }: { item: TriageItem }) {
   const actorLine = [item.actor1Name, item.actor2Name].filter(Boolean).join(" → ");
 
+  const docQuery = trpc.intel.eventsByDocUrl.useQuery(
+    { url: item.sourceUrl ?? "" },
+    { enabled: !!item.sourceUrl, staleTime: 10 * 60 * 1000 },
+  );
+  const docTitle = docQuery.data?.[0]?.docTitle ?? null;
+
   return (
     <div className="flex items-start gap-4 rounded-lg border border-emerald-200 bg-emerald-50/40 dark:border-emerald-800 dark:bg-emerald-950/20 px-4 py-3">
       <div className="min-w-0 flex-1">
@@ -171,6 +177,11 @@ function FlaggedEventCard({ item }: { item: TriageItem }) {
           <span>{formatDate(item.ingestedAt)}</span>
           <span className="truncate font-mono">{truncateUrl(item.sourceUrl)}</span>
         </div>
+        {docTitle && (
+          <div className="mt-1 text-xs text-muted-foreground">
+            <em>{docTitle}</em>
+          </div>
+        )}
       </div>
       <Link href={`/horizon/gdelt/read/${item.globalEventId}`}>
         <Button

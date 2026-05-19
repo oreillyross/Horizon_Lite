@@ -168,9 +168,11 @@ export const intelRouter = router({
           e.actor1_name,
           e.actor2_name,
           e.event_time,
-          e.action_geo_fullname
+          e.action_geo_fullname,
+          d.title AS doc_title
         FROM gdelt_event_mentions em
         JOIN gdelt_events e ON e.global_event_id = em.global_event_id
+        LEFT JOIN gdelt_documents d ON d.url = em.url
         WHERE em.url = ${input.url}
           AND e.num_mentions > 15
         ORDER BY e.num_mentions DESC
@@ -186,6 +188,7 @@ export const intelRouter = router({
         actor2_name: string | null;
         event_time: string | null;
         action_geo_fullname: string | null;
+        doc_title: string | null;
       };
 
       return (rows.rows as EventRow[]).map((r) => ({
@@ -197,6 +200,7 @@ export const intelRouter = router({
         actor2Name: r.actor2_name,
         eventTime: r.event_time,
         actionGeoFullname: r.action_geo_fullname,
+        docTitle: r.doc_title,
       }));
     }),
 
