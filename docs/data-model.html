@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Horizon Lite — Data Model</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #0f1117;
+    color: #e2e8f0;
+    padding: 2rem;
+    line-height: 1.5;
+  }
+  h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; color: #f8fafc; }
+  .subtitle { color: #64748b; font-size: 0.875rem; margin-bottom: 2.5rem; }
+
+  /* ── Flow diagram ── */
+  .flow {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    overflow-x: auto;
+    padding-bottom: 1rem;
+    margin-bottom: 3rem;
+  }
+  .flow-node {
+    flex: 0 0 auto;
+    width: 170px;
+  }
+  .flow-card {
+    background: #1e2330;
+    border: 1px solid #2d3748;
+    border-radius: 10px;
+    padding: 1rem;
+  }
+  .flow-card .badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+    display: inline-block;
+  }
+  .flow-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.4rem; }
+  .flow-card p  { font-size: 0.75rem; color: #94a3b8; }
+  .flow-card ul { list-style: none; margin-top: 0.5rem; }
+  .flow-card ul li {
+    font-size: 0.72rem;
+    color: #64748b;
+    padding: 2px 0;
+    padding-left: 0.75rem;
+    position: relative;
+  }
+  .flow-card ul li::before { content: "·"; position: absolute; left: 0; color: #475569; }
+
+  /* colour scheme per entity */
+  .theme   .badge { background: #1e3a5f; color: #60a5fa; }
+  .theme   .flow-card { border-color: #1e3a5f; }
+  .scenario .badge { background: #1e3a2a; color: #4ade80; }
+  .scenario .flow-card { border-color: #1e3a2a; }
+  .indicator .badge { background: #3b2f12; color: #fbbf24; }
+  .indicator .flow-card { border-color: #3b2f12; }
+  .snippet .badge { background: #2e1f3e; color: #c084fc; }
+  .snippet .flow-card { border-color: #2e1f3e; }
+  .signal .badge { background: #1f2e2e; color: #34d399; }
+  .signal .flow-card { border-color: #1f2e2e; }
+
+  /* arrows between nodes */
+  .flow-arrow {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+    gap: 2px;
+    min-width: 52px;
+    padding-top: 2.5rem;
+  }
+  .flow-arrow .rel-label {
+    font-size: 0.6rem;
+    color: #475569;
+    text-align: center;
+    white-space: nowrap;
+  }
+  .flow-arrow .arrow-line {
+    display: flex;
+    align-items: center;
+    width: 100%;
+  }
+  .flow-arrow .line {
+    flex: 1;
+    height: 1px;
+    background: #334155;
+  }
+  .flow-arrow .head {
+    width: 0; height: 0;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-left: 8px solid #334155;
+    flex-shrink: 0;
+  }
+  .flow-arrow .cardinality {
+    font-size: 0.65rem;
+    color: #475569;
+    text-align: center;
+  }
+
+  /* ── Detail section ── */
+  .section-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #94a3b8;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #1e2330;
+    padding-bottom: 0.5rem;
+  }
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+    margin-bottom: 3rem;
+  }
+  .detail-card {
+    background: #1e2330;
+    border: 1px solid #2d3748;
+    border-radius: 10px;
+    padding: 1.25rem;
+  }
+  .detail-card h4 {
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+  }
+  .dot-blue   { background: #3b82f6; }
+  .dot-green  { background: #22c55e; }
+  .dot-yellow { background: #f59e0b; }
+  .dot-purple { background: #a855f7; }
+  .dot-teal   { background: #14b8a6; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+  th {
+    text-align: left;
+    color: #475569;
+    font-weight: 600;
+    padding: 4px 0;
+    border-bottom: 1px solid #2d3748;
+  }
+  td { padding: 4px 0; color: #94a3b8; vertical-align: top; }
+  td:first-child { color: #e2e8f0; font-family: monospace; font-size: 0.7rem; padding-right: 0.75rem; white-space: nowrap; }
+  td .fk { color: #60a5fa; font-size: 0.65rem; }
+  td .enum { color: #fbbf24; font-size: 0.65rem; }
+
+  /* ── Workflow ── */
+  .workflow {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-bottom: 3rem;
+    counter-reset: step;
+  }
+  .step {
+    background: #1e2330;
+    border: 1px solid #2d3748;
+    border-radius: 10px;
+    padding: 1.25rem;
+    position: relative;
+  }
+  .step::before {
+    counter-increment: step;
+    content: counter(step);
+    position: absolute;
+    top: -10px; left: 12px;
+    background: #334155;
+    color: #94a3b8;
+    font-size: 0.65rem;
+    font-weight: 700;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .step h4 { font-size: 0.8rem; font-weight: 700; margin-bottom: 0.4rem; color: #f1f5f9; }
+  .step p  { font-size: 0.75rem; color: #64748b; }
+
+  /* ── Many-to-many callout ── */
+  .callout {
+    background: #1a1f2e;
+    border: 1px solid #2d3748;
+    border-left: 3px solid #f59e0b;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    font-size: 0.78rem;
+    color: #94a3b8;
+    margin-bottom: 3rem;
+  }
+  .callout strong { color: #fbbf24; }
+
+  /* ── Key distinctions ── */
+  .distinctions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 3rem;
+  }
+  @media (max-width: 600px) { .distinctions { grid-template-columns: 1fr; } }
+  .distinction-card {
+    background: #1e2330;
+    border: 1px solid #2d3748;
+    border-radius: 10px;
+    padding: 1.25rem;
+  }
+  .distinction-card h4 { font-size: 0.8rem; font-weight: 700; margin-bottom: 0.5rem; color: #f1f5f9; }
+  .distinction-card p  { font-size: 0.75rem; color: #64748b; }
+  .tag-vs { color: #475569; font-size: 0.7rem; align-self: center; text-align: center; }
+</style>
+</head>
+<body>
+
+<h1>Horizon Lite — Data Model</h1>
+<p class="subtitle">How Themes, Scenarios, Indicators, Snippets, and Signal Events connect</p>
+
+<!-- ════════════════════════════════════════════════════════
+     FLOW DIAGRAM
+     ════════════════════════════════════════════════════════ -->
+<div class="section-title">Entity Flow</div>
+
+<div class="flow">
+
+  <!-- THEME -->
+  <div class="flow-node theme">
+    <div class="flow-card">
+      <span class="badge">Theme</span>
+      <h3>Theme</h3>
+      <p>A strategic domain the analyst is watching (e.g. "Russian Information Operations").</p>
+      <ul>
+        <li>name (unique)</li>
+        <li>description</li>
+        <li>AI-generated synopsis</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="flow-arrow">
+    <div class="rel-label">groups</div>
+    <div class="arrow-line"><div class="line"></div><div class="head"></div></div>
+    <div class="cardinality">1 → many</div>
+  </div>
+
+  <!-- SCENARIO -->
+  <div class="flow-node scenario">
+    <div class="flow-card">
+      <span class="badge">Scenario</span>
+      <h3>Scenario</h3>
+      <p>A plausible future outcome inside a Theme (e.g. "Escalation to kinetic sabotage").</p>
+      <ul>
+        <li>themeId FK</li>
+        <li>analystGroupId FK</li>
+        <li>name + description</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="flow-arrow">
+    <div class="rel-label">watches</div>
+    <div class="arrow-line"><div class="line"></div><div class="head"></div></div>
+    <div class="cardinality">1 → many<br><span style="font-size:0.58rem;color:#f59e0b">+ many-to-many<br>via map table</span></div>
+  </div>
+
+  <!-- INDICATOR -->
+  <div class="flow-node indicator">
+    <div class="flow-card">
+      <span class="badge">Indicator</span>
+      <h3>Indicator</h3>
+      <p>A measurable signal that tracks whether a Scenario is becoming more/less likely.</p>
+      <ul>
+        <li>currentValue / baseline</li>
+        <li>thresholds: watch / trigger</li>
+        <li>status: normal → watching → triggered</li>
+        <li>strength (1–9), decay</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="flow-arrow">
+    <div class="rel-label">evidenced by</div>
+    <div class="arrow-line"><div class="line"></div><div class="head"></div></div>
+    <div class="cardinality">1 → many</div>
+  </div>
+
+  <!-- SNIPPET -->
+  <div class="flow-node snippet">
+    <div class="flow-card">
+      <span class="badge">Snippet</span>
+      <h3>Snippet</h3>
+      <p>An analyst-captured piece of content (article, quote, web clip).</p>
+      <ul>
+        <li>content + quote</li>
+        <li>sourceUrl / pubDate</li>
+        <li>themeId FK (loose)</li>
+        <li>indicatorId FK (assigned)</li>
+        <li>aiSuggestedIndicatorId</li>
+        <li>analystNotes</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="flow-arrow">
+    <div class="rel-label">auto-ingested via</div>
+    <div class="arrow-line"><div class="line"></div><div class="head"></div></div>
+    <div class="cardinality">parallel path</div>
+  </div>
+
+  <!-- SIGNAL EVENT -->
+  <div class="flow-node signal">
+    <div class="flow-card">
+      <span class="badge">Signal Event</span>
+      <h3>Signal Event</h3>
+      <p>An auto-ingested GDELT event matched to an Indicator by the AI pipeline.</p>
+      <ul>
+        <li>indicatorId FK</li>
+        <li>score (impact weight)</li>
+        <li>status: pending / accepted / dismissed</li>
+        <li>dedupeKey</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     MANY-TO-MANY CALLOUT
+     ════════════════════════════════════════════════════════ -->
+<div class="callout">
+  <strong>Many-to-many: scenario_indicator_map</strong><br>
+  An Indicator has a <em>primary owner</em> Scenario via <code>indicators.scenario_id</code>,
+  but it can also be <em>shared</em> across multiple Scenarios through the
+  <code>scenario_indicator_map</code> join table (which carries a per-scenario <code>weight</code>).
+  This means one Indicator — say "Suspicious port intrusions in Baltic states" — can simultaneously
+  contribute evidence to both a "Cyber Escalation" and a "Hybrid Warfare" Scenario, each
+  with a different analyst-assigned weight.
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     COLUMN DETAIL CARDS
+     ════════════════════════════════════════════════════════ -->
+<div class="section-title">Column Reference</div>
+<div class="cards-grid">
+
+  <div class="detail-card">
+    <h4><span class="dot dot-blue"></span>themes</h4>
+    <table>
+      <tr><th>Column</th><th>Notes</th></tr>
+      <tr><td>id</td><td>uuid PK</td></tr>
+      <tr><td>name</td><td>unique text</td></tr>
+      <tr><td>description</td><td>optional text</td></tr>
+      <tr><td>synopsis</td><td>AI-generated summary</td></tr>
+      <tr><td>synopsis_version</td><td>incremented on regen</td></tr>
+    </table>
+  </div>
+
+  <div class="detail-card">
+    <h4><span class="dot dot-green"></span>scenarios</h4>
+    <table>
+      <tr><th>Column</th><th>Notes</th></tr>
+      <tr><td>id</td><td>uuid PK</td></tr>
+      <tr><td>theme_id</td><td><span class="fk">FK → themes</span> SET NULL on delete</td></tr>
+      <tr><td>analyst_group_id</td><td><span class="fk">FK → analyst_groups</span> CASCADE</td></tr>
+      <tr><td>name</td><td>text, not null</td></tr>
+      <tr><td>description</td><td>text, not null</td></tr>
+    </table>
+  </div>
+
+  <div class="detail-card">
+    <h4><span class="dot dot-yellow"></span>indicators</h4>
+    <table>
+      <tr><th>Column</th><th>Notes</th></tr>
+      <tr><td>id</td><td>uuid PK</td></tr>
+      <tr><td>scenario_id</td><td><span class="fk">FK → scenarios</span> SET NULL (primary owner)</td></tr>
+      <tr><td>category</td><td><span class="enum">infoops | political | infra | diplomatic</span></td></tr>
+      <tr><td>current_value</td><td>float, updated by signals</td></tr>
+      <tr><td>baseline_value</td><td>analyst's reference point</td></tr>
+      <tr><td>threshold_watch</td><td>default 1.5×</td></tr>
+      <tr><td>threshold_trigger</td><td>default 2.5×</td></tr>
+      <tr><td>status</td><td><span class="enum">normal | watching | triggered</span></td></tr>
+      <tr><td>strength</td><td>1–9 analyst weight</td></tr>
+      <tr><td>decay_behaviour</td><td><span class="enum">linear | step | none</span></td></tr>
+      <tr><td>time_weight</td><td><span class="enum">day | week | month | year</span></td></tr>
+    </table>
+  </div>
+
+  <div class="detail-card">
+    <h4><span class="dot dot-yellow"></span>scenario_indicator_map</h4>
+    <table>
+      <tr><th>Column</th><th>Notes</th></tr>
+      <tr><td>scenario_id</td><td><span class="fk">FK → scenarios</span> CASCADE</td></tr>
+      <tr><td>indicator_id</td><td><span class="fk">FK → indicators</span> CASCADE</td></tr>
+      <tr><td>weight</td><td>float — analyst importance score for this pairing</td></tr>
+    </table>
+    <p style="font-size:0.7rem;color:#475569;margin-top:0.5rem;">Composite PK: (scenario_id, indicator_id)</p>
+  </div>
+
+  <div class="detail-card">
+    <h4><span class="dot dot-purple"></span>snippets</h4>
+    <table>
+      <tr><th>Column</th><th>Notes</th></tr>
+      <tr><td>id</td><td>uuid PK</td></tr>
+      <tr><td>content</td><td>full captured text</td></tr>
+      <tr><td>quote</td><td>highlighted excerpt</td></tr>
+      <tr><td>source_url</td><td>origin URL</td></tr>
+      <tr><td>pub_date</td><td>article publication date</td></tr>
+      <tr><td>theme_id</td><td><span class="fk">FK → themes</span> SET NULL (loose tag)</td></tr>
+      <tr><td>indicator_id</td><td><span class="fk">FK → indicators</span> SET NULL (analyst assignment)</td></tr>
+      <tr><td>ai_suggested_indicator_id</td><td><span class="fk">FK → indicators</span> AI pre-fill</td></tr>
+      <tr><td>analyst_notes</td><td>free-text annotation</td></tr>
+      <tr><td>tags</td><td>text[] array</td></tr>
+    </table>
+  </div>
+
+  <div class="detail-card">
+    <h4><span class="dot dot-teal"></span>signal_events</h4>
+    <table>
+      <tr><th>Column</th><th>Notes</th></tr>
+      <tr><td>id</td><td>uuid PK</td></tr>
+      <tr><td>indicator_id</td><td><span class="fk">FK → indicators</span> NOT NULL</td></tr>
+      <tr><td>title</td><td>headline from GDELT</td></tr>
+      <tr><td>source_url</td><td>GDELT article URL</td></tr>
+      <tr><td>score</td><td>float — impact weight</td></tr>
+      <tr><td>status</td><td><span class="enum">pending | accepted | dismissed</span></td></tr>
+      <tr><td>dedupe_key</td><td>unique constraint prevents double-ingest</td></tr>
+    </table>
+  </div>
+
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     SNIPPET CAPTURE WORKFLOW
+     ════════════════════════════════════════════════════════ -->
+<div class="section-title">Snippet Capture Workflow</div>
+<div class="workflow">
+
+  <div class="step">
+    <h4>Analyst captures content</h4>
+    <p>Via the web-cut tool or manual entry. A <code>snippet</code> row is created with <code>content</code>, <code>quote</code>, <code>source_url</code>, and <code>pub_date</code>.</p>
+  </div>
+
+  <div class="step">
+    <h4>Tag to a Theme</h4>
+    <p>The analyst (or the capture UI) sets <code>theme_id</code>. This is a <em>loose</em> link — it just files the snippet under the right domain. The snippet is not yet contributing to any measurement.</p>
+  </div>
+
+  <div class="step">
+    <h4>AI suggests an Indicator</h4>
+    <p>The server-side AI pipeline reads the snippet and writes its best guess into <code>ai_suggested_indicator_id</code>. No value is changed yet.</p>
+  </div>
+
+  <div class="step">
+    <h4>Analyst accepts or overrides</h4>
+    <p>The analyst reviews the suggestion. They set <code>indicator_id</code> — either confirming the AI's pick or choosing a different one. They can also add <code>analyst_notes</code>.</p>
+  </div>
+
+  <div class="step">
+    <h4>Indicator value updates</h4>
+    <p>Once <code>indicator_id</code> is set, the assigned snippet counts as evidence. The indicator's <code>current_value</code> is recalculated, and its <code>status</code> may advance from <em>normal</em> → <em>watching</em> → <em>triggered</em>.</p>
+  </div>
+
+  <div class="step">
+    <h4>Scenario probability shifts</h4>
+    <p>Because the Indicator is linked to one or more Scenarios (via <code>scenario_id</code> or <code>scenario_indicator_map</code>), the underlying scenario's evidence weight changes — visible in the dashboard.</p>
+  </div>
+
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     KEY DISTINCTIONS
+     ════════════════════════════════════════════════════════ -->
+<div class="section-title">Key Distinctions</div>
+<div class="distinctions">
+
+  <div class="distinction-card">
+    <h4>Snippet vs Signal Event</h4>
+    <p><strong>Snippets</strong> are analyst-driven: a human chooses to capture something and decides which Indicator it belongs to.<br><br>
+    <strong>Signal Events</strong> are machine-driven: the GDELT pipeline ingests them automatically and the AI assigns a score. The analyst reviews them but doesn't need to go hunting.</p>
+  </div>
+
+  <div class="distinction-card">
+    <h4>theme_id on a Snippet (loose) vs indicator_id (precise)</h4>
+    <p><code>theme_id</code> on a snippet is a filing tag — it says "this article is broadly about Theme X." It has no numeric effect.<br><br>
+    <code>indicator_id</code> is the operational link — it says "this evidence moves the needle on Indicator Y," which in turn affects the parent Scenario's assessment.</p>
+  </div>
+
+  <div class="distinction-card">
+    <h4>indicators.scenario_id vs scenario_indicator_map</h4>
+    <p><code>indicators.scenario_id</code> is the <em>primary owner</em>: the Scenario this Indicator was originally created for.<br><br>
+    <code>scenario_indicator_map</code> enables <em>sharing</em>: the same Indicator can contribute weighted evidence to additional Scenarios without duplicating data.</p>
+  </div>
+
+  <div class="distinction-card">
+    <h4>Indicator status lifecycle</h4>
+    <p><strong>normal</strong> — current_value is below threshold_watch. Business as usual.<br><br>
+    <strong>watching</strong> — current_value ≥ threshold_watch (1.5× baseline). Pay attention.<br><br>
+    <strong>triggered</strong> — current_value ≥ threshold_trigger (2.5× baseline). Escalate to the Sentinel Assessment.</p>
+  </div>
+
+</div>
+
+<p style="font-size:0.7rem;color:#334155;text-align:center;padding-bottom:1rem;">
+  Generated from live schema in <code>shared/db/tables/</code> — Horizon Lite
+</p>
+
+</body>
+</html>
