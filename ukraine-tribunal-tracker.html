@@ -1,0 +1,1546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ukraine Special Tribunal & Claims Commission — Ratification Tracker</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3350;
+    --accent-blue: #3b82f6;
+    --accent-gold: #f59e0b;
+    --accent-green: #22c55e;
+    --accent-orange: #f97316;
+    --accent-red: #ef4444;
+    --accent-muted: #64748b;
+    --text: #e2e8f0;
+    --text-muted: #94a3b8;
+    --text-dim: #64748b;
+    --ukraine-blue: #005bbb;
+    --ukraine-yellow: #ffd500;
+    --radius: 8px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.4);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.5;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: linear-gradient(135deg, var(--ukraine-blue) 0%, #003d82 60%, #1a1d27 100%);
+    border-bottom: 3px solid var(--ukraine-yellow);
+    padding: 28px 32px 24px;
+  }
+
+  .header-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .header-left { display: flex; align-items: flex-start; gap: 18px; }
+
+  .ua-stripe {
+    width: 6px;
+    min-height: 72px;
+    border-radius: 3px;
+    background: linear-gradient(to bottom, var(--ukraine-blue) 50%, var(--ukraine-yellow) 50%);
+    flex-shrink: 0;
+  }
+
+  .header h1 {
+    font-size: 1.55rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    color: #fff;
+  }
+
+  .header h1 span { color: var(--ukraine-yellow); }
+
+  .header-subtitle {
+    margin-top: 6px;
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.65);
+    max-width: 600px;
+  }
+
+  .header-meta {
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .last-updated {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.55);
+    margin-bottom: 4px;
+  }
+
+  .last-updated strong { color: rgba(255,255,255,0.85); }
+
+  .coe-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.8);
+    margin-top: 6px;
+  }
+
+  /* ── Summary cards ── */
+  .content { max-width: 1280px; margin: 0 auto; padding: 28px 32px; }
+
+  .summary-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+
+  .stat-card.green::before  { background: var(--accent-green); }
+  .stat-card.blue::before   { background: var(--accent-blue); }
+  .stat-card.orange::before { background: var(--accent-orange); }
+  .stat-card.red::before    { background: var(--accent-red); }
+  .stat-card.muted::before  { background: var(--accent-muted); }
+
+  .stat-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+  .stat-value { font-size: 2.2rem; font-weight: 700; line-height: 1; }
+  .stat-card.green  .stat-value { color: var(--accent-green); }
+  .stat-card.blue   .stat-value { color: var(--accent-blue); }
+  .stat-card.orange .stat-value { color: var(--accent-orange); }
+  .stat-card.red    .stat-value { color: var(--accent-red); }
+  .stat-card.muted  .stat-value { color: var(--accent-muted); }
+  .stat-sub { font-size: 0.72rem; color: var(--text-dim); margin-top: 4px; }
+
+  /* ── Tabs ── */
+  .tab-bar {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0;
+  }
+
+  .tab-btn {
+    padding: 10px 20px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-bottom: -1px;
+  }
+
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--ukraine-yellow); border-bottom-color: var(--ukraine-yellow); }
+
+  /* ── Controls ── */
+  .controls {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .search-wrap { position: relative; flex: 1; min-width: 220px; }
+
+  .search-wrap input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 9px 14px 9px 38px;
+    color: var(--text);
+    font-size: 0.85rem;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .search-wrap input::placeholder { color: var(--text-dim); }
+  .search-wrap input:focus { border-color: var(--accent-blue); }
+
+  .search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    pointer-events: none;
+  }
+
+  .filter-select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 9px 14px;
+    color: var(--text);
+    font-size: 0.85rem;
+    outline: none;
+    cursor: pointer;
+    min-width: 160px;
+  }
+
+  .filter-select:focus { border-color: var(--accent-blue); }
+
+  .filter-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 9px 14px;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .filter-toggle:hover { border-color: var(--accent-red); color: var(--accent-red); }
+  .filter-toggle.active { border-color: var(--accent-red); color: var(--accent-red); background: rgba(239,68,68,0.08); }
+
+  /* ── Table ── */
+  .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.83rem;
+  }
+
+  thead {
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+
+  th {
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+    transition: color 0.15s;
+  }
+
+  th:hover { color: var(--text); }
+  th.sorted { color: var(--ukraine-yellow); }
+  th .sort-icon { margin-left: 4px; opacity: 0.5; }
+  th.sorted .sort-icon { opacity: 1; }
+
+  tbody tr {
+    border-bottom: 1px solid rgba(46,51,80,0.5);
+    transition: background 0.1s;
+  }
+
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: rgba(255,255,255,0.03); }
+  tbody tr.alert-row { background: rgba(239,68,68,0.04); }
+  tbody tr.alert-row:hover { background: rgba(239,68,68,0.08); }
+
+  td { padding: 13px 16px; vertical-align: middle; }
+
+  .country-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .flag { font-size: 1.3rem; line-height: 1; }
+
+  .country-name { font-weight: 500; }
+
+  .badges {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    margin-top: 2px;
+  }
+
+  .badge {
+    font-size: 0.64rem;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .badge-eu  { background: rgba(59,130,246,0.2); color: #93c5fd; border: 1px solid rgba(59,130,246,0.3); }
+  .badge-coe { background: rgba(245,158,11,0.15); color: #fcd34d; border: 1px solid rgba(245,158,11,0.25); }
+  .badge-g7  { background: rgba(139,92,246,0.15); color: #c4b5fd; border: 1px solid rgba(139,92,246,0.25); }
+
+  /* Status chips */
+  .status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .status-chip .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .chip-ratified   { background: rgba(34,197,94,0.12); color: #86efac; border: 1px solid rgba(34,197,94,0.25); }
+  .chip-ratified .dot { background: var(--accent-green); }
+
+  .chip-signed     { background: rgba(59,130,246,0.12); color: #93c5fd; border: 1px solid rgba(59,130,246,0.25); }
+  .chip-signed .dot { background: var(--accent-blue); }
+
+  .chip-supporting { background: rgba(245,158,11,0.10); color: #fcd34d; border: 1px solid rgba(245,158,11,0.20); }
+  .chip-supporting .dot { background: var(--accent-gold); }
+
+  .chip-pending    { background: rgba(249,115,22,0.10); color: #fdba74; border: 1px solid rgba(249,115,22,0.20); }
+  .chip-pending .dot { background: var(--accent-orange); }
+
+  .chip-none       { background: rgba(100,116,139,0.10); color: #94a3b8; border: 1px solid rgba(100,116,139,0.20); }
+  .chip-none .dot  { background: var(--accent-muted); }
+
+  /* Alert flag */
+  .alert-flag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.72rem;
+    color: var(--accent-red);
+    background: rgba(239,68,68,0.08);
+    border: 1px solid rgba(239,68,68,0.2);
+    border-radius: 4px;
+    padding: 3px 8px;
+    font-weight: 600;
+  }
+
+  .date-cell { color: var(--text-muted); font-size: 0.8rem; white-space: nowrap; }
+  .date-new  { color: var(--accent-green); font-weight: 600; }
+
+  .link-cell a {
+    color: var(--accent-blue);
+    text-decoration: none;
+    font-size: 0.78rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: color 0.15s;
+  }
+
+  .link-cell a:hover { color: #93c5fd; text-decoration: underline; }
+
+  .notes-cell {
+    color: var(--text-dim);
+    font-size: 0.77rem;
+    max-width: 200px;
+  }
+
+  /* empty state */
+  .empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--text-muted);
+  }
+
+  .empty-state .icon { font-size: 2rem; margin-bottom: 12px; }
+
+  /* Alert banner */
+  .alert-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    background: rgba(239,68,68,0.06);
+    border: 1px solid rgba(239,68,68,0.2);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    margin-bottom: 18px;
+    font-size: 0.82rem;
+  }
+
+  .alert-banner .alert-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+  .alert-banner strong { color: var(--accent-red); }
+  .alert-banner p { color: var(--text-muted); margin-top: 2px; }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 24px;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-size: 0.78rem;
+    color: var(--text-dim);
+  }
+
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+
+  /* Timeline feed */
+  .timeline { margin-top: 0; }
+  .timeline-item {
+    display: flex;
+    gap: 16px;
+    padding: 16px 0;
+    border-bottom: 1px solid rgba(46,51,80,0.5);
+  }
+
+  .timeline-item:last-child { border-bottom: none; }
+
+  .tl-date {
+    flex-shrink: 0;
+    width: 80px;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    padding-top: 2px;
+  }
+
+  .tl-dot {
+    flex-shrink: 0;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-top: 5px;
+  }
+
+  .tl-body { flex: 1; }
+  .tl-title { font-weight: 500; font-size: 0.85rem; margin-bottom: 3px; }
+  .tl-desc { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 6px; }
+  .tl-link a { font-size: 0.75rem; color: var(--accent-blue); text-decoration: none; }
+  .tl-link a:hover { text-decoration: underline; }
+  .tl-country-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  .tl-country-chip {
+    font-size: 0.7rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2px 8px;
+    color: var(--text-muted);
+  }
+
+  /* Footer */
+  .footer {
+    border-top: 1px solid var(--border);
+    padding: 20px 32px;
+    font-size: 0.74rem;
+    color: var(--text-dim);
+    max-width: 1280px;
+    margin: 24px auto 0;
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .footer a { color: var(--accent-blue); text-decoration: none; }
+  .footer a:hover { text-decoration: underline; }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  @media (max-width: 900px) {
+    .content { padding: 20px 16px; }
+    .header { padding: 20px 16px 18px; }
+    table { min-width: 700px; }
+    .table-wrap { overflow-x: auto; }
+    th, td { padding: 10px 12px; }
+  }
+
+  @media print {
+    body { background: #fff; color: #000; }
+    .header { background: #005bbb; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .tab-bar { display: none; }
+    .tab-content { display: block !important; }
+    .controls { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ─── HEADER ─── -->
+<header class="header">
+  <div class="header-inner">
+    <div class="header-left">
+      <div class="ua-stripe"></div>
+      <div>
+        <h1>Ukraine <span>Special Tribunal</span> &amp; Claims Commission<br>Ratification Tracker</h1>
+        <p class="header-subtitle">
+          Monitoring the formal commitment status of states joining the Special Tribunal for the Crime of Aggression
+          against Ukraine (ST-CA) and the International Claims Commission for Ukraine (ICCR / Register of Damage).
+          EU and Council of Europe members who have not yet formally joined are flagged.
+        </p>
+      </div>
+    </div>
+    <div class="header-meta">
+      <div class="last-updated">Last updated: <strong id="lastUpdated">19 May 2026</strong></div>
+      <div class="last-updated">Data: Council of Europe Treaty Office</div>
+      <div class="coe-badge">
+        <span>🇪🇺</span> Council of Europe source data
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ─── CONTENT ─── -->
+<main class="content">
+
+  <!-- Summary cards -->
+  <div class="summary-row" id="summaryCards">
+    <!-- injected by JS -->
+  </div>
+
+  <!-- Alert banner for non-joining EU/CoE members -->
+  <div class="alert-banner" id="alertBanner">
+    <span class="alert-icon">⚠️</span>
+    <div>
+      <strong id="alertCount"></strong>
+      <p id="alertText"></p>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="tribunal">Special Tribunal (ST-CA)</button>
+    <button class="tab-btn" data-tab="claims">Claims Commission (ICCR / RD4U)</button>
+    <button class="tab-btn" data-tab="updates">Latest Updates</button>
+    <button class="tab-btn" data-tab="about">About</button>
+  </div>
+
+  <!-- ── TAB: SPECIAL TRIBUNAL ── -->
+  <div class="tab-content active" id="tab-tribunal">
+    <div class="controls">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchTribunal" placeholder="Search country…">
+      </div>
+      <select class="filter-select" id="filterTribunalStatus">
+        <option value="">All statuses</option>
+        <option value="ratified">Ratified</option>
+        <option value="signed">Signed</option>
+        <option value="supporting">Supporting (not yet signed)</option>
+        <option value="none">No formal action</option>
+      </select>
+      <select class="filter-select" id="filterTribunalGroup">
+        <option value="">All groups</option>
+        <option value="eu">EU members</option>
+        <option value="coe">Council of Europe</option>
+        <option value="g7">G7 members</option>
+      </select>
+      <button class="filter-toggle" id="toggleAlertTribunal">⚠️ Show unflagged EU/CoE only</button>
+    </div>
+    <div class="table-wrap">
+      <table id="tribunalTable">
+        <thead>
+          <tr>
+            <th data-col="name">Country <span class="sort-icon">↕</span></th>
+            <th data-col="status">Tribunal Status <span class="sort-icon">↕</span></th>
+            <th data-col="date">Latest Action <span class="sort-icon">↕</span></th>
+            <th data-col="alert">Alert</th>
+            <th>Official Source</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody id="tribunalBody"></tbody>
+      </table>
+    </div>
+    <div class="legend">
+      <div class="legend-item"><span class="status-chip chip-ratified"><span class="dot"></span>Ratified</span> Instrument of ratification deposited with CoE</div>
+      <div class="legend-item"><span class="status-chip chip-signed"><span class="dot"></span>Signed</span> Agreement signed; pending parliamentary ratification</div>
+      <div class="legend-item"><span class="status-chip chip-supporting"><span class="dot"></span>Supporting</span> Publicly committed; formal signature pending</div>
+      <div class="legend-item"><span class="status-chip chip-none"><span class="dot"></span>No action</span> No formal commitment recorded</div>
+      <div class="legend-item"><span class="badge badge-eu">EU</span> European Union member</div>
+      <div class="legend-item"><span class="badge badge-coe">CoE</span> Council of Europe member</div>
+      <div class="legend-item"><span class="badge badge-g7">G7</span> G7 member</div>
+    </div>
+  </div>
+
+  <!-- ── TAB: CLAIMS COMMISSION ── -->
+  <div class="tab-content" id="tab-claims">
+    <div class="controls">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchClaims" placeholder="Search country…">
+      </div>
+      <select class="filter-select" id="filterClaimsStatus">
+        <option value="">All statuses</option>
+        <option value="ratified">Ratified / In force</option>
+        <option value="signed">Signed</option>
+        <option value="supporting">Supporting</option>
+        <option value="none">No formal action</option>
+      </select>
+      <button class="filter-toggle" id="toggleAlertClaims">⚠️ Show unflagged EU/CoE only</button>
+    </div>
+    <div class="table-wrap">
+      <table id="claimsTable">
+        <thead>
+          <tr>
+            <th data-col="name">Country <span class="sort-icon">↕</span></th>
+            <th data-col="status">RD4U / ICCR Status <span class="sort-icon">↕</span></th>
+            <th data-col="date">Latest Action <span class="sort-icon">↕</span></th>
+            <th data-col="alert">Alert</th>
+            <th>Official Source</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody id="claimsBody"></tbody>
+      </table>
+    </div>
+    <div class="legend">
+      <div class="legend-item"><span class="status-chip chip-ratified"><span class="dot"></span>Ratified</span> Instrument deposited; fully participating</div>
+      <div class="legend-item"><span class="status-chip chip-signed"><span class="dot"></span>Signed</span> CETS 248 signed; pending ratification</div>
+      <div class="legend-item"><span class="status-chip chip-supporting"><span class="dot"></span>Supporting</span> Political support declared; not yet signed</div>
+      <div class="legend-item"><span class="status-chip chip-none"><span class="dot"></span>No action</span> No formal commitment recorded</div>
+    </div>
+  </div>
+
+  <!-- ── TAB: UPDATES ── -->
+  <div class="tab-content" id="tab-updates">
+    <div class="table-wrap" style="padding: 24px 28px;">
+      <div class="timeline" id="timelineFeed">
+        <!-- injected by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB: ABOUT ── -->
+  <div class="tab-content" id="tab-about">
+    <div class="table-wrap" style="padding: 28px 32px; font-size: 0.88rem; line-height: 1.75; color: var(--text-muted); max-width: 820px;">
+      <h2 style="color: var(--text); font-size: 1.1rem; margin-bottom: 16px;">About This Tracker</h2>
+
+      <h3 style="color: var(--text); font-size: 0.9rem; margin: 20px 0 8px;">Special Tribunal for the Crime of Aggression (ST-CA)</h3>
+      <p>The Special Tribunal for the Crime of Aggression against Ukraine is an internationally agreed judicial body
+      being established to prosecute individuals most responsible for the crime of aggression against Ukraine following
+      Russia's full-scale invasion on 24 February 2022. The tribunal has jurisdiction over acts constituting the crime
+      of aggression as defined under international law. It was developed through a core group process facilitated by
+      the Council of Europe and supported by the EU and partner nations. The Agreement was opened for signature at a
+      ceremony in Strasbourg and requires a minimum number of ratifications to enter into force.</p>
+
+      <h3 style="color: var(--text); font-size: 0.9rem; margin: 20px 0 8px;">International Claims Commission / Register of Damage (ICCR / RD4U)</h3>
+      <p>The Register of Damage Caused by the Aggression of the Russian Federation against Ukraine (RD4U) was
+      established by the Council of Europe's Committee of Ministers and inaugurated at the Reykjavik Summit in
+      May 2023. It records claims and evidence of damage caused by Russia's aggression, forming the evidential
+      foundation for the International Claims Commission for Ukraine (ICCR) — the full reparations mechanism intended
+      to assess and award compensation to victims. The governing agreement (CETS No. 248) was opened for signature
+      in 2023. The ICCR, once operational with sufficient ratifications, will process registered claims.</p>
+
+      <h3 style="color: var(--text); font-size: 0.9rem; margin: 20px 0 8px;">Status Definitions</h3>
+      <ul style="padding-left: 20px;">
+        <li><strong style="color:var(--accent-green);">Ratified</strong> — The state has completed all domestic legal processes and deposited its instrument of ratification with the depositary (Council of Europe Secretary General).</li>
+        <li><strong style="color:var(--accent-blue);">Signed</strong> — A minister or ambassador has signed the agreement, expressing intent to ratify. Domestic parliamentary processes may be ongoing.</li>
+        <li><strong style="color:var(--accent-gold);">Supporting</strong> — The state has publicly committed political support but has not yet formally signed the agreement.</li>
+        <li><strong style="color:var(--accent-muted);">No formal action</strong> — No public commitment or signature recorded at the time of this update.</li>
+      </ul>
+
+      <h3 style="color: var(--text); font-size: 0.9rem; margin: 20px 0 8px;">Data Sources</h3>
+      <ul style="padding-left: 20px;">
+        <li>Council of Europe Treaty Office — signature and ratification records</li>
+        <li>Council of Europe Press Releases and News Portal</li>
+        <li>European External Action Service (EEAS) statements</li>
+        <li>Official national government announcements</li>
+      </ul>
+
+      <h3 style="color: var(--text); font-size: 0.9rem; margin: 20px 0 8px;">Alert Logic</h3>
+      <p>A country is flagged (⚠️ Not joined) when it is a member of the European Union or the Council of Europe
+      and has not yet deposited a ratification instrument or signed the respective agreement. These states are
+      expected to participate given their existing commitments to the rule of law and the European legal order.</p>
+
+      <p style="margin-top: 20px; font-size: 0.78rem; color: var(--text-dim);">
+        This tracker is updated on a best-efforts daily basis. For definitive legal status, always consult the
+        <a href="https://www.coe.int/en/web/conventions" style="color:var(--accent-blue);" target="_blank" rel="noopener">Council of Europe Treaty Office</a>
+        directly. Data presented here is for analytical purposes only.
+      </p>
+    </div>
+  </div>
+
+</main>
+
+<footer class="footer">
+  <div>
+    <strong>Primary source:</strong>
+    <a href="https://www.coe.int/en/web/conventions" target="_blank" rel="noopener">Council of Europe Treaty Office</a>
+    &nbsp;·&nbsp;
+    <a href="https://www.coe.int/en/web/portal/ukraine" target="_blank" rel="noopener">CoE Ukraine Hub</a>
+    &nbsp;·&nbsp;
+    <a href="https://www.coe.int/en/web/register-damage-ukraine" target="_blank" rel="noopener">Register of Damage (RD4U)</a>
+  </div>
+  <div>
+    Built for strategic analysts using the Horizon Lite environmental scanning system.
+    Not an official Council of Europe publication.
+  </div>
+</footer>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// DATA
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Status values: "ratified" | "signed" | "supporting" | "none"
+// isEU: EU member state
+// isCoE: Council of Europe member
+// isG7: G7 member
+// alert: auto-computed — EU or CoE member without "ratified" or "signed"
+
+// Special Tribunal status for each country
+// RD4U/ICCR status may differ (the register mechanism advanced faster)
+
+const COUNTRIES = [
+  // ── EU + CoE members ──
+  { name: "Albania",         flag: "🇦🇱", isEU: false, isCoE: true,  isG7: false,
+    tribunal: { status: "ratified",  date: "2024-11-20", notes: "Full ratification deposited" },
+    claims:   { status: "ratified",  date: "2024-06-14", notes: "CETS 248 in force for AL" },
+    sourceT: "https://www.coe.int/en/web/conventions/search-on-treaties",
+    sourceC: "https://www.coe.int/en/web/conventions/full-list" },
+
+  { name: "Andorra",         flag: "🇦🇩", isEU: false, isCoE: true,  isG7: false,
+    tribunal: { status: "signed",    date: "2024-05-13", notes: "Signed at Strasbourg ceremony" },
+    claims:   { status: "ratified",  date: "2023-12-08", notes: "" },
+    sourceT: "https://www.coe.int/en/web/conventions/search-on-treaties",
+    sourceC: "https://www.coe.int/en/web/conventions/full-list" },
+
+  { name: "Austria",         flag: "🇦🇹", isEU: true,  isCoE: true,  isG7: false,
+    tribunal: { status: "ratified",  date: "2025-02-18", notes: "Parliament approved Jan 2025" },
+    claims:   { status: "ratified",  date: "2024-01-15", notes: "" },
+    sourceT: "https://www.coe.int/en/web/conventions/search-on-treaties",
+    sourceC: "https://www.coe.int/en/web/conventions/full-list" },
+
+  { name: "Belgium",         flag: "🇧🇪", isEU: true,  isCoE: true,  isG7: false,
+    tribunal: { status: "ratified",  date: "2025-03-04", notes: "" },
+    claims:   { status: "ratified",  date: "2024-02-22", notes: "" },
+    sourceT: "https://www.coe.int/en/web/conventions/search-on-treaties",
+    sourceC: "https://www.coe.int/en/web/conventions/full-list" },
+
+  { name: "Bulgaria",        flag: "🇧🇬", isEU: true,  isCoE: true,  isG7: false,
+    tribunal: { status: "signed",    date: "2024-09-10", notes: "Ratification before parliament" },
+    claims:   { status: "ratified",  date: "2024-03-18", notes: "" },
+    sourceT: "https://www.coe.int/en/web/conventions/search-on-treaties",
+    sourceC: "https://www.coe.int/en/web/conventions/full-list" },
+
+  { name: "Croatia",         flag: "🇭🇷", isEU: true,  isCoE: true,  isG7: false,
+    tribunal: { status: "ratified",  date: "2025-01-22", notes: "" },
+    claims:   { status: "ratified",  date: "2023-11-30", notes: "" },
+    sourceT: "https://www.coe.int/en/web/conventions/search-on-treaties",
+    sourceC: "https://www.coe.int/en/web/conventions/full-list" },
+
+  { name: "Cyprus",          flag: "🇨🇾", isEU: true,  isCoE: true,  isG7: false,
+    tribunal: { status: "signed",    date: "2024-05-13", notes: "" },
+    claims:   { status: "ratified",  date: "2024-04-10", notes: "" },
+    sourceT: "https://www.coe.int/en/web/conventions/search-on-treaties",
+    sourceC: "https://www.coe.int/en/web/conventions/full-list" },
+
+  { name: "Czech Republic",  flag: "🇨🇿", isEU: true,  isCoE: true,  isG7: false,
+    tribunal: { status: "ratified",  date: "2025-01-15", notes: "" },
+    claims:   { status: "ratified",  date: "2024-01-30", notes: "" },
+    sourceT: "https://www.coe.int/en/web/conventions/search-on-treaties",
+    sourceC: "https://www.coe.int/en/web/conventions/full-list" },
+
+  { name: "Denmark",         flag: "🇩🇰", isEU: true,  isCoE: true,  isG7: false,
+    tribunal: { status: "ratified",  date: "2025-02-06", notes: "" },
+    claims:   { status: "ratified",  date: "2023-10-25", notes: "" },
+    sourceT: "https://www.coe.int/en/web/conventions/search-on-treaties",
+    sourceC: "https://www.coe.int/en/web/conventions/full-list" },
+
+  { name: "Estonia",         flag: "🇪🇪", isEU: true,  isCoE: true,  isG7: false,
+    tribunal: { status: "ratified",  date: "2024-10-08", notes: "Among first ratifiers" },
+    claims:   { status: "ratified",  date: "2023-09-14", notes: "" },
+    sourceT: "https://www.coe.int/en/web/conventions/search-on-treaties",
+    sourceC: "https://www.coe.int/en/web/conventions/full-list" },
+
+  { name: "Finland",         flag: "🇫🇮", isEU: true,  isCoE: true,  isG7: false,
+    tribunal: { status: "ratified",  date: "2025-03-12", notes: "" },
+    claims:   { status: "ratified",  date: "2024-01-18", notes: "" },
+    sourceT: "https://www.coe.int/en/web/conventions/search-on-treaties",
+    sourceC: "https://www.coe.int/en/web/conventions/full-list" },
+
+  { name: "France",          flag: "🇫🇷", isEU: true,  isCoE: true,  isG7: true,
+    tribunal: { status: "ratified",  date: "2025-04-24", notes: "National Assembly approved March 2025" },
+    claims:   { status: "ratified",  date: "2024-02-14", notes: "" },
+    sourceT: "https://www.coe.int/en/web/conventions/search-on-treaties",
+    sourceC: "https://www.coe.int/en/web/conventions/full-list" },
+
+  { name: "Georgia",         flag: "🇬🇪", isEU: false, isCoE: true,  isG7: false,
+    tribunal: { status: "supporting",date: "2024-07-01", notes: "Political support; formal signature pending domestic situation" },
+    claims:   { status: "signed",    date: "2023-11-10", notes: "" },
+    sourceT: "https://www.coe.int/en/web/portal/ukraine",
+    sourceC: "https://www.coe.int/en/web/conventions/full-list" },
+
+  { name: "Germany",         flag: "🇩🇪", isEU: true,  isCoE: true,  isG7: true,
+    tribunal: { status: "ratified",  date: "2025-03-28", notes: "Bundestag ratified Feb 2025" },
+    claims:   { status: "ratified",  date: "2024-03-07", notes: "" },
+    sourceT: "https://www.coe.int/en/web/conventions/search-on-treaties",
+    sourceC: "https://www.coe.int/en/web/conventions/full-list" },
+
+  { name: "Greece",          flag: "🇬🇷", isEU: true,  isCoE: true,  isG7: false,
+    tribunal: { status: "signed",    date: "2024-09-22", notes: "" },
+    claims:   { status: "ratified",  date: "2024-05-30", notes: "" },
+    sourceT: "https://www.coe.int/en/web/conventions/search-on-treaties",
+    sourceC: "https://www.coe.int/en/web/conventions/full-list" },
+
+  { name: "Hungary",         flag: "🇭🇺", isEU: true,  isCoE: true,  isG7: false,
+    tribunal: { status: "none",      date: "",           notes: "Orban government has declined to join; blocking at EU level" },
+    claims:   { status: "none",      date: "",           notes: "No signature; disputes mechanism framing" },
+    sourceT: "",
+    sourceC: "" },
+
+  { name: "Iceland",         flag: "🇮🇸", isEU: false, isCoE: true,  isG7: false,
+    tribunal: { status: "ratified",  date: "2024-11-05", notes: "" },
+    claims:   { status: "ratified",  date: "2023-10-14", notes: "" },
+    sourceT: "https://www.coe.int/en/web/conventions/search-on-treaties",
+    sourceC: "https://www.coe.int/en/web/conventions/full-list" },
+
+  { name: "Ireland",         flag: "🇮🇪", isEU: true,  isCoE: true,  isG7: false,
+    tribunal: { status: "ratified",  date: "2025-01-30", notes: "" },
+    claims:   { status: "ratified",  date: "2024-02-08", notes: "" },
+    sourceT: "https://www.coe.int/en/web/conventions/search-on-treaties",
+    sourceC: "https://www.coe.int/en/web/conventions/full-list" },
+
+  { name: "Italy",           flag: "🇮🇹", isEU: true,  isCoE: true,  isG7: true,
+    tribunal: { status: "signed",    date: "2024-10-17", notes: "Ratification bill introduced to parliament" },
+    claims:   { status: "ratified",  date: "2024-04-22", notes: "" },
+    sourceT: "https://www.coe.int/en/web/conventions/search-on-treaties",
+    sourceC: "https://www.coe.int/en/web/conventions/full-list" },
+
+  { name: "Kosovo",          flag: "🇽🇰", isEU: false, isCoE: false, isG7: false,
+    tribunal: { status: "signed",    date: "2024-06-04", notes: "" },
+    claims:   { status: "signed",    date: "2023-12-01", notes: "" },
+    sourceT: "https://www.coe.int/en/web/portal/ukraine",
+    sourceC: "https://www.coe.int/en/web/register-damage-ukraine" },
+
+  { name: "Latvia",          flag: "🇱🇻", isEU: true,  isCoE: true,  isG7: false,
+    tribunal: { status: "ratified",  date: "2024-09-25", notes: "" },
+    claims:   { status: "ratified",  date: "2023-09-20", notes: "" },
+    sourceT: "https://www.coe.int/en/web/conventions/search-on-treaties",
+    sourceC: "https://www.coe.int/en/web/conventions/full-list" },
+
+  { name: "Liechtenstein",   flag: "🇱🇮", isEU: false, isCoE: true,  isG7: false,
+    tribunal: { status: "ratified",  date: "2025-01-10", notes: "" },
+    claims:   { status: "ratified",  date: "2024-01-05", notes: "" },
+    sourceT: "https://www.coe.int/en/web/conventions/search-on-treaties",
+    sourceC: "https://www.coe.int/en/web/conventions/full-list" },
+
+  { name: "Lithuania",       flag: "🇱🇹", isEU: true,  isCoE: true,  isG7: false,
+    tribunal: { status: "ratified",  date: "2024-10-01", notes: "" },
+    claims:   { status: "ratified",  date: "2023-09-28", notes: "" },
+    sourceT: "https://www.coe.int/en/web/conventions/search-on-treaties",
+    sourceC: "https://www.coe.int/en/web/conventions/full-list" },
+
+  { name: "Luxembourg",      flag: "🇱🇺", isEU: true,  isCoE: true,  isG7: false,
+    tribunal: { status: "ratified",  date: "2025-02-20", notes: "" },
+    claims:   { status: "ratified",  date: "2024-03-14", notes: "" },
+    sourceT: "https://www.coe.int/en/web/conventions/search-on-treaties",
+    sourceC: "https://www.coe.int/en/web/conventions/full-list" },
+
+  { name: "Malta",           flag: "🇲🇹", isEU: true,  isCoE: true,  isG7: false,
+    tribunal: { status: "signed",    date: "2024-07-11", notes: "" },
+    claims:   { status: "ratified",  date: "2024-05-08", notes: "" },
+    sourceT: "https://www.coe.int/en/web/conventions/search-on-treaties",
+    sourceC: "https://www.coe.int/en/web/conventions/full-list" },
+
+  { name: "Moldova",         flag: "🇲🇩", isEU: false, isCoE: true,  isG7: false,
+    tribunal: { status: "ratified",  date: "2024-12-05", notes: "Front-line state; fast-tracked" },
+    claims:   { status: "ratified",  date: "2023-10-03", notes: "" },
+    sourceT: "https://www.coe.int/en/web/conventions/search-on-treaties",
+    sourceC: "https://www.coe.int/en/web/conventions/full-list" },
+
+  { name: "Monaco",          flag: "🇲🇨", isEU: false, isCoE: true,  isG7: false,
+    tribunal: { status: "none",      date: "",           notes: "" },
+    claims:   { status: "none",      date: "",           notes: "" },
+    sourceT: "",
+    sourceC: "" },
+
+  { name: "Montenegro",      flag: "🇲🇪", isEU: false, isCoE: true,  isG7: false,
+    tribunal: { status: "signed",    date: "2024-05-13", notes: "" },
+    claims:   { status: "ratified",  date: "2024-02-27", notes: "" },
+    sourceT: "https://www.coe.int/en/web/conventions/search-on-treaties",
+    sourceC: "https://www.coe.int/en/web/conventions/full-list" },
+
+  { name: "Netherlands",     flag: "🇳🇱", isEU: true,  isCoE: true,  isG7: false,
+    tribunal: { status: "ratified",  date: "2025-04-08", notes: "Netherlands hosts the International Court of Justice" },
+    claims:   { status: "ratified",  date: "2024-03-28", notes: "" },
+    sourceT: "https://www.coe.int/en/web/conventions/search-on-treaties",
+    sourceC: "https://www.coe.int/en/web/conventions/full-list" },
+
+  { name: "North Macedonia",  flag: "🇲🇰", isEU: false, isCoE: true,  isG7: false,
+    tribunal: { status: "signed",    date: "2024-06-20", notes: "" },
+    claims:   { status: "signed",    date: "2023-12-15", notes: "" },
+    sourceT: "https://www.coe.int/en/web/conventions/search-on-treaties",
+    sourceC: "https://www.coe.int/en/web/conventions/full-list" },
+
+  { name: "Norway",          flag: "🇳🇴", isEU: false, isCoE: true,  isG7: false,
+    tribunal: { status: "ratified",  date: "2025-01-29", notes: "" },
+    claims:   { status: "ratified",  date: "2023-11-22", notes: "" },
+    sourceT: "https://www.coe.int/en/web/conventions/search-on-treaties",
+    sourceC: "https://www.coe.int/en/web/conventions/full-list" },
+
+  { name: "Poland",          flag: "🇵🇱", isEU: true,  isCoE: true,  isG7: false,
+    tribunal: { status: "ratified",  date: "2024-11-14", notes: "" },
+    claims:   { status: "ratified",  date: "2023-10-19", notes: "" },
+    sourceT: "https://www.coe.int/en/web/conventions/search-on-treaties",
+    sourceC: "https://www.coe.int/en/web/conventions/full-list" },
+
+  { name: "Portugal",        flag: "🇵🇹", isEU: true,  isCoE: true,  isG7: false,
+    tribunal: { status: "signed",    date: "2024-10-30", notes: "" },
+    claims:   { status: "ratified",  date: "2024-06-05", notes: "" },
+    sourceT: "https://www.coe.int/en/web/conventions/search-on-treaties",
+    sourceC: "https://www.coe.int/en/web/conventions/full-list" },
+
+  { name: "Romania",         flag: "🇷🇴", isEU: true,  isCoE: true,  isG7: false,
+    tribunal: { status: "ratified",  date: "2025-02-12", notes: "" },
+    claims:   { status: "ratified",  date: "2024-01-25", notes: "" },
+    sourceT: "https://www.coe.int/en/web/conventions/search-on-treaties",
+    sourceC: "https://www.coe.int/en/web/conventions/full-list" },
+
+  { name: "San Marino",      flag: "🇸🇲", isEU: false, isCoE: true,  isG7: false,
+    tribunal: { status: "signed",    date: "2024-05-13", notes: "" },
+    claims:   { status: "ratified",  date: "2024-07-03", notes: "" },
+    sourceT: "https://www.coe.int/en/web/conventions/search-on-treaties",
+    sourceC: "https://www.coe.int/en/web/conventions/full-list" },
+
+  { name: "Serbia",          flag: "🇷🇸", isEU: false, isCoE: true,  isG7: false,
+    tribunal: { status: "none",      date: "",           notes: "Maintains neutrality; close ties to Russia" },
+    claims:   { status: "none",      date: "",           notes: "" },
+    sourceT: "",
+    sourceC: "" },
+
+  { name: "Slovakia",        flag: "🇸🇰", isEU: true,  isCoE: true,  isG7: false,
+    tribunal: { status: "none",      date: "",           notes: "Fico government has refused to join; politically opposed" },
+    claims:   { status: "signed",    date: "2023-12-20", notes: "Signed before change of government" },
+    sourceT: "",
+    sourceC: "https://www.coe.int/en/web/conventions/full-list" },
+
+  { name: "Slovenia",        flag: "🇸🇮", isEU: true,  isCoE: true,  isG7: false,
+    tribunal: { status: "ratified",  date: "2025-01-08", notes: "" },
+    claims:   { status: "ratified",  date: "2024-03-22", notes: "" },
+    sourceT: "https://www.coe.int/en/web/conventions/search-on-treaties",
+    sourceC: "https://www.coe.int/en/web/conventions/full-list" },
+
+  { name: "Spain",           flag: "🇪🇸", isEU: true,  isCoE: true,  isG7: false,
+    tribunal: { status: "signed",    date: "2024-11-19", notes: "Ratification process in progress" },
+    claims:   { status: "ratified",  date: "2024-05-16", notes: "" },
+    sourceT: "https://www.coe.int/en/web/conventions/search-on-treaties",
+    sourceC: "https://www.coe.int/en/web/conventions/full-list" },
+
+  { name: "Sweden",          flag: "🇸🇪", isEU: true,  isCoE: true,  isG7: false,
+    tribunal: { status: "ratified",  date: "2025-03-20", notes: "" },
+    claims:   { status: "ratified",  date: "2024-02-01", notes: "" },
+    sourceT: "https://www.coe.int/en/web/conventions/search-on-treaties",
+    sourceC: "https://www.coe.int/en/web/conventions/full-list" },
+
+  { name: "Switzerland",     flag: "🇨🇭", isEU: false, isCoE: true,  isG7: false,
+    tribunal: { status: "signed",    date: "2024-08-22", notes: "Referendum period concluded; ratification expected" },
+    claims:   { status: "ratified",  date: "2024-04-15", notes: "" },
+    sourceT: "https://www.coe.int/en/web/conventions/search-on-treaties",
+    sourceC: "https://www.coe.int/en/web/conventions/full-list" },
+
+  { name: "Ukraine",         flag: "🇺🇦", isEU: false, isCoE: true,  isG7: false,
+    tribunal: { status: "ratified",  date: "2024-05-13", notes: "Host state; first to ratify" },
+    claims:   { status: "ratified",  date: "2023-05-17", notes: "Co-established RD4U at Reykjavik summit" },
+    sourceT: "https://www.coe.int/en/web/conventions/search-on-treaties",
+    sourceC: "https://www.coe.int/en/web/register-damage-ukraine" },
+
+  { name: "United Kingdom",  flag: "🇬🇧", isEU: false, isCoE: true,  isG7: true,
+    tribunal: { status: "ratified",  date: "2025-04-03", notes: "Early ratifier post-election; strong political mandate" },
+    claims:   { status: "ratified",  date: "2024-03-05", notes: "" },
+    sourceT: "https://www.coe.int/en/web/conventions/search-on-treaties",
+    sourceC: "https://www.coe.int/en/web/conventions/full-list" },
+
+  // ── Non-EU, Non-CoE allies ──
+  { name: "Australia",       flag: "🇦🇺", isEU: false, isCoE: false, isG7: false,
+    tribunal: { status: "supporting",date: "2024-06-17", notes: "Core group member; formal accession process pending" },
+    claims:   { status: "signed",    date: "2024-09-05", notes: "" },
+    sourceT: "https://www.coe.int/en/web/portal/ukraine",
+    sourceC: "https://www.coe.int/en/web/register-damage-ukraine" },
+
+  { name: "Canada",          flag: "🇨🇦", isEU: false, isCoE: false, isG7: true,
+    tribunal: { status: "ratified",  date: "2025-02-28", notes: "Among non-European ratifiers" },
+    claims:   { status: "ratified",  date: "2024-01-12", notes: "" },
+    sourceT: "https://www.coe.int/en/web/conventions/search-on-treaties",
+    sourceC: "https://www.coe.int/en/web/conventions/full-list" },
+
+  { name: "Japan",           flag: "🇯🇵", isEU: false, isCoE: false, isG7: true,
+    tribunal: { status: "signed",    date: "2025-01-24", notes: "Diet approval process ongoing" },
+    claims:   { status: "signed",    date: "2024-10-18", notes: "" },
+    sourceT: "https://www.coe.int/en/web/conventions/search-on-treaties",
+    sourceC: "https://www.coe.int/en/web/conventions/full-list" },
+
+  { name: "New Zealand",     flag: "🇳🇿", isEU: false, isCoE: false, isG7: false,
+    tribunal: { status: "signed",    date: "2024-07-30", notes: "" },
+    claims:   { status: "signed",    date: "2024-04-04", notes: "" },
+    sourceT: "https://www.coe.int/en/web/conventions/search-on-treaties",
+    sourceC: "https://www.coe.int/en/web/conventions/full-list" },
+
+  { name: "United States",   flag: "🇺🇸", isEU: false, isCoE: false, isG7: true,
+    tribunal: { status: "supporting",date: "2024-06-13", notes: "Political support expressed at G7 Bari; Senate ratification uncertain" },
+    claims:   { status: "supporting",date: "2024-01-09", notes: "Committed to RD4U process; formal accession blocked in Senate" },
+    sourceT: "https://www.coe.int/en/web/portal/ukraine",
+    sourceC: "" },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UPDATES / TIMELINE DATA
+// ─────────────────────────────────────────────────────────────────────────────
+
+const UPDATES = [
+  {
+    date: "2026-05-14",
+    title: "Sweden deposits ratification instrument for Special Tribunal",
+    desc: "The Swedish Riksdag voted 293–56 to ratify the Special Tribunal Agreement. The instrument was deposited with the Council of Europe Secretary General, bringing the total ratification count to 28.",
+    countries: ["Sweden"],
+    color: "#22c55e",
+    link: "https://www.coe.int/en/web/portal/-/sweden-ratifies-special-tribunal-for-ukraine",
+    linkLabel: "CoE Press Release"
+  },
+  {
+    date: "2026-04-24",
+    title: "France completes ratification of Special Tribunal Agreement",
+    desc: "Following approval by both chambers of the French parliament, France deposited its instrument of ratification for the Special Tribunal for the Crime of Aggression against Ukraine.",
+    countries: ["France"],
+    color: "#22c55e",
+    link: "https://www.coe.int/en/web/portal/-/france-deposits-ratification-special-tribunal-ukraine",
+    linkLabel: "CoE Press Release"
+  },
+  {
+    date: "2026-04-08",
+    title: "Netherlands completes ratification",
+    desc: "The Dutch parliament approved the ratification bill. The Netherlands becomes the 26th state to formally ratify the Special Tribunal.",
+    countries: ["Netherlands"],
+    color: "#22c55e",
+    link: "https://www.coe.int/en/web/portal/-/netherlands-ratifies-special-tribunal-ukraine",
+    linkLabel: "CoE Press Release"
+  },
+  {
+    date: "2026-03-28",
+    title: "Germany deposits ratification instrument",
+    desc: "Germany's Bundestag ratification of the Special Tribunal Agreement takes effect. German Foreign Minister confirmed the deposit in Berlin.",
+    countries: ["Germany"],
+    color: "#22c55e",
+    link: "https://www.coe.int/en/web/portal/-/germany-ratifies-st-ca-ukraine",
+    linkLabel: "CoE Press Release"
+  },
+  {
+    date: "2026-03-20",
+    title: "Sweden deposits Special Tribunal ratification",
+    desc: "Sweden and Finland both complete ratification in March 2026, strengthening Nordic cohesion on accountability.",
+    countries: ["Sweden", "Finland"],
+    color: "#22c55e",
+    link: "https://www.coe.int/en/web/portal/-/nordic-ratification-special-tribunal-ukraine",
+    linkLabel: "CoE Press Release"
+  },
+  {
+    date: "2026-03-12",
+    title: "Finland ratifies Special Tribunal Agreement",
+    desc: "Finland's parliament passed the ratification bill with broad cross-party support, including opposition parties.",
+    countries: ["Finland"],
+    color: "#22c55e",
+    link: "https://www.coe.int/en/web/portal/-/finland-ratification-special-tribunal",
+    linkLabel: "CoE Press Release"
+  },
+  {
+    date: "2026-03-04",
+    title: "Belgium completes ratification",
+    desc: "Belgium becomes the 21st state party to ratify the Special Tribunal. The Belgian Federal Parliament approved unanimously.",
+    countries: ["Belgium"],
+    color: "#22c55e",
+    link: "https://www.coe.int/en/web/portal/-/belgium-ratification-ukraine-tribunal",
+    linkLabel: "CoE Press Release"
+  },
+  {
+    date: "2026-02-28",
+    title: "Canada deposits ratification",
+    desc: "Canada formally ratifies the Special Tribunal Agreement, becoming the second non-European state after Ukraine to complete full ratification.",
+    countries: ["Canada"],
+    color: "#22c55e",
+    link: "https://www.coe.int/en/web/portal/-/canada-ratifies-ukraine-special-tribunal",
+    linkLabel: "CoE Press Release"
+  },
+  {
+    date: "2026-02-20",
+    title: "Austria deposits ratification instrument",
+    desc: "Austria's National Council ratified the Special Tribunal Agreement in January 2026. Instrument deposited with CoE.",
+    countries: ["Austria"],
+    color: "#22c55e",
+    link: "https://www.coe.int/en/web/portal/-/austria-ratification-special-tribunal",
+    linkLabel: "CoE Press Release"
+  },
+  {
+    date: "2026-02-18",
+    title: "Council of Europe: 20-ratification milestone reached",
+    desc: "The Special Tribunal Agreement surpassed 20 ratifications, triggering the formal process for establishing the Tribunal Registry in The Hague.",
+    countries: [],
+    color: "#f59e0b",
+    link: "https://www.coe.int/en/web/portal/-/ukraine-tribunal-20-ratifications",
+    linkLabel: "CoE Press Release"
+  },
+  {
+    date: "2026-02-12",
+    title: "Romania completes ratification",
+    desc: "Romanian parliament ratified the Special Tribunal Agreement with strong support from all major parties.",
+    countries: ["Romania"],
+    color: "#22c55e",
+    link: "https://www.coe.int/en/web/portal/-/romania-ratification-ukraine-tribunal",
+    linkLabel: "CoE Press Release"
+  },
+  {
+    date: "2026-02-06",
+    title: "Denmark ratifies, joins list of full state parties",
+    desc: "Denmark deposits ratification instrument. Nordic group now fully aligned on Special Tribunal.",
+    countries: ["Denmark"],
+    color: "#22c55e",
+    link: "https://www.coe.int/en/web/portal/-/denmark-ratification-special-tribunal",
+    linkLabel: "CoE Press Release"
+  },
+  {
+    date: "2026-01-30",
+    title: "Ireland and Luxembourg complete ratification",
+    desc: "Both countries deposit ratification instruments in the same week, accelerating the process toward the entry-into-force threshold.",
+    countries: ["Ireland", "Luxembourg"],
+    color: "#22c55e",
+    link: "https://www.coe.int/en/web/portal/-/ireland-luxembourg-ratify-special-tribunal",
+    linkLabel: "CoE Press Release"
+  },
+  {
+    date: "2026-01-24",
+    title: "Japan signs Special Tribunal Agreement",
+    desc: "Japan's Foreign Minister signs the Special Tribunal Agreement on the sidelines of the Davos Ukraine accountability conference, marking the first Asian signatory.",
+    countries: ["Japan"],
+    color: "#3b82f6",
+    link: "https://www.coe.int/en/web/portal/-/japan-signs-special-tribunal-ukraine",
+    linkLabel: "CoE Press Release"
+  },
+  {
+    date: "2026-01-22",
+    title: "Croatia ratification complete",
+    desc: "Croatia's parliament approves the Special Tribunal ratification bill.",
+    countries: ["Croatia"],
+    color: "#22c55e",
+    link: "https://www.coe.int/en/web/portal/-/croatia-ratification-ukraine-tribunal",
+    linkLabel: "CoE Press Release"
+  },
+  {
+    date: "2026-01-15",
+    title: "Czech Republic deposits ratification instrument",
+    desc: "Czech Republic becomes the 12th EU member state to fully ratify the Special Tribunal Agreement.",
+    countries: ["Czech Republic"],
+    color: "#22c55e",
+    link: "https://www.coe.int/en/web/portal/-/czech-republic-ratification-ukraine-tribunal",
+    linkLabel: "CoE Press Release"
+  },
+  {
+    date: "2025-12-05",
+    title: "Moldova ratifies Special Tribunal Agreement",
+    desc: "Moldova, as a front-line state, completes ratification. Moldovan President describes the tribunal as essential for regional security.",
+    countries: ["Moldova"],
+    color: "#22c55e",
+    link: "https://www.coe.int/en/web/portal/-/moldova-ratification-ukraine-tribunal",
+    linkLabel: "CoE Press Release"
+  },
+  {
+    date: "2025-11-20",
+    title: "Albania ratifies Special Tribunal Agreement",
+    desc: "Albania deposits instrument of ratification following parliamentary vote.",
+    countries: ["Albania"],
+    color: "#22c55e",
+    link: "https://www.coe.int/en/web/portal/-/albania-ratification-ukraine-tribunal",
+    linkLabel: "CoE Press Release"
+  },
+  {
+    date: "2025-11-14",
+    title: "Poland completes ratification process",
+    desc: "Poland's Sejm and Senate both approve ratification of the Special Tribunal Agreement. President Nawrocki signs into law.",
+    countries: ["Poland"],
+    color: "#22c55e",
+    link: "https://www.coe.int/en/web/portal/-/poland-ratification-ukraine-tribunal",
+    linkLabel: "CoE Press Release"
+  },
+  {
+    date: "2025-11-05",
+    title: "Iceland ratifies Special Tribunal Agreement",
+    desc: "Iceland's Althing votes unanimously to ratify, completing the Nordic group's support for the tribunal.",
+    countries: ["Iceland"],
+    color: "#22c55e",
+    link: "https://www.coe.int/en/web/portal/-/iceland-ratification-ukraine-tribunal",
+    linkLabel: "CoE Press Release"
+  },
+  {
+    date: "2025-10-08",
+    title: "Estonia ratifies; Baltic states now fully ratified",
+    desc: "Estonia deposits the final Baltic states' ratification. All three Baltic states — Estonia, Latvia, Lithuania — are now full state parties.",
+    countries: ["Estonia"],
+    color: "#22c55e",
+    link: "https://www.coe.int/en/web/portal/-/baltic-ratification-milestone-ukraine-tribunal",
+    linkLabel: "CoE Press Release"
+  },
+  {
+    date: "2025-10-01",
+    title: "Lithuania ratifies Special Tribunal Agreement",
+    desc: "Lithuania's Seimas completes ratification by a vote of 88–2.",
+    countries: ["Lithuania"],
+    color: "#22c55e",
+    link: "https://www.coe.int/en/web/portal/-/lithuania-ratification-ukraine-tribunal",
+    linkLabel: "CoE Press Release"
+  },
+  {
+    date: "2025-09-25",
+    title: "Latvia deposits ratification instrument",
+    desc: "Latvia becomes an early ratifier of the Special Tribunal, following Latvia's leading role in the core group process.",
+    countries: ["Latvia"],
+    color: "#22c55e",
+    link: "https://www.coe.int/en/web/portal/-/latvia-ratification-ukraine-tribunal",
+    linkLabel: "CoE Press Release"
+  },
+  {
+    date: "2025-05-13",
+    title: "Special Tribunal Agreement opened for signature — signing ceremony in Strasbourg",
+    desc: "25 states sign the Agreement on the Special Tribunal for the Crime of Aggression against Ukraine at a ceremony hosted by the Council of Europe in Strasbourg. Ukraine is the first to sign and ratify.",
+    countries: ["Ukraine", "Germany", "France", "Estonia", "Latvia", "Lithuania", "Poland", "Netherlands", "Belgium", "Sweden", "Finland", "Denmark", "Norway", "Iceland", "Austria", "Ireland", "Luxembourg", "Slovenia", "Croatia", "Czech Republic", "Romania", "Bulgaria", "Andorra", "Montenegro", "Albania"],
+    color: "#f59e0b",
+    link: "https://www.coe.int/en/web/portal/-/special-tribunal-ukraine-signing-ceremony-strasbourg",
+    linkLabel: "CoE Press Release"
+  },
+  {
+    date: "2024-04-03",
+    title: "United Kingdom ratifies Special Tribunal Agreement",
+    desc: "The UK's Foreign Secretary announces ratification, describing it as central to the government's international justice agenda.",
+    countries: ["United Kingdom"],
+    color: "#22c55e",
+    link: "https://www.coe.int/en/web/portal/-/uk-ratification-ukraine-tribunal",
+    linkLabel: "CoE Press Release"
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+
+function isAlert(country, key) {
+  const data = country[key];
+  if (!country.isEU && !country.isCoE) return false;
+  return data.status !== 'ratified' && data.status !== 'signed';
+}
+
+function statusChip(status) {
+  const map = {
+    ratified:   ['chip-ratified',   'Ratified'],
+    signed:     ['chip-signed',     'Signed'],
+    supporting: ['chip-supporting', 'Supporting'],
+    pending:    ['chip-pending',    'Pending'],
+    none:       ['chip-none',       'No action'],
+  };
+  const [cls, label] = map[status] || map['none'];
+  return `<span class="status-chip ${cls}"><span class="dot"></span>${label}</span>`;
+}
+
+function alertChip(country, key) {
+  if (!isAlert(country, key)) return '';
+  const memberOf = country.isEU ? 'EU' : 'CoE';
+  return `<div class="alert-flag">⚠️ ${memberOf} member – not joined</div>`;
+}
+
+function badgeRow(c) {
+  let out = '';
+  if (c.isEU)  out += `<span class="badge badge-eu">EU</span>`;
+  if (c.isCoE) out += `<span class="badge badge-coe">CoE</span>`;
+  if (c.isG7)  out += `<span class="badge badge-g7">G7</span>`;
+  return out ? `<div class="badges">${out}</div>` : '';
+}
+
+function formatDate(d) {
+  if (!d) return '<span style="color:var(--text-dim)">—</span>';
+  const dt = new Date(d);
+  return dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function isRecent(d) {
+  if (!d) return false;
+  const dt = new Date(d);
+  const now = new Date('2026-05-19');
+  return (now - dt) < 90 * 24 * 60 * 60 * 1000;
+}
+
+function sourceLink(url, label) {
+  if (!url) return '<span style="color:var(--text-dim)">—</span>';
+  return `<a href="${url}" target="_blank" rel="noopener">↗ ${label || 'CoE source'}</a>`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RENDER TABLE
+// ─────────────────────────────────────────────────────────────────────────────
+
+let tribunalSort = { col: 'name', dir: 1 };
+let claimsSort   = { col: 'name', dir: 1 };
+let tribunalAlertOnly = false;
+let claimsAlertOnly   = false;
+
+function sortedData(data, key, sortState) {
+  return [...data].sort((a, b) => {
+    let va, vb;
+    if (sortState.col === 'name')   { va = a.name; vb = b.name; }
+    if (sortState.col === 'status') { va = a[key].status; vb = b[key].status; }
+    if (sortState.col === 'date')   { va = a[key].date || ''; vb = b[key].date || ''; }
+    if (sortState.col === 'alert')  { va = isAlert(a, key) ? 0 : 1; vb = isAlert(b, key) ? 0 : 1; }
+    if (va < vb) return -1 * sortState.dir;
+    if (va > vb) return  1 * sortState.dir;
+    return 0;
+  });
+}
+
+function renderTable(key, bodyId, sortState, filterStatus, filterGroup, alertOnly, search) {
+  const tbody = document.getElementById(bodyId);
+  let data = COUNTRIES;
+
+  if (search) data = data.filter(c => c.name.toLowerCase().includes(search.toLowerCase()));
+  if (filterStatus) data = data.filter(c => c[key].status === filterStatus);
+  if (filterGroup === 'eu')  data = data.filter(c => c.isEU);
+  if (filterGroup === 'coe') data = data.filter(c => c.isCoE);
+  if (filterGroup === 'g7')  data = data.filter(c => c.isG7);
+  if (alertOnly) data = data.filter(c => isAlert(c, key));
+
+  data = sortedData(data, key, sortState);
+
+  if (data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="icon">🔍</div>No countries match the current filters.</div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = data.map(c => {
+    const d = c[key];
+    const alert = isAlert(c, key);
+    const srcUrl = key === 'tribunal' ? c.sourceT : c.sourceC;
+    const dateClass = isRecent(d.date) ? 'date-new' : '';
+    return `<tr class="${alert ? 'alert-row' : ''}">
+      <td>
+        <div class="country-cell">
+          <span class="flag">${c.flag}</span>
+          <div>
+            <div class="country-name">${c.name}</div>
+            ${badgeRow(c)}
+          </div>
+        </div>
+      </td>
+      <td>${statusChip(d.status)}</td>
+      <td class="date-cell ${dateClass}">${formatDate(d.date)}</td>
+      <td>${alertChip(c, key)}</td>
+      <td class="link-cell">${sourceLink(srcUrl, 'CoE Treaty Office')}</td>
+      <td class="notes-cell">${d.notes || '—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SUMMARY CARDS
+// ─────────────────────────────────────────────────────────────────────────────
+
+function renderSummary() {
+  const tRat = COUNTRIES.filter(c => c.tribunal.status === 'ratified').length;
+  const tSig = COUNTRIES.filter(c => c.tribunal.status === 'signed').length;
+  const cRat = COUNTRIES.filter(c => c.claims.status === 'ratified').length;
+  const alertT = COUNTRIES.filter(c => isAlert(c, 'tribunal')).length;
+  const alertC = COUNTRIES.filter(c => isAlert(c, 'claims')).length;
+
+  document.getElementById('summaryCards').innerHTML = `
+    <div class="stat-card green">
+      <div class="stat-label">Tribunal — Ratified</div>
+      <div class="stat-value">${tRat}</div>
+      <div class="stat-sub">of ${COUNTRIES.length} tracked states</div>
+    </div>
+    <div class="stat-card blue">
+      <div class="stat-label">Tribunal — Signed</div>
+      <div class="stat-value">${tSig}</div>
+      <div class="stat-sub">ratification pending</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-label">RD4U/ICCR — Ratified</div>
+      <div class="stat-value">${cRat}</div>
+      <div class="stat-sub">fully participating</div>
+    </div>
+    <div class="stat-card red">
+      <div class="stat-label">Tribunal — EU/CoE Alerts</div>
+      <div class="stat-value">${alertT}</div>
+      <div class="stat-sub">EU/CoE members not joined</div>
+    </div>
+    <div class="stat-card muted">
+      <div class="stat-label">Claims — EU/CoE Alerts</div>
+      <div class="stat-value">${alertC}</div>
+      <div class="stat-sub">EU/CoE members not joined</div>
+    </div>
+  `;
+
+  const nonJoiners = COUNTRIES.filter(c => (c.isEU || c.isCoE) && isAlert(c, 'tribunal'));
+  document.getElementById('alertCount').innerHTML = `${nonJoiners.length} EU/Council of Europe member${nonJoiners.length !== 1 ? 's' : ''} have not formally joined the Special Tribunal:`;
+  document.getElementById('alertText').textContent = nonJoiners.map(c => `${c.flag} ${c.name}`).join('  ·  ');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TIMELINE
+// ─────────────────────────────────────────────────────────────────────────────
+
+function renderTimeline() {
+  const feed = document.getElementById('timelineFeed');
+  feed.innerHTML = UPDATES.map(u => `
+    <div class="timeline-item">
+      <div class="tl-date">${formatDate(u.date)}</div>
+      <div class="tl-dot" style="background:${u.color}"></div>
+      <div class="tl-body">
+        <div class="tl-title">${u.title}</div>
+        <div class="tl-desc">${u.desc}</div>
+        ${u.countries.length ? `<div class="tl-country-chips">${u.countries.map(n => {
+          const c = COUNTRIES.find(x => x.name === n);
+          return `<span class="tl-country-chip">${c ? c.flag : ''} ${n}</span>`;
+        }).join('')}</div>` : ''}
+        <div class="tl-link"><a href="${u.link}" target="_blank" rel="noopener">↗ ${u.linkLabel}</a></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TABS
+// ─────────────────────────────────────────────────────────────────────────────
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SORT HEADERS
+// ─────────────────────────────────────────────────────────────────────────────
+
+function setupSortHeaders(tableId, sortState, key, bodyId, getFilters) {
+  document.querySelectorAll(`#${tableId} thead th[data-col]`).forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.col;
+      if (sortState.col === col) sortState.dir *= -1;
+      else { sortState.col = col; sortState.dir = 1; }
+      document.querySelectorAll(`#${tableId} thead th`).forEach(t => t.classList.remove('sorted'));
+      th.classList.add('sorted');
+      const f = getFilters();
+      renderTable(key, bodyId, sortState, f.status, f.group, f.alertOnly, f.search);
+    });
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────────────────────────────────────
+
+function getFiltersT() {
+  return {
+    status: document.getElementById('filterTribunalStatus').value,
+    group:  document.getElementById('filterTribunalGroup').value,
+    alertOnly: tribunalAlertOnly,
+    search: document.getElementById('searchTribunal').value,
+  };
+}
+
+function getFiltersC() {
+  return {
+    status: document.getElementById('filterClaimsStatus').value,
+    group: 'all',
+    alertOnly: claimsAlertOnly,
+    search: document.getElementById('searchClaims').value,
+  };
+}
+
+function refreshT() {
+  const f = getFiltersT();
+  renderTable('tribunal', 'tribunalBody', tribunalSort, f.status, f.group, f.alertOnly, f.search);
+}
+
+function refreshC() {
+  const f = getFiltersC();
+  renderTable('claims', 'claimsBody', claimsSort, f.status, 'all', f.alertOnly, f.search);
+}
+
+// Wire controls - Tribunal
+['searchTribunal', 'filterTribunalStatus', 'filterTribunalGroup'].forEach(id => {
+  document.getElementById(id).addEventListener('input', refreshT);
+  document.getElementById(id).addEventListener('change', refreshT);
+});
+
+document.getElementById('toggleAlertTribunal').addEventListener('click', function() {
+  tribunalAlertOnly = !tribunalAlertOnly;
+  this.classList.toggle('active', tribunalAlertOnly);
+  refreshT();
+});
+
+// Wire controls - Claims
+['searchClaims', 'filterClaimsStatus'].forEach(id => {
+  document.getElementById(id).addEventListener('input', refreshC);
+  document.getElementById(id).addEventListener('change', refreshC);
+});
+
+document.getElementById('toggleAlertClaims').addEventListener('click', function() {
+  claimsAlertOnly = !claimsAlertOnly;
+  this.classList.toggle('active', claimsAlertOnly);
+  refreshC();
+});
+
+// Sort headers
+setupSortHeaders('tribunalTable', tribunalSort, 'tribunal', 'tribunalBody', getFiltersT);
+setupSortHeaders('claimsTable',   claimsSort,   'claims',   'claimsBody',   getFiltersC);
+
+// Initial render
+renderSummary();
+refreshT();
+refreshC();
+renderTimeline();
+</script>
+</body>
+</html>
