@@ -1,8 +1,10 @@
 import { useInView } from "react-intersection-observer";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ToastAction } from "@/components/ui/toast";
+import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import { Flag, SkipForward, Loader2, Inbox, BookOpen } from "lucide-react";
 
@@ -142,7 +144,15 @@ function NewEventCard({
   );
 }
 
-function FlaggedEventCard({ item }: { item: TriageItem }) {
+function FlaggedEventCard({
+  item,
+  onUnflag,
+  isRemoving,
+}: {
+  item: TriageItem;
+  onUnflag: () => void;
+  isRemoving: boolean;
+}) {
   const actorLine = [item.actor1Name, item.actor2Name].filter(Boolean).join(" → ");
 
   const docQuery = trpc.intel.eventsByDocUrl.useQuery(
@@ -152,7 +162,14 @@ function FlaggedEventCard({ item }: { item: TriageItem }) {
   const docTitle = docQuery.data?.[0]?.docTitle ?? null;
 
   return (
-    <div className="flex items-start gap-4 rounded-lg border border-emerald-200 bg-emerald-50/40 dark:border-emerald-800 dark:bg-emerald-950/20 px-4 py-3">
+    <div
+      className="flex items-start gap-4 rounded-lg border border-emerald-200 bg-emerald-50/40 dark:border-emerald-800 dark:bg-emerald-950/20 px-4 py-3 group"
+      style={
+        isRemoving
+          ? { opacity: 0, transform: "translateX(-8px)", transition: "opacity 220ms ease, transform 220ms ease" }
+          : undefined
+      }
+    >
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <Link
@@ -169,6 +186,14 @@ function FlaggedEventCard({ item }: { item: TriageItem }) {
           <Badge className="shrink-0 text-xs bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900 dark:text-emerald-300">
             flagged
           </Badge>
+          <button
+            type="button"
+            className="inline-flex items-center p-0 ml-0 bg-transparent border-0 text-[11.5px] leading-none font-normal cursor-pointer select-none opacity-0 transition-[opacity,color] duration-[120ms] ease-linear text-[#8a958f] group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none hover:text-[#a83232] focus-visible:text-[#a83232] [@media(hover:none)]:opacity-100"
+            onClick={(e) => { e.preventDefault(); onUnflag(); }}
+            aria-label={`Remove flag from ${displayTitle(item)}`}
+          >
+            × unflag
+          </button>
         </div>
         <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
           {actorLine && <span className="font-medium text-foreground/70">{actorLine}</span>}
@@ -200,6 +225,8 @@ function FlaggedEventCard({ item }: { item: TriageItem }) {
 
 export default function HorizonGdeltTriageScreen() {
   const utils = trpc.useUtils();
+  const { toast } = useToast();
+  const [removingIds, setRemovingIds] = useState<Set<string>>(new Set());
 
   const newQuery = trpc.horizon.gdelt.list.useInfiniteQuery(
     { limit: 30, status: "new" },
@@ -240,6 +267,82 @@ export default function HorizonGdeltTriageScreen() {
       void utils.horizon.gdelt.list.invalidate({ limit: 20, status: "flagged" });
     },
   });
+
+  const unflag = trpc.horizon.gdelt.setStatus.useMutation({
+    onSettled: () => {
+      void utils.horizon.gdelt.list.invalidate({ limit: 20, status: "flagged" });
+    },
+  });
+
+  const reflag = trpc.horizon.gdelt.setStatus.useMutation({
+    onSettled: () => {
+      void utils.horizon.gdelt.list.invalidate({ limit: 20, status: "flagged" });
+    },
+  });
+
+  function handleUnflag(item: TriageItem) {
+    if (removingIds.has(item.globalEventId)) return;
+    setRemovingIds((prev) => new Set([...prev, item.globalEventId]));
+
+    unflag.mutate(
+      { id: item.globalEventId, status: "new" },
+      {
+        onSuccess: () => {
+          const title = displayTitle(item);
+          toast({
+            title: `Unflagged "${title}"`,
+            action: (
+              <ToastAction altText="Undo" onClick={() => handleReflag(item)}>
+                Undo
+              </ToastAction>
+            ),
+            duration: 6000,
+          });
+        },
+        onError: () => {
+          setRemovingIds((prev) => {
+            const s = new Set(prev);
+            s.delete(item.globalEventId);
+            return s;
+          });
+          toast({ title: "Couldn't unflag. Try again.", variant: "destructive" });
+        },
+      },
+    );
+  }
+
+  function handleReflag(item: TriageItem) {
+    utils.horizon.gdelt.list.setInfiniteData({ limit: 20, status: "flagged" }, (old) => {
+      if (!old) return old;
+      const firstPage = old.pages[0];
+      return {
+        ...old,
+        pages: [
+          { ...firstPage, items: [item, ...(firstPage?.items ?? [])] },
+          ...old.pages.slice(1),
+        ],
+      };
+    });
+
+    reflag.mutate(
+      { id: item.globalEventId, status: "flagged" },
+      {
+        onError: () => {
+          utils.horizon.gdelt.list.setInfiniteData({ limit: 20, status: "flagged" }, (old) => {
+            if (!old) return old;
+            return {
+              ...old,
+              pages: old.pages.map((p) => ({
+                ...p,
+                items: p.items.filter((i) => i.globalEventId !== item.globalEventId),
+              })),
+            };
+          });
+          toast({ title: "Couldn't restore flag.", variant: "destructive" });
+        },
+      },
+    );
+  }
 
   const { ref: newSentinelRef, inView: newInView } = useInView({ threshold: 0 });
   const { ref: flaggedSentinelRef, inView: flaggedInView } = useInView({ threshold: 0 });
@@ -294,7 +397,12 @@ export default function HorizonGdeltTriageScreen() {
 
           <div className="flex flex-col gap-2">
             {flaggedItems.map((item) => (
-              <FlaggedEventCard key={item.globalEventId} item={item} />
+              <FlaggedEventCard
+                key={item.globalEventId}
+                item={item}
+                onUnflag={() => handleUnflag(item)}
+                isRemoving={removingIds.has(item.globalEventId)}
+              />
             ))}
           </div>
 
