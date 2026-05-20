@@ -39,15 +39,31 @@ export const gdeltRouter = router({
         : { t: null, u: null };
 
       const result = await db.execute(sql`
-        SELECT global_event_id, title, source_name, ingested_at,
-               action_geo_country_code, action_geo_fullname,
-               source_url, status,
-               actor1_name, actor2_name,
-               num_mentions, goldstein
-        FROM gdelt_events
-        WHERE status = ${status}
-          ${cursorTime && cursorId ? sql`AND (ingested_at, global_event_id) < (${cursorTime}::timestamptz, ${cursorId})` : sql``}
-        ORDER BY ingested_at DESC, global_event_id DESC
+        SELECT e.global_event_id,
+               COALESCE(e.title, d.title)       AS title,
+               e.source_name,
+               e.ingested_at,
+               e.action_geo_country_code,
+               e.action_geo_fullname,
+               COALESCE(e.source_url, d.url)    AS source_url,
+               e.status,
+               e.actor1_name,
+               e.actor2_name,
+               e.num_mentions,
+               e.goldstein
+        FROM gdelt_events e
+        LEFT JOIN LATERAL (
+          SELECT gd.title, gd.url
+          FROM gdelt_event_mentions gem
+          JOIN gdelt_documents gd ON gd.url = gem.url
+          WHERE gem.global_event_id = e.global_event_id
+            AND gd.title IS NOT NULL
+          ORDER BY gem.confidence DESC NULLS LAST
+          LIMIT 1
+        ) d ON true
+        WHERE e.status = ${status}
+          ${cursorTime && cursorId ? sql`AND (e.ingested_at, e.global_event_id) < (${cursorTime}::timestamptz, ${cursorId})` : sql``}
+        ORDER BY e.ingested_at DESC, e.global_event_id DESC
         LIMIT ${limitPlusOne}
       `);
 
@@ -108,13 +124,29 @@ export const gdeltRouter = router({
     .input(z.object({ id: z.string() }))
     .query(async ({ input }) => {
       const result = await db.execute(sql`
-        SELECT global_event_id, title, source_name, ingested_at,
-               action_geo_country_code, action_geo_fullname,
-               source_url, status,
-               actor1_name, actor2_name,
-               num_mentions, goldstein
-        FROM gdelt_events
-        WHERE global_event_id = ${input.id}
+        SELECT e.global_event_id,
+               COALESCE(e.title, d.title)       AS title,
+               e.source_name,
+               e.ingested_at,
+               e.action_geo_country_code,
+               e.action_geo_fullname,
+               COALESCE(e.source_url, d.url)    AS source_url,
+               e.status,
+               e.actor1_name,
+               e.actor2_name,
+               e.num_mentions,
+               e.goldstein
+        FROM gdelt_events e
+        LEFT JOIN LATERAL (
+          SELECT gd.title, gd.url
+          FROM gdelt_event_mentions gem
+          JOIN gdelt_documents gd ON gd.url = gem.url
+          WHERE gem.global_event_id = e.global_event_id
+            AND gd.title IS NOT NULL
+          ORDER BY gem.confidence DESC NULLS LAST
+          LIMIT 1
+        ) d ON true
+        WHERE e.global_event_id = ${input.id}
         LIMIT 1
       `);
       const row = result.rows[0] as TriageRow | undefined;
