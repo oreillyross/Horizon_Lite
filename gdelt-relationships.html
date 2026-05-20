@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GDELT — DB · API · UI Relationships</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --border: #2e3148;
+    --text: #e2e8f0;
+    --muted: #8892a4;
+    --db: #1e3a5f;
+    --db-border: #3b82f6;
+    --db-head: #3b82f6;
+    --api: #1e3a2f;
+    --api-border: #22c55e;
+    --api-head: #22c55e;
+    --ui: #3a1e3a;
+    --ui-border: #a855f7;
+    --ui-head: #a855f7;
+    --job: #3a2e1e;
+    --job-border: #f59e0b;
+    --job-head: #f59e0b;
+    --arrow: #4b5563;
+    --highlight: #f59e0b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+    padding: 24px;
+    min-height: 100vh;
+  }
+  h1 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+  .subtitle { color: var(--muted); font-size: 12px; margin-bottom: 24px; }
+
+  /* Legend */
+  .legend {
+    display: flex; gap: 20px; flex-wrap: wrap;
+    margin-bottom: 28px;
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: 7px;
+    font-size: 12px; color: var(--muted);
+  }
+  .legend-dot {
+    width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0;
+  }
+
+  /* Grid layout */
+  .diagram {
+    display: grid;
+    grid-template-columns: 260px 260px 260px 260px;
+    grid-template-rows: auto auto;
+    gap: 20px;
+    position: relative;
+  }
+
+  /* Cards */
+  .card {
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .card.db  { background: var(--db);  border-color: var(--db-border); }
+  .card.api { background: var(--api); border-color: var(--api-border); }
+  .card.ui  { background: var(--ui);  border-color: var(--ui-border); }
+  .card.job { background: var(--job); border-color: var(--job-border); }
+
+  .card-head {
+    padding: 10px 14px;
+    font-weight: 700;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card.db  .card-head { background: rgba(59,130,246,.18); color: var(--db-head); }
+  .card.api .card-head { background: rgba(34,197,94,.15);  color: var(--api-head); }
+  .card.ui  .card-head { background: rgba(168,85,247,.15); color: var(--ui-head); }
+  .card.job .card-head { background: rgba(245,158,11,.15); color: var(--job-head); }
+
+  .card-body { padding: 12px 14px; }
+
+  /* Table column list */
+  .col-list { list-style: none; }
+  .col-list li {
+    padding: 3px 0;
+    border-bottom: 1px solid rgba(255,255,255,.04);
+    display: flex; align-items: baseline; gap: 6px;
+    font-size: 12px;
+  }
+  .col-list li:last-child { border-bottom: none; }
+  .col-name { font-family: monospace; color: #93c5fd; }
+  .col-type { color: var(--muted); font-size: 11px; }
+  .col-pk   { font-size: 10px; background: #3b82f6; color: #fff;
+               border-radius: 3px; padding: 1px 5px; flex-shrink: 0; }
+  .col-fk   { font-size: 10px; background: #6366f1; color: #fff;
+               border-radius: 3px; padding: 1px 5px; flex-shrink: 0; }
+  .col-idx  { font-size: 10px; background: #374151; color: #9ca3af;
+               border-radius: 3px; padding: 1px 5px; flex-shrink: 0; }
+
+  /* Procedure list */
+  .proc-list { list-style: none; }
+  .proc-list li {
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(255,255,255,.04);
+    font-size: 12px;
+  }
+  .proc-list li:last-child { border-bottom: none; }
+  .proc-name { font-family: monospace; color: #86efac; font-weight: 600; }
+  .proc-kind {
+    font-size: 10px; border-radius: 3px; padding: 1px 5px;
+    margin-left: 4px;
+  }
+  .proc-kind.query  { background: #1e3a5f; color: #60a5fa; }
+  .proc-kind.mut    { background: #3a1e1e; color: #f87171; }
+  .proc-desc { color: var(--muted); font-size: 11px; margin-top: 1px; }
+  .proc-tables { font-size: 11px; color: #6ee7b7; margin-top: 2px; }
+
+  /* Component list */
+  .comp-list { list-style: none; }
+  .comp-list li {
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(255,255,255,.04);
+    font-size: 12px;
+  }
+  .comp-list li:last-child { border-bottom: none; }
+  .comp-name { font-family: monospace; color: #d8b4fe; font-weight: 600; }
+  .comp-route { font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .comp-calls { font-size: 11px; color: #c4b5fd; margin-top: 2px; }
+
+  /* Relationship flow section */
+  .flow-section {
+    grid-column: 1 / -1;
+    margin-top: 8px;
+  }
+  .flow-title {
+    font-size: 13px; font-weight: 600; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .07em;
+    margin-bottom: 14px;
+  }
+
+  /* Flow rows */
+  .flow-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  .flow-table th {
+    text-align: left;
+    padding: 6px 10px;
+    background: #1a1d27;
+    color: var(--muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    border-bottom: 1px solid var(--border);
+  }
+  .flow-table td {
+    padding: 7px 10px;
+    border-bottom: 1px solid rgba(255,255,255,.04);
+    vertical-align: top;
+  }
+  .flow-table tr:hover td { background: rgba(255,255,255,.02); }
+  .flow-table .t-ui   { color: #d8b4fe; font-family: monospace; }
+  .flow-table .t-proc { color: #86efac; font-family: monospace; }
+  .flow-table .t-db   { color: #93c5fd; font-family: monospace; }
+  .flow-table .t-op   { color: var(--muted); font-size: 11px; }
+  .flow-table .t-note { color: var(--muted); font-size: 11px; }
+  .arrow-cell { color: var(--muted); text-align: center; width: 32px; }
+
+  /* SVG connector overlay */
+  .svg-row {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0;
+    pointer-events: none;
+  }
+
+  /* Ingest flow diagram */
+  .ingest-flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+  }
+  .flow-node {
+    border-radius: 7px;
+    padding: 8px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .flow-node.source { background: #1e293b; color: #94a3b8; border: 1px solid #334155; }
+  .flow-node.job    { background: var(--job);  color: var(--job-head);  border: 1px solid var(--job-border); }
+  .flow-node.db-n   { background: var(--db);   color: var(--db-head);   border: 1px solid var(--db-border); }
+  .flow-arrow {
+    color: var(--muted);
+    font-size: 18px;
+    padding: 0 6px;
+    display: flex; align-items: center;
+  }
+  .flow-label {
+    font-size: 10px; color: var(--muted);
+    text-align: center; margin-top: 3px;
+  }
+  .flow-col { display: flex; flex-direction: column; align-items: center; }
+
+  /* Job trigger note */
+  .trigger-note {
+    background: rgba(245,158,11,.08);
+    border: 1px solid rgba(245,158,11,.25);
+    border-radius: 7px;
+    padding: 8px 14px;
+    font-size: 11px;
+    color: #fcd34d;
+    margin-bottom: 20px;
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--muted);
+    margin-bottom: 10px;
+    margin-top: 24px;
+  }
+
+  /* Relation badges */
+  .rel {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(255,255,255,.05);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 11px;
+    color: #9ca3af;
+    margin: 2px 2px 0 0;
+  }
+  .rel .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .rel .dot.db  { background: var(--db-border); }
+  .rel .dot.api { background: var(--api-border); }
+  .rel .dot.ui  { background: var(--ui-border); }
+</style>
+</head>
+<body>
+
+<h1>GDELT — Database · API · UI Relationships</h1>
+<p class="subtitle">Horizon Lite · generated 2026-05-20</p>
+
+<!-- Legend -->
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#3b82f6"></div> Database table</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#22c55e"></div> tRPC procedure</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#a855f7"></div> React component</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div> Ingest job / job runner</div>
+</div>
+
+<!-- ── Ingest flow ── -->
+<div class="section-label">Ingest pipeline</div>
+<div class="trigger-note">
+  <span>⚡</span>
+  Triggered via <code>POST /internal/jobs/gdelt</code> (X-Job-Secret auth) or <code>adminRouter.runGdelt</code> mutation · Protected by Postgres advisory lock <code>987654321</code>
+</div>
+<div class="ingest-flow">
+  <div class="flow-col">
+    <div class="flow-node source">data.gdeltproject.org<br><span style="font-size:10px;font-weight:400;color:#64748b">lastupdate.txt → 3 ZIP feeds</span></div>
+  </div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-col">
+    <div class="flow-node job">gdeltIngest.ts<br><span style="font-size:10px;font-weight:400">ingestGdelt()</span></div>
+    <div class="flow-label">parse + upsert</div>
+  </div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-col">
+    <div class="flow-node db-n">gdelt_events<br><span style="font-size:10px;font-weight:400">parseExportRow() → UPSERT<br>preserves status on conflict</span></div>
+  </div>
+  <div class="flow-arrow" style="padding:0 3px">+</div>
+  <div class="flow-col">
+    <div class="flow-node db-n">gdelt_event_mentions<br><span style="font-size:10px;font-weight:400">parseMentionsRow() → INSERT<br>ON CONFLICT DO NOTHING</span></div>
+  </div>
+  <div class="flow-arrow" style="padding:0 3px">+</div>
+  <div class="flow-col">
+    <div class="flow-node db-n">gdelt_documents<br><span style="font-size:10px;font-weight:400">parseGkgRow() → UPSERT<br>on url conflict</span></div>
+  </div>
+</div>
+
+<!-- ── Main diagram grid ── -->
+<div class="section-label">Tables · Procedures · Components</div>
+<div class="diagram">
+
+  <!-- DB: gdelt_events -->
+  <div class="card db">
+    <div class="card-head">
+      <span>🗄</span> gdelt_events
+    </div>
+    <div class="card-body">
+      <ul class="col-list">
+        <li><span class="col-pk">PK</span><span class="col-name">global_event_id</span><span class="col-type">text</span></li>
+        <li><span class="col-idx">idx</span><span class="col-name">event_time</span><span class="col-type">timestamptz</span></li>
+        <li><span class="col-name">actor1_name</span><span class="col-type">text</span><span class="col-idx">idx</span></li>
+        <li><span class="col-name">actor2_name</span><span class="col-type">text</span><span class="col-idx">idx</span></li>
+        <li><span class="col-name">event_code</span><span class="col-type">varchar(4)</span><span class="col-idx">idx</span></li>
+        <li><span class="col-name">quad_class</span><span class="col-type">int</span></li>
+        <li><span class="col-name">goldstein</span><span class="col-type">float8</span></li>
+        <li><span class="col-name">avg_tone</span><span class="col-type">float8</span></li>
+        <li><span class="col-name">num_mentions</span><span class="col-type">int</span><span class="col-idx">idx</span></li>
+        <li><span class="col-name">num_sources</span><span class="col-type">int</span></li>
+        <li><span class="col-name">num_articles</span><span class="col-type">int</span></li>
+        <li><span class="col-name">action_geo_fullname</span><span class="col-type">text</span></li>
+        <li><span class="col-name">action_geo_country_code</span><span class="col-type">text</span></li>
+        <li><span class="col-name">action_geo_lat/lon</span><span class="col-type">float8</span></li>
+        <li><span class="col-name">source_url</span><span class="col-type">text</span></li>
+        <li><span class="col-name">title / source_name</span><span class="col-type">text</span></li>
+        <li><span class="col-name">status</span><span class="col-type">text</span> <span style="font-size:10px;color:#6ee7b7">new|flagged|reviewed|skipped</span></li>
+        <li><span class="col-name">ingested_at / created_at / updated_at</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- DB: gdelt_event_mentions -->
+  <div class="card db">
+    <div class="card-head">
+      <span>🗄</span> gdelt_event_mentions
+    </div>
+    <div class="card-body">
+      <ul class="col-list">
+        <li><span class="col-pk">PK</span><span class="col-name">id</span><span class="col-type">text <span style="color:#6b7280">(eventId|urlHash)</span></span></li>
+        <li><span class="col-fk">FK→events</span><span class="col-name">global_event_id</span><span class="col-type">text</span></li>
+        <li><span class="col-name">mention_time</span><span class="col-type">timestamptz</span></li>
+        <li><span class="col-name">domain</span><span class="col-type">text</span></li>
+        <li><span class="col-fk">FK→docs</span><span class="col-name">url</span><span class="col-type">text</span></li>
+        <li><span class="col-name">confidence</span><span class="col-type">int</span></li>
+        <li><span class="col-name">doc_tone</span><span class="col-type">float8</span></li>
+        <li><span class="col-name">created_at</span><span class="col-type">timestamptz</span></li>
+        <li><span class="col-idx">UQ</span><span style="font-size:11px;color:#9ca3af">(global_event_id, url)</span></li>
+      </ul>
+      <div style="margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,.06)">
+        <div style="font-size:11px;color:#6b7280;margin-bottom:4px">JOIN bridge between</div>
+        <div style="display:flex;gap:6px">
+          <span class="rel"><span class="dot db"></span>gdelt_events</span>
+          <span style="color:#4b5563;font-size:14px">⟷</span>
+          <span class="rel"><span class="dot db"></span>gdelt_documents</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DB: gdelt_documents -->
+  <div class="card db">
+    <div class="card-head">
+      <span>🗄</span> gdelt_documents
+    </div>
+    <div class="card-body">
+      <ul class="col-list">
+        <li><span class="col-pk">PK</span><span class="col-name">url</span><span class="col-type">text</span></li>
+        <li><span class="col-idx">idx</span><span class="col-name">published_at</span><span class="col-type">timestamptz</span></li>
+        <li><span class="col-idx">idx</span><span class="col-name">domain</span><span class="col-type">text</span></li>
+        <li><span class="col-name">title</span><span class="col-type">text</span></li>
+        <li><span class="col-name">image_url</span><span class="col-type">text</span></li>
+        <li><span class="col-name">tone</span><span class="col-type">float8</span></li>
+        <li><span class="col-name">themes</span><span class="col-type">text[]</span></li>
+        <li><span class="col-name">organizations</span><span class="col-type">text[]</span></li>
+        <li><span class="col-name">raw_extras_xml</span><span class="col-type">text</span></li>
+        <li><span class="col-name">created_at / updated_at</span><span class="col-type">timestamptz</span></li>
+      </ul>
+      <div style="margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,.06)">
+        <div style="font-size:11px;color:#6b7280">Source: GKG (Global Knowledge Graph) feed</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Spacer / join explanation -->
+  <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;gap:16px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:10px">
+    <div style="text-align:center;font-size:11px;color:var(--muted);line-height:1.8">
+      <div style="font-size:13px;font-weight:700;color:#e2e8f0;margin-bottom:8px">Key relationships</div>
+      <div><span style="color:#93c5fd">event_mentions.global_event_id</span></div>
+      <div style="color:#4b5563">→ references →</div>
+      <div><span style="color:#93c5fd">events.global_event_id</span></div>
+      <div style="margin:8px 0;border-top:1px solid var(--border)"></div>
+      <div><span style="color:#93c5fd">event_mentions.url</span></div>
+      <div style="color:#4b5563">→ references →</div>
+      <div><span style="color:#93c5fd">documents.url</span></div>
+      <div style="margin:8px 0;border-top:1px solid var(--border)"></div>
+      <div style="font-size:10px;color:#6b7280">No hard FK constraints in schema<br>(logical references only)</div>
+    </div>
+  </div>
+
+  <!-- tRPC: gdelt.router.ts procedures -->
+  <div class="card api" style="grid-column:1/2;grid-row:2">
+    <div class="card-head">
+      <span>⚡</span> horizon.gdelt.*
+      <span style="font-size:10px;font-weight:400;color:#6b7280;margin-left:auto">gdelt.router.ts</span>
+    </div>
+    <div class="card-body">
+      <ul class="proc-list">
+        <li>
+          <div><span class="proc-name">list</span><span class="proc-kind query">query</span></div>
+          <div class="proc-desc">Paginated events by status (cursor)</div>
+          <div class="proc-tables">→ gdelt_events (SELECT by status)</div>
+        </li>
+        <li>
+          <div><span class="proc-name">setStatus</span><span class="proc-kind mut">mutation</span></div>
+          <div class="proc-desc">Set new|flagged|skipped on an event</div>
+          <div class="proc-tables">→ gdelt_events (UPDATE status)</div>
+        </li>
+        <li>
+          <div><span class="proc-name">countNew</span><span class="proc-kind query">query</span></div>
+          <div class="proc-desc">Count events with status='new'</div>
+          <div class="proc-tables">→ gdelt_events (COUNT)</div>
+        </li>
+        <li>
+          <div><span class="proc-name">getEvent</span><span class="proc-kind query">query</span></div>
+          <div class="proc-desc">Single event by global_event_id</div>
+          <div class="proc-tables">→ gdelt_events (SELECT)</div>
+        </li>
+        <li>
+          <div><span class="proc-name">webcut</span><span class="proc-kind query">query</span></div>
+          <div class="proc-desc">Fetch + extract readable text from URL</div>
+          <div class="proc-tables" style="color:#9ca3af">→ no DB (fetchReadable())</div>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- tRPC: intelRouter.ts procedures -->
+  <div class="card api" style="grid-column:2/3;grid-row:2">
+    <div class="card-head">
+      <span>⚡</span> intel.*
+      <span style="font-size:10px;font-weight:400;color:#6b7280;margin-left:auto">intelRouter.ts</span>
+    </div>
+    <div class="card-body">
+      <ul class="proc-list">
+        <li>
+          <div><span class="proc-name">feed</span><span class="proc-kind query">query</span></div>
+          <div class="proc-desc">Paginated document feed</div>
+          <div class="proc-tables">→ gdelt_documents (published_at not null)</div>
+        </li>
+        <li>
+          <div><span class="proc-name">searchDocuments</span><span class="proc-kind query">query</span></div>
+          <div class="proc-desc">Full-text title search (ILIKE)</div>
+          <div class="proc-tables">→ gdelt_documents (WHERE title ILIKE)</div>
+        </li>
+        <li>
+          <div><span class="proc-name">coverage</span><span class="proc-kind query">query</span></div>
+          <div class="proc-desc">Mention count + headlines for an event</div>
+          <div class="proc-tables">→ event_mentions JOIN documents<br>→ gdelt_events (num_mentions, avg_tone)</div>
+        </li>
+        <li>
+          <div><span class="proc-name">eventsByDocUrl</span><span class="proc-kind query">query</span></div>
+          <div class="proc-desc">Events that mention a given document URL</div>
+          <div class="proc-tables">→ event_mentions JOIN events JOIN documents<br>WHERE num_mentions &gt; 15</div>
+        </li>
+        <li>
+          <div><span class="proc-name">listEvents</span><span class="proc-kind query">query</span></div>
+          <div class="proc-desc">Paginated events + event code names</div>
+          <div class="proc-tables">→ gdelt_events + event_codes (LEFT JOIN)<br>optional actor/geo ILIKE search</div>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- React components -->
+  <div class="card ui" style="grid-column:3/5;grid-row:2">
+    <div class="card-head">
+      <span>⬡</span> React components
+    </div>
+    <div class="card-body">
+      <ul class="comp-list">
+        <li>
+          <div><span class="comp-name">HorizonGdeltTriageScreen</span></div>
+          <div class="comp-route">📍 /horizon/gdelt/triage · protected</div>
+          <div class="comp-calls">
+            horizon.gdelt.list (status=new, status=flagged) · setStatus · countNew.invalidate<br>
+            intel.eventsByDocUrl (inside FlaggedEventCard)
+          </div>
+          <div style="margin-top:4px;font-size:11px;color:#6b7280">Sub-components: NewEventCard · FlaggedEventCard — infinite scroll, Flag/Skip/Unflag actions</div>
+        </li>
+        <li>
+          <div><span class="comp-name">HorizonWebcutScreen</span></div>
+          <div class="comp-route">📍 /horizon/gdelt/read/:eventId · protected</div>
+          <div class="comp-calls">
+            horizon.gdelt.getEvent · horizon.gdelt.webcut<br>
+            horizon.signals.listIndicators · horizon.snippets.suggestIndicator · snippets.create
+          </div>
+          <div style="margin-top:4px;font-size:11px;color:#6b7280">Read article text, select text → create Snippet, AI indicator suggestion</div>
+        </li>
+        <li>
+          <div><span class="comp-name">IntelEventsPage</span></div>
+          <div class="comp-route">📍 /intel/events · protected</div>
+          <div class="comp-calls">intel.listEvents (infinite, cursor-paginated)</div>
+          <div style="margin-top:4px;font-size:11px;color:#6b7280">Paginated table: actors, location, mentions, tone, Goldstein, event code · EventDetailModal on row click</div>
+        </li>
+        <li>
+          <div><span class="comp-name">SubNavigationBar</span></div>
+          <div class="comp-route">📍 global nav bar</div>
+          <div class="comp-calls">horizon.gdelt.countNew — badge showing unreviewed count</div>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+</div><!-- /diagram -->
+
+<!-- ── Cross-reference flow table ── -->
+<div style="margin-top:32px">
+  <div class="section-label">End-to-end call flows</div>
+  <table class="flow-table">
+    <thead>
+      <tr>
+        <th>UI component / trigger</th>
+        <th></th>
+        <th>tRPC procedure</th>
+        <th></th>
+        <th>Tables read/written</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="t-ui">SubNavigationBar</td>
+        <td class="arrow-cell">→</td>
+        <td class="t-proc">horizon.gdelt.countNew</td>
+        <td class="arrow-cell">→</td>
+        <td class="t-db">gdelt_events</td>
+        <td class="t-note">COUNT WHERE status='new', polled to show nav badge</td>
+      </tr>
+      <tr>
+        <td class="t-ui">TriageScreen · initial load</td>
+        <td class="arrow-cell">→</td>
+        <td class="t-proc">horizon.gdelt.list (×2)</td>
+        <td class="arrow-cell">→</td>
+        <td class="t-db">gdelt_events</td>
+        <td class="t-note">Two concurrent infinite queries: status=new and status=flagged</td>
+      </tr>
+      <tr>
+        <td class="t-ui">FlaggedEventCard load</td>
+        <td class="arrow-cell">→</td>
+        <td class="t-proc">intel.eventsByDocUrl</td>
+        <td class="arrow-cell">→</td>
+        <td class="t-db">event_mentions ⋈ events ⋈ documents</td>
+        <td class="t-note">Fired per flagged card; reveals related events for that source URL</td>
+      </tr>
+      <tr>
+        <td class="t-ui">TriageScreen · Flag / Skip</td>
+        <td class="arrow-cell">→</td>
+        <td class="t-proc">horizon.gdelt.setStatus</td>
+        <td class="arrow-cell">→</td>
+        <td class="t-db">gdelt_events (UPDATE)</td>
+        <td class="t-note">Invalidates list + countNew; unflag/reflag also use setStatus</td>
+      </tr>
+      <tr>
+        <td class="t-ui">WebcutScreen · load</td>
+        <td class="arrow-cell">→</td>
+        <td class="t-proc">horizon.gdelt.getEvent</td>
+        <td class="arrow-cell">→</td>
+        <td class="t-db">gdelt_events (SELECT 1)</td>
+        <td class="t-note">Renders event metadata header</td>
+      </tr>
+      <tr>
+        <td class="t-ui">WebcutScreen · article text</td>
+        <td class="arrow-cell">→</td>
+        <td class="t-proc">horizon.gdelt.webcut</td>
+        <td class="arrow-cell">→</td>
+        <td class="t-db">— (fetchReadable only)</td>
+        <td class="t-note">Server-side fetch of source_url; no DB read</td>
+      </tr>
+      <tr>
+        <td class="t-ui">IntelEventsPage · scroll</td>
+        <td class="arrow-cell">→</td>
+        <td class="t-proc">intel.listEvents</td>
+        <td class="arrow-cell">→</td>
+        <td class="t-db">gdelt_events ⋈ event_codes</td>
+        <td class="t-note">Cursor-paginated; optional ILIKE filter on actor/geo; num_mentions ≥ 1</td>
+      </tr>
+      <tr>
+        <td class="t-ui">IntelEventsPage · EventDetailModal</td>
+        <td class="arrow-cell">→</td>
+        <td class="t-proc">intel.coverage</td>
+        <td class="arrow-cell">→</td>
+        <td class="t-db">event_mentions ⋈ documents + events</td>
+        <td class="t-note">Shows mention count, avg tone, and linked article headlines</td>
+      </tr>
+      <tr>
+        <td class="t-ui">Intel feed / search pages</td>
+        <td class="arrow-cell">→</td>
+        <td class="t-proc">intel.feed / searchDocuments</td>
+        <td class="arrow-cell">→</td>
+        <td class="t-db">gdelt_documents</td>
+        <td class="t-note">Document-centric view; sortable by added or published date</td>
+      </tr>
+      <tr>
+        <td class="t-ui">Cron / Admin panel</td>
+        <td class="arrow-cell">→</td>
+        <td class="t-proc">POST /internal/jobs/gdelt<br>admin.runGdelt</td>
+        <td class="arrow-cell">→</td>
+        <td class="t-db">events · event_mentions · documents (UPSERT)</td>
+        <td class="t-note">Advisory lock prevents concurrent runs; status never overwritten on upsert</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div style="margin-top:32px;padding:14px 18px;background:var(--surface);border:1px solid var(--border);border-radius:10px;font-size:11px;color:var(--muted);line-height:1.8">
+  <strong style="color:#e2e8f0">File locations</strong><br>
+  <code style="color:#93c5fd">shared/db/tables/gdelt_events.ts</code> ·
+  <code style="color:#93c5fd">shared/db/tables/gdelt_event_mentions.ts</code> ·
+  <code style="color:#93c5fd">shared/db/tables/gdelt_documents.ts</code><br>
+  <code style="color:#86efac">server/routers/gdelt.router.ts</code> ·
+  <code style="color:#86efac">server/routers/intelRouter.ts</code> ·
+  <code style="color:#86efac">server/routers/adminRouter.ts</code><br>
+  <code style="color:#f59e0b">server/jobs/gdeltIngest.ts</code> ·
+  <code style="color:#f59e0b">server/index.ts (POST /internal/jobs/gdelt)</code><br>
+  <code style="color:#d8b4fe">client/src/pages/HorizonGdeltTriageScreen.tsx</code> ·
+  <code style="color:#d8b4fe">client/src/pages/HorizonWebcutScreen.tsx</code> ·
+  <code style="color:#d8b4fe">client/src/pages/IntelEventsPage.tsx</code> ·
+  <code style="color:#d8b4fe">client/src/components/SubNavigationBar.tsx</code>
+</div>
+
+</body>
+</html>
