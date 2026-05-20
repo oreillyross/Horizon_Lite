@@ -120,6 +120,14 @@ export const gdeltRouter = router({
     return { count: row.count ?? 0 };
   }),
 
+  countFlagged: protectedProcedure.query(async () => {
+    const result = await db.execute(sql`
+      SELECT COUNT(*)::int AS count FROM gdelt_events WHERE status = 'flagged'
+    `);
+    const row = result.rows[0] as { count: number };
+    return { count: row.count ?? 0 };
+  }),
+
   getEvent: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input }) => {

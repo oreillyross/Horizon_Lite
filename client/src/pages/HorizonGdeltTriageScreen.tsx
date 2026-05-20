@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { ToastAction } from "@/components/ui/toast";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
-import { Flag, SkipForward, Loader2, Inbox, BookOpen } from "lucide-react";
+import { Flag, SkipForward, Loader2, Inbox, BookOpen, ArrowUp } from "lucide-react";
 
 type TriageItem = {
   globalEventId: string;
@@ -227,6 +227,25 @@ export default function HorizonGdeltTriageScreen() {
   const utils = trpc.useUtils();
   const { toast } = useToast();
   const [removingIds, setRemovingIds] = useState<Set<string>>(new Set());
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    function onScroll() {
+      setScrolled(window.scrollY > 120);
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const countNewQuery = trpc.horizon.gdelt.countNew.useQuery(undefined, {
+    refetchInterval: 60_000,
+  });
+  const countFlaggedQuery = trpc.horizon.gdelt.countFlagged.useQuery(undefined, {
+    refetchInterval: 60_000,
+  });
+
+  const newCount = countNewQuery.data?.count ?? 0;
+  const flaggedCount = countFlaggedQuery.data?.count ?? 0;
 
   const newQuery = trpc.horizon.gdelt.list.useInfiniteQuery(
     { limit: 30, status: "new" },
@@ -263,6 +282,7 @@ export default function HorizonGdeltTriageScreen() {
     },
     onSettled: () => {
       void utils.horizon.gdelt.countNew.invalidate();
+      void utils.horizon.gdelt.countFlagged.invalidate();
       void utils.horizon.gdelt.list.invalidate({ limit: 30, status: "new" });
       void utils.horizon.gdelt.list.invalidate({ limit: 20, status: "flagged" });
     },
@@ -270,12 +290,14 @@ export default function HorizonGdeltTriageScreen() {
 
   const unflag = trpc.horizon.gdelt.setStatus.useMutation({
     onSettled: () => {
+      void utils.horizon.gdelt.countFlagged.invalidate();
       void utils.horizon.gdelt.list.invalidate({ limit: 20, status: "flagged" });
     },
   });
 
   const reflag = trpc.horizon.gdelt.setStatus.useMutation({
     onSettled: () => {
+      void utils.horizon.gdelt.countFlagged.invalidate();
       void utils.horizon.gdelt.list.invalidate({ limit: 20, status: "flagged" });
     },
   });
@@ -467,6 +489,43 @@ export default function HorizonGdeltTriageScreen() {
           )}
         </div>
       </section>
+
+      {/* Floating triage subbar */}
+      <div
+        className={[
+          "fixed bottom-6 right-6 z-40 flex items-center gap-0 rounded-xl border bg-background/90 shadow-lg backdrop-blur-sm transition-all duration-200",
+          scrolled ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0 pointer-events-none",
+        ].join(" ")}
+        aria-hidden={!scrolled}
+      >
+        <div className="flex items-center gap-1.5 px-4 py-2.5 text-sm">
+          <Flag className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+          <span className="font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
+            {flaggedCount}
+          </span>
+          <span className="text-xs text-muted-foreground">flagged</span>
+        </div>
+
+        <div className="h-5 w-px bg-border" />
+
+        <div className="flex items-center gap-1.5 px-4 py-2.5 text-sm">
+          <Inbox className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className="font-semibold tabular-nums">{newCount > 999 ? "999+" : newCount}</span>
+          <span className="text-xs text-muted-foreground">new</span>
+        </div>
+
+        <div className="h-5 w-px bg-border" />
+
+        <button
+          type="button"
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          className="flex items-center gap-1.5 px-4 py-2.5 text-sm text-muted-foreground transition-colors hover:text-foreground rounded-r-xl"
+          aria-label="Scroll to top"
+        >
+          <ArrowUp className="h-3.5 w-3.5" />
+          <span className="text-xs">Top</span>
+        </button>
+      </div>
     </div>
   );
 }
