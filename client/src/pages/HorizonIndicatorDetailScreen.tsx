@@ -63,9 +63,10 @@ function EmptyBox({ title, body }: { title: string; body: string }) {
 function SuggestionsPanel({ indicatorId }: { indicatorId: string }) {
   const { toast } = useToast();
   const utils = trpc.useUtils();
+  const [showDuplicates, setShowDuplicates] = useState(false);
 
   const q = trpc.horizon.signals.listSuggestions.useQuery(
-    { indicatorId },
+    { indicatorId, showDuplicates },
     { enabled: Boolean(indicatorId) },
   );
 
@@ -91,11 +92,23 @@ function SuggestionsPanel({ indicatorId }: { indicatorId: string }) {
     <SectionCard
       title="Signal suggestions"
       right={
-        q.data && q.data.length > 0 ? (
-          <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
-            {q.data.length} pending
-          </span>
-        ) : undefined
+        <div className="flex items-center gap-2">
+          {q.data && q.data.length > 0 && (
+            <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+              {q.data.length} pending
+            </span>
+          )}
+          <button
+            onClick={() => setShowDuplicates((v) => !v)}
+            className={`rounded-md border px-2.5 py-1 text-xs font-medium transition-colors ${
+              showDuplicates
+                ? "border-blue-300 bg-blue-50 text-blue-700"
+                : "border-border text-muted-foreground hover:bg-muted"
+            }`}
+          >
+            {showDuplicates ? "Hide duplicates" : "Show duplicates"}
+          </button>
+        </div>
       }
     >
       {q.isLoading ? (
@@ -124,9 +137,16 @@ function SuggestionsPanel({ indicatorId }: { indicatorId: string }) {
             return (
               <div key={event.id} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
                 <div className="min-w-0 flex-1">
-                  <div className="text-sm font-medium">
-                    {event.title ?? (
-                      <span className="italic text-muted-foreground">Untitled</span>
+                  <div className="flex items-center gap-2">
+                    <div className="text-sm font-medium">
+                      {event.title ?? (
+                        <span className="italic text-muted-foreground">Untitled</span>
+                      )}
+                    </div>
+                    {event.canonicalId && (
+                      <span className="rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-xs text-slate-500">
+                        duplicate
+                      </span>
                     )}
                   </div>
                   <div className="mt-0.5 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">

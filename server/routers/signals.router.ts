@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { eq, and, inArray, ilike, SQL } from "drizzle-orm";
+import { eq, and, inArray, ilike, isNull, SQL } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "../trpc";
@@ -257,7 +257,10 @@ export const signalsRouter = router({
     }),
 
   listSuggestions: protectedProcedure
-    .input(z.object({ indicatorId: z.string().uuid() }))
+    .input(z.object({
+      indicatorId: z.string().uuid(),
+      showDuplicates: z.boolean().optional().default(false),
+    }))
     .output(
       z.array(
         z.object({
@@ -268,6 +271,7 @@ export const signalsRouter = router({
           sourceHost: z.string().nullable(),
           score: z.number(),
           confidenceScore: z.number().nullable(),
+          canonicalId: z.string().uuid().nullable(),
           status: z.string(),
           createdAt: z.string(),
         }),
@@ -278,15 +282,16 @@ export const signalsRouter = router({
         throw new TRPCError({ code: "FORBIDDEN", message: "No analyst group" });
       }
 
+      const conditions = [
+        eq(signalEvents.indicatorId, input.indicatorId),
+        eq(signalEvents.status, "pending"),
+        ...(input.showDuplicates ? [] : [isNull(signalEvents.canonicalId)]),
+      ];
+
       const rows = await db
         .select()
         .from(signalEvents)
-        .where(
-          and(
-            eq(signalEvents.indicatorId, input.indicatorId),
-            eq(signalEvents.status, "pending"),
-          ),
-        )
+        .where(and(...conditions))
         .orderBy(signalEvents.createdAt);
 
       return rows.map((r) => ({
@@ -297,6 +302,7 @@ export const signalsRouter = router({
         sourceHost: r.sourceHost ?? null,
         score: r.score,
         confidenceScore: r.confidenceScore ?? null,
+        canonicalId: r.canonicalId ?? null,
         status: r.status,
         createdAt: r.createdAt.toISOString(),
       }));
