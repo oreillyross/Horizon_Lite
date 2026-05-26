@@ -175,12 +175,19 @@ function AssessmentSkeletons() {
   );
 }
 
+const WINDOWS = [
+  { label: "7d", value: "7d" as const },
+  { label: "30d", value: "30d" as const },
+  { label: "90d", value: "90d" as const },
+];
+
 export default function HorizonReportsScreen() {
   const [themeId, setThemeId] = useState<string | undefined>(undefined);
+  const [window, setWindow] = useState<"7d" | "30d" | "90d">("30d");
 
   const themesQuery = trpc.horizon.themes.list.useQuery();
   const assessmentQuery = trpc.horizon.reports.generateAssessment.useQuery(
-    { themeId: themeId!, window: "30d" },
+    { themeId: themeId!, window },
     { enabled: !!themeId }
   );
 
@@ -208,24 +215,42 @@ export default function HorizonReportsScreen() {
         </div>
       </div>
 
-      {/* Theme selector */}
-      <div className="mt-6 flex items-center gap-3">
-        <span className="text-sm font-medium">Theme</span>
-        <Select
-          value={themeId ?? ""}
-          onValueChange={(val) => setThemeId(val || undefined)}
-        >
-          <SelectTrigger className="w-64">
-            <SelectValue placeholder="Select a theme…" />
-          </SelectTrigger>
-          <SelectContent>
-            {(themesQuery.data ?? []).map((t) => (
-              <SelectItem key={t.id} value={t.id}>
-                {t.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      {/* Controls row */}
+      <div className="mt-6 flex flex-wrap items-center gap-4">
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-medium">Theme</span>
+          <Select
+            value={themeId ?? ""}
+            onValueChange={(val) => setThemeId(val || undefined)}
+          >
+            <SelectTrigger className="w-64">
+              <SelectValue placeholder="Select a theme…" />
+            </SelectTrigger>
+            <SelectContent>
+              {(themesQuery.data ?? []).map((t) => (
+                <SelectItem key={t.id} value={t.id}>
+                  {t.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex items-center gap-1 rounded-md border p-1">
+          {WINDOWS.map((w) => (
+            <button
+              key={w.value}
+              onClick={() => setWindow(w.value)}
+              className={`rounded px-3 py-1 text-sm font-medium transition-colors ${
+                window === w.value
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {w.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Body */}
