@@ -129,14 +129,14 @@ and handed to a decision-maker.
 
 ### Research agenda
 
-- [ ] Add a `getResearchAgenda` query in `reports.router.ts`: return indicators with zero approved `signalEvents`, sorted descending by their total weight across all linked scenarios
-- [ ] Render a "Research agenda" section at the bottom of the assessment — unfulfilled indicators listed with parent scenario name and weight
+- [x] Add a `getResearchAgenda` query in `reports.router.ts`: return indicators with zero approved `signalEvents`, sorted descending by their total weight across all linked scenarios
+- [x] Render a "Research agenda" section at the bottom of the assessment — unfulfilled indicators listed with parent scenario name and weight
 
 ### Export
 
-- [ ] Add an `exportMarkdown` tRPC procedure that serialises the current assessment to a Markdown string
-- [ ] Add a "Download Markdown" button to `HorizonReportsScreen` that triggers the export and initiates a file download in the browser
-- [ ] Add a print-optimised CSS block in `client/src/index.css` (scoped to `@media print`) so the report page prints cleanly; add a "Print / Save PDF" button that calls `window.print()`
+- [x] Add an `exportMarkdown` tRPC procedure that serialises the current assessment to a Markdown string
+- [x] Add a "Download Markdown" button to `HorizonReportsScreen` that triggers the export and initiates a file download in the browser
+- [x] Add a print-optimised CSS block in `client/src/index.css` (scoped to `@media print`) so the report page prints cleanly; add a "Print / Save PDF" button that calls `window.print()`
 
 ---
 

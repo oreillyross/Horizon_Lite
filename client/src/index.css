@@ -286,3 +286,45 @@
     inset: -1px;
   }
 }
+
+@media print {
+  nav,
+  header,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  body {
+    font-size: 12pt;
+    color: #000;
+    background: #fff;
+  }
+
+  .print\:block {
+    display: block !important;
+  }
+
+  a[href]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.75em;
+    color: #555;
+  }
+
+  .rounded-lg,
+  .rounded-md {
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+
+  .space-y-8 > * + * {
+    margin-top: 2rem;
+  }
+
+  .shadow-sm {
+    box-shadow: none;
+  }
+
+  .page-break-before {
+    page-break-before: always;
+  }
+}
