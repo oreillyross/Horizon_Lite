@@ -267,6 +267,7 @@ export const signalsRouter = router({
           sourceUrl: z.string().nullable(),
           sourceHost: z.string().nullable(),
           score: z.number(),
+          confidenceScore: z.number().nullable(),
           status: z.string(),
           createdAt: z.string(),
         }),
@@ -295,6 +296,7 @@ export const signalsRouter = router({
         sourceUrl: r.sourceUrl ?? null,
         sourceHost: r.sourceHost ?? null,
         score: r.score,
+        confidenceScore: r.confidenceScore ?? null,
         status: r.status,
         createdAt: r.createdAt.toISOString(),
       }));

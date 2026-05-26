@@ -134,6 +134,19 @@ function SuggestionsPanel({ indicatorId }: { indicatorId: string }) {
                     <span className="font-mono tabular-nums">
                       score {event.score.toFixed(2)}
                     </span>
+                    {event.confidenceScore !== null && event.confidenceScore !== undefined && (
+                      <span
+                        className={`inline-flex items-center rounded-full px-2 py-0.5 font-medium tabular-nums ${
+                          event.confidenceScore >= 0.66
+                            ? "bg-emerald-100 text-emerald-800"
+                            : event.confidenceScore >= 0.33
+                            ? "bg-amber-100 text-amber-800"
+                            : "bg-slate-100 text-slate-700"
+                        }`}
+                      >
+                        conf {event.confidenceScore.toFixed(2)}
+                      </span>
+                    )}
                     <span>{formatDate(event.createdAt)}</span>
                   </div>
                   {event.sourceUrl && (
