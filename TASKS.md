@@ -119,7 +119,7 @@ and handed to a decision-maker.
 
 - [x] Add a `generateAssessment` tRPC procedure in `reports.router.ts` that accepts `themeId` and a `window` (7d/30d/90d) and returns: scenarios sorted by warmth delta (warmer first), each with their driving indicators and the signal events behind them
 - [x] Build an assessment view in `HorizonReportsScreen` — warmer scenarios section, colder scenarios section, evidence list per scenario
-- [ ] Add a 7d / 30d / 90d window selector that re-runs the assessment query
+- [x] Add a 7d / 30d / 90d window selector that re-runs the assessment query
 
 ### Evidence trail
 
