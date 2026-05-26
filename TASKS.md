@@ -158,9 +158,9 @@ and handed to a decision-maker.
 
 ### Deduplication
 
-- [ ] Add a `canonicalId uuid` (nullable, self-reference) column to `signalEvents` to mark duplicates; run migrations
-- [ ] In `server/ingest/gdeltIngest.ts`, before inserting a new signal event, check for existing rows with the same `globalEventId`; for near-duplicates (same actors + same day + same CAMEO root code) set `canonicalId` to the id of the earliest matching row
-- [ ] Filter non-canonical rows (where `canonicalId IS NOT NULL`) out of the default suggestion queue; add a "Show duplicates" toggle
+- [x] Add a `canonicalId uuid` (nullable, self-reference) column to `signalEvents` to mark duplicates; run migrations
+- [x] In `server/ingest/gdeltIngest.ts`, before inserting a new signal event, check for existing rows with the same `globalEventId`; for near-duplicates (same actors + same day + same CAMEO root code) set `canonicalId` to the id of the earliest matching row
+- [x] Filter non-canonical rows (where `canonicalId IS NOT NULL`) out of the default suggestion queue; add a "Show duplicates" toggle
 
 ### Signal lifecycle
 

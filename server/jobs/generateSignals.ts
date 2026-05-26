@@ -40,6 +40,9 @@ type AmplificationRow = {
   source_url: string | null;
   event_code: string | null;
   goldstein: number | string | null;
+  actor1_name: string | null;
+  actor2_name: string | null;
+  event_time: Date | string | null;
 };
 
 type HotspotRow = {
@@ -73,6 +76,45 @@ function computeConfidenceScore(
     ? Math.min(1, Math.log(1 + numMentions) / Math.log(10001))
     : 0;
   return (catWeight + goldNorm + mentionNorm) / 3;
+}
+
+function toDateString(v: Date | string | null): string | null {
+  if (!v) return null;
+  const d = v instanceof Date ? v : new Date(v as string);
+  return isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
+}
+
+async function findCanonicalForAmplification(
+  actor1: string | null,
+  actor2: string | null,
+  rootCode: string,
+  eventDate: string,
+  excludeGlobalEventId: string,
+): Promise<string | null> {
+  const nearDups = await db.execute(sql`
+    SELECT global_event_id
+    FROM gdelt_events
+    WHERE LEFT(event_code, 2) = ${rootCode}
+      AND DATE(event_time AT TIME ZONE 'UTC') = ${eventDate}::date
+      AND global_event_id != ${excludeGlobalEventId}
+      AND (actor1_name IS NOT DISTINCT FROM ${actor1})
+      AND (actor2_name IS NOT DISTINCT FROM ${actor2})
+    LIMIT 10
+  `);
+
+  for (const dup of nearDups.rows as { global_event_id: string }[]) {
+    const prefix = `amplification|${dup.global_event_id}|`;
+    const existing = await db.execute(sql`
+      SELECT id FROM signal_events
+      WHERE dedupe_key LIKE ${prefix + "%"}
+        AND canonical_id IS NULL
+      ORDER BY created_at ASC
+      LIMIT 1
+    `);
+    const row = existing.rows[0] as { id: string } | undefined;
+    if (row?.id) return row.id;
+  }
+  return null;
 }
 
 function hourBucket(d = new Date()) {
@@ -226,7 +268,10 @@ export async function generateSignals(): Promise<SignalGenerationResult> {
       (num_mentions::float / NULLIF(num_sources,0)) AS mps,
       source_url,
       event_code,
-      goldstein
+      goldstein,
+      actor1_name,
+      actor2_name,
+      event_time
     FROM gdelt_events
     WHERE event_time >= now() - interval '60 minutes'
       AND num_mentions IS NOT NULL
@@ -235,6 +280,9 @@ export async function generateSignals(): Promise<SignalGenerationResult> {
     ORDER BY mps DESC NULLS LAST
     LIMIT 25;
   `);
+
+  // Local map: nearKey → canonical signal event id, to avoid repeated DB lookups within batch
+  const nearDupeCache = new Map<string, string>();
 
   for (const row of amplificationResult.rows as AmplificationRow[]) {
     const mps = Number(row.mps ?? 0);
@@ -249,7 +297,26 @@ export async function generateSignals(): Promise<SignalGenerationResult> {
       row.num_mentions !== null ? Number(row.num_mentions) : null,
     );
 
-    await db
+    const rootCode = row.event_code ? row.event_code.slice(0, 2) : null;
+    const eventDate = toDateString(row.event_time ?? null);
+    const actor1 = row.actor1_name ?? null;
+    const actor2 = row.actor2_name ?? null;
+    const nearKey = rootCode && eventDate
+      ? `${rootCode}|${actor1 ?? ""}|${actor2 ?? ""}|${eventDate}`
+      : null;
+
+    let canonicalId: string | null = null;
+    if (nearKey) {
+      if (nearDupeCache.has(nearKey)) {
+        canonicalId = nearDupeCache.get(nearKey)!;
+      } else {
+        canonicalId = await findCanonicalForAmplification(
+          actor1, actor2, rootCode!, eventDate!, row.global_event_id,
+        );
+      }
+    }
+
+    const inserted = await db
       .insert(signalEvents)
       .values({
         indicatorId: mapIndicator(`AMPLIFICATION ${row.global_event_id}`),
@@ -258,9 +325,16 @@ export async function generateSignals(): Promise<SignalGenerationResult> {
         title: `Amplification anomaly (MPS=${mps.toFixed(1)})`,
         score: mps,
         confidenceScore,
+        canonicalId,
         dedupeKey,
       })
+      .returning({ id: signalEvents.id })
       .onConflictDoNothing();
+
+    // Record first canonical insert so subsequent near-dups in this batch reference it
+    if (inserted.length > 0 && canonicalId === null && nearKey) {
+      nearDupeCache.set(nearKey, inserted[0].id);
+    }
 
     amplifications++;
   }
