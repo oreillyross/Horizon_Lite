@@ -20,7 +20,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Check, Loader2, Pencil, Trash2, X } from "lucide-react";
+import { Check, ExternalLink, Loader2, Pencil, Trash2, X } from "lucide-react";
 import { createIndicatorInputSchema, type CreateIndicatorInput } from "@shared";
 import { IndicatorPill } from "@/components/IndicatorPill";
 import { formatDate, formatDateTime } from "@/lib/formatters";
@@ -140,10 +140,11 @@ function SuggestionsPanel({ indicatorId }: { indicatorId: string }) {
                     <a
                       href={event.sourceUrl}
                       target="_blank"
-                      rel="noreferrer"
-                      className="mt-0.5 block truncate text-xs text-blue-600 hover:underline"
+                      rel="noopener noreferrer"
+                      className="mt-0.5 inline-flex items-center gap-0.5 text-xs text-blue-600 hover:underline"
                     >
-                      {event.sourceUrl}
+                      <ExternalLink className="h-3 w-3 shrink-0" />
+                      {event.sourceHost ?? event.sourceUrl}
                     </a>
                   )}
                 </div>
@@ -717,10 +718,11 @@ export default function HorizonIndicatorDetailScreen() {
                             <a
                               href={e.url}
                               target="_blank"
-                              rel="noreferrer"
-                              className="hover:underline"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 hover:underline"
                             >
                               {e.title}
+                              <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground" />
                             </a>
                           ) : (
                             e.title
@@ -730,7 +732,19 @@ export default function HorizonIndicatorDetailScreen() {
                           </div>
                         </td>
                         <td className="py-3 pr-4 text-muted-foreground">
-                          {e.sourceHost}
+                          {e.url ? (
+                            <a
+                              href={e.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-0.5 hover:underline"
+                            >
+                              <ExternalLink className="h-3 w-3 shrink-0" />
+                              {e.sourceHost}
+                            </a>
+                          ) : (
+                            e.sourceHost
+                          )}
                         </td>
                         <td className="py-3 pr-4 text-muted-foreground">
                           {e.geo?.countryCode ?? e.geo?.regionLabel ?? "—"}
