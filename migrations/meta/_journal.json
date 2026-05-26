@@ -183,6 +183,13 @@
       "when": 1779105185141,
       "tag": "0025_clammy_norrin_radd",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1748217600000,
+      "tag": "0026_signal_confidence_score",
+      "breakpoints": true
     }
   ]
 }

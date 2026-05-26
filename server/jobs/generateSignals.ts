@@ -38,6 +38,8 @@ type AmplificationRow = {
   num_articles: number | string | null;
   mps: number | string | null;
   source_url: string | null;
+  event_code: string | null;
+  goldstein: number | string | null;
 };
 
 type HotspotRow = {
@@ -48,6 +50,30 @@ type HotspotRow = {
   tone_now: number | string | null;
   delta: number | string | null;
 };
+
+// CAMEO root-code weights: higher conflict/intensity = higher weight
+const CAMEO_WEIGHTS: Record<string, number> = {
+  "01": 0.10, "02": 0.15, "03": 0.20, "04": 0.25, "05": 0.30,
+  "06": 0.35, "07": 0.40, "08": 0.30, "09": 0.35, "10": 0.50,
+  "11": 0.45, "12": 0.55, "13": 0.70, "14": 0.60, "15": 0.65,
+  "16": 0.60, "17": 0.80, "18": 0.90, "19": 0.95, "20": 1.00,
+};
+
+// Combine GDELT event fields into a normalised [0,1] confidence score.
+// eventCode category weight (0–1) + |goldstein| / 10 (0–1) + log(1+mentions) / log(10001) (0–1), averaged.
+function computeConfidenceScore(
+  eventCode: string | null,
+  goldstein: number | null,
+  numMentions: number | null,
+): number {
+  const root = eventCode ? eventCode.slice(0, 2) : null;
+  const catWeight = root ? (CAMEO_WEIGHTS[root] ?? 0.30) : 0.30;
+  const goldNorm = goldstein !== null ? Math.min(1, Math.abs(goldstein) / 10) : 0.5;
+  const mentionNorm = numMentions !== null
+    ? Math.min(1, Math.log(1 + numMentions) / Math.log(10001))
+    : 0;
+  return (catWeight + goldNorm + mentionNorm) / 3;
+}
 
 function hourBucket(d = new Date()) {
   const x = new Date(d);
@@ -198,7 +224,9 @@ export async function generateSignals(): Promise<SignalGenerationResult> {
       num_sources,
       num_articles,
       (num_mentions::float / NULLIF(num_sources,0)) AS mps,
-      source_url
+      source_url,
+      event_code,
+      goldstein
     FROM gdelt_events
     WHERE event_time >= now() - interval '60 minutes'
       AND num_mentions IS NOT NULL
@@ -215,6 +243,11 @@ export async function generateSignals(): Promise<SignalGenerationResult> {
     if (!row.source_url) continue;
 
     const dedupeKey = `amplification|${row.global_event_id}|${bucket}`;
+    const confidenceScore = computeConfidenceScore(
+      row.event_code,
+      row.goldstein !== null ? Number(row.goldstein) : null,
+      row.num_mentions !== null ? Number(row.num_mentions) : null,
+    );
 
     await db
       .insert(signalEvents)
@@ -224,6 +257,7 @@ export async function generateSignals(): Promise<SignalGenerationResult> {
         sourceHost: null,
         title: `Amplification anomaly (MPS=${mps.toFixed(1)})`,
         score: mps,
+        confidenceScore,
         dedupeKey,
       })
       .onConflictDoNothing();

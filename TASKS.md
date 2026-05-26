@@ -152,9 +152,9 @@ and handed to a decision-maker.
 
 ### Signal confidence scoring
 
-- [ ] Add a `confidenceScore doublePrecision` column to `signalEvents`; run migrations
-- [ ] Update `server/ingest/generateSignals.ts` to compute confidence from: GDELT `eventCode` category weight + Goldstein scale (normalised 0–1) + log(mention count); store in `confidenceScore`
-- [ ] Display confidence score on signal suggestion cards in the indicator review panel
+- [x] Add a `confidenceScore doublePrecision` column to `signalEvents`; run migrations
+- [x] Update `server/ingest/generateSignals.ts` to compute confidence from: GDELT `eventCode` category weight + Goldstein scale (normalised 0–1) + log(mention count); store in `confidenceScore`
+- [x] Display confidence score on signal suggestion cards in the indicator review panel
 
 ### Deduplication
 

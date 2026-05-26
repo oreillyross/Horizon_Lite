@@ -24,6 +24,8 @@ export const signalEvents = pgTable(
 
     score: doublePrecision("score").notNull(),
 
+    confidenceScore: doublePrecision("confidence_score"),
+
     dedupeKey: text("dedupe_key"),
 
     status: text("status").notNull().default("pending"),
