@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { TrendingUp, TrendingDown, Minus, ExternalLink, FileText, ChevronDown } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, ExternalLink, FileText, ChevronDown, Printer, Download } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -189,6 +189,55 @@ function AssessmentSkeletons() {
   );
 }
 
+type ResearchAgendaItem = {
+  indicatorId: string;
+  indicatorName: string;
+  strength: number;
+  totalWeight: number;
+  scenarios: { scenarioId: string; scenarioName: string; weight: number }[];
+};
+
+function ResearchAgendaSection({ items }: { items: ResearchAgendaItem[] }) {
+  if (items.length === 0) return null;
+
+  return (
+    <section className="print-section">
+      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">
+        Research Agenda
+      </h2>
+      <p className="mb-3 text-xs text-muted-foreground">
+        Indicators with no approved signal events — prioritised by total weight across linked scenarios.
+      </p>
+      <div className="space-y-2">
+        {items.map((item) => (
+          <div key={item.indicatorId} className="rounded-md border bg-background px-4 py-3 shadow-sm">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <Badge variant="outline" className="tabular-nums text-xs shrink-0">
+                  {item.strength}
+                </Badge>
+                <span className="truncate font-medium text-sm">{item.indicatorName}</span>
+              </div>
+              <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+                weight {item.totalWeight.toFixed(1)}
+              </span>
+            </div>
+            <ul className="mt-1.5 space-y-0.5 pl-2">
+              {item.scenarios.map((s) => (
+                <li key={s.scenarioId} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <span className="shrink-0 text-muted-foreground/50">↳</span>
+                  <span className="flex-1 truncate">{s.scenarioName}</span>
+                  <span className="tabular-nums">{s.weight.toFixed(1)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 const WINDOWS = [
   { label: "7d", value: "7d" as const },
   { label: "30d", value: "30d" as const },
@@ -197,12 +246,20 @@ const WINDOWS = [
 
 export default function HorizonReportsScreen() {
   const [themeId, setThemeId] = useState<string | undefined>(undefined);
-  const [window, setWindow] = useState<"7d" | "30d" | "90d">("30d");
+  const [timeWindow, setTimeWindow] = useState<"7d" | "30d" | "90d">("30d");
 
   const themesQuery = trpc.horizon.themes.list.useQuery();
   const assessmentQuery = trpc.horizon.reports.generateAssessment.useQuery(
-    { themeId: themeId!, window },
+    { themeId: themeId!, window: timeWindow },
     { enabled: !!themeId }
+  );
+  const agendaQuery = trpc.horizon.reports.getResearchAgenda.useQuery(
+    { themeId: themeId! },
+    { enabled: !!themeId }
+  );
+  const exportQuery = trpc.horizon.reports.exportMarkdown.useQuery(
+    { themeId: themeId!, window: timeWindow },
+    { enabled: false }
   );
 
   const scenarios = assessmentQuery.data ?? [];
@@ -210,10 +267,25 @@ export default function HorizonReportsScreen() {
   const neutral = scenarios.filter((s) => s.delta === 0);
   const colder = scenarios.filter((s) => s.delta < 0);
 
+  function handleDownloadMarkdown() {
+    exportQuery.refetch().then(({ data }) => {
+      if (!data) return;
+      const blob = new Blob([data], { type: "text/markdown;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `sentinel-assessment-${timeWindow}.md`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+  }
+
+  const hasAssessment = !!themeId && !assessmentQuery.isLoading && scenarios.length > 0;
+
   return (
-    <div className="mx-auto max-w-4xl px-6 lg:px-8 py-8">
+    <div className="mx-auto max-w-4xl px-6 lg:px-8 py-8 print:px-0 print:py-4">
       {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-4 print:hidden">
         <div>
           <div className="text-sm text-muted-foreground">
             <Link href="/horizon/overview" className="hover:underline">
@@ -227,10 +299,39 @@ export default function HorizonReportsScreen() {
             Signal activity across scenarios for the selected theme.
           </div>
         </div>
+        {hasAssessment && (
+          <div className="flex items-center gap-2 mt-auto">
+            <button
+              onClick={handleDownloadMarkdown}
+              disabled={exportQuery.isFetching}
+              className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-muted disabled:opacity-50 transition-colors"
+            >
+              <Download className="h-4 w-4" />
+              {exportQuery.isFetching ? "Preparing…" : "Download Markdown"}
+            </button>
+            <button
+              onClick={() => window.print()}
+              className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-muted transition-colors"
+            >
+              <Printer className="h-4 w-4" />
+              Print / Save PDF
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Print-only header */}
+      <div className="hidden print:block mb-6">
+        <h1 className="text-2xl font-semibold">Sentinel Assessment</h1>
+        {themesQuery.data?.find((t) => t.id === themeId) && (
+          <p className="text-sm text-gray-600 mt-1">
+            Theme: {themesQuery.data.find((t) => t.id === themeId)?.name} · Window: {timeWindow}
+          </p>
+        )}
       </div>
 
       {/* Controls row */}
-      <div className="mt-6 flex flex-wrap items-center gap-4">
+      <div className="mt-6 flex flex-wrap items-center gap-4 print:hidden">
         <div className="flex items-center gap-3">
           <span className="text-sm font-medium">Theme</span>
           <Select
@@ -254,9 +355,9 @@ export default function HorizonReportsScreen() {
           {WINDOWS.map((w) => (
             <button
               key={w.value}
-              onClick={() => setWindow(w.value)}
+              onClick={() => setTimeWindow(w.value)}
               className={`rounded px-3 py-1 text-sm font-medium transition-colors ${
-                window === w.value
+                timeWindow === w.value
                   ? "bg-foreground text-background"
                   : "text-muted-foreground hover:text-foreground"
               }`}
@@ -270,7 +371,7 @@ export default function HorizonReportsScreen() {
       {/* Body */}
       <div className="mt-8">
         {!themeId ? (
-          <div className="flex flex-col items-center justify-center rounded-lg border border-dashed bg-background py-16 text-center">
+          <div className="flex flex-col items-center justify-center rounded-lg border border-dashed bg-background py-16 text-center print:hidden">
             <FileText className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
             <div className="text-base font-medium">No theme selected</div>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -280,11 +381,11 @@ export default function HorizonReportsScreen() {
         ) : assessmentQuery.isLoading ? (
           <AssessmentSkeletons />
         ) : assessmentQuery.isError ? (
-          <div className="rounded-md border bg-muted p-4 text-sm text-muted-foreground">
+          <div className="rounded-md border bg-muted p-4 text-sm text-muted-foreground print:hidden">
             {assessmentQuery.error.message}
           </div>
         ) : scenarios.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-lg border border-dashed bg-background py-16 text-center">
+          <div className="flex flex-col items-center justify-center rounded-lg border border-dashed bg-background py-16 text-center print:hidden">
             <FileText className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
             <div className="text-base font-medium">No scenarios in this theme</div>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -296,6 +397,7 @@ export default function HorizonReportsScreen() {
             <SectionBlock title="Warmer scenarios" accent="green" scenarios={warmer} />
             <SectionBlock title="No movement" accent="muted" scenarios={neutral} />
             <SectionBlock title="Colder scenarios" accent="red" scenarios={colder} />
+            <ResearchAgendaSection items={agendaQuery.data ?? []} />
           </div>
         )}
       </div>
