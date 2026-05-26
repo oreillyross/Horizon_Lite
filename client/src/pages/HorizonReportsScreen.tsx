@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { TrendingUp, TrendingDown, Minus, ExternalLink, FileText } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, ExternalLink, FileText, ChevronDown } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -111,6 +111,9 @@ function EvidenceRows({ scenario }: { scenario: AssessmentScenario }) {
 }
 
 function ScenarioCard({ scenario }: { scenario: AssessmentScenario }) {
+  const [showEvidence, setShowEvidence] = React.useState(false);
+  const hasEvidence = scenario.indicators.some((ind) => ind.events.length > 0);
+
   return (
     <div className="rounded-lg border bg-background p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
@@ -122,11 +125,22 @@ function ScenarioCard({ scenario }: { scenario: AssessmentScenario }) {
             </p>
           )}
         </div>
-        <div className="shrink-0 pt-0.5">
+        <div className="flex shrink-0 items-center gap-3 pt-0.5">
+          {hasEvidence && (
+            <button
+              onClick={() => setShowEvidence((v) => !v)}
+              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+            >
+              <ChevronDown
+                className={`h-3.5 w-3.5 transition-transform ${showEvidence ? "rotate-180" : ""}`}
+              />
+              {showEvidence ? "Hide evidence" : "Show evidence"}
+            </button>
+          )}
           <DeltaBadge delta={scenario.delta} />
         </div>
       </div>
-      <EvidenceRows scenario={scenario} />
+      {showEvidence && <EvidenceRows scenario={scenario} />}
     </div>
   );
 }

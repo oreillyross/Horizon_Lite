@@ -123,9 +123,9 @@ and handed to a decision-maker.
 
 ### Evidence trail
 
-- [ ] Ensure every event in the report view renders: scenario name → indicator name → event title → clickable source URL
-- [ ] Add a collapsible "Show evidence" toggle per scenario in the report that expands the full indicator→event chain
-- [ ] Render source URLs as clickable external links on `HorizonIndicatorDetailScreen` and in the report evidence rows
+- [x] Ensure every event in the report view renders: scenario name → indicator name → event title → clickable source URL
+- [x] Add a collapsible "Show evidence" toggle per scenario in the report that expands the full indicator→event chain
+- [x] Render source URLs as clickable external links on `HorizonIndicatorDetailScreen` and in the report evidence rows
 
 ### Research agenda
 
