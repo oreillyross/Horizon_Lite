@@ -20,7 +20,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Check, ExternalLink, Loader2, Pencil, Trash2, X } from "lucide-react";
+import { Check, CheckSquare, ExternalLink, Loader2, Pencil, Square, Trash2, X } from "lucide-react";
 import { createIndicatorInputSchema, type CreateIndicatorInput } from "@shared";
 import { IndicatorPill } from "@/components/IndicatorPill";
 import { formatDate, formatDateTime } from "@/lib/formatters";
@@ -65,6 +65,7 @@ function SuggestionsPanel({ indicatorId }: { indicatorId: string }) {
   const utils = trpc.useUtils();
   const [showDuplicates, setShowDuplicates] = useState(false);
   const [showExpired, setShowExpired] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const q = trpc.horizon.signals.listSuggestions.useQuery(
     { indicatorId, showDuplicates, showExpired },
@@ -88,6 +89,50 @@ function SuggestionsPanel({ indicatorId }: { indicatorId: string }) {
       toast({ title: "Dismiss failed", description: err.message, variant: "destructive" });
     },
   });
+
+  const approveLinksMutation = trpc.horizon.signals.approveLinks.useMutation({
+    onSuccess: (data) => {
+      setSelectedIds(new Set());
+      utils.horizon.signals.listSuggestions.invalidate({ indicatorId });
+      toast({ title: `${data.count} signal${data.count !== 1 ? "s" : ""} approved` });
+    },
+    onError: (err) => {
+      toast({ title: "Bulk approve failed", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const dismissLinksMutation = trpc.horizon.signals.dismissLinks.useMutation({
+    onSuccess: (data) => {
+      setSelectedIds(new Set());
+      utils.horizon.signals.listSuggestions.invalidate({ indicatorId });
+      toast({ title: `${data.count} signal${data.count !== 1 ? "s" : ""} dismissed` });
+    },
+    onError: (err) => {
+      toast({ title: "Bulk dismiss failed", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const allIds = q.data?.map((e) => e.id) ?? [];
+  const allSelected = allIds.length > 0 && allIds.every((id) => selectedIds.has(id));
+  const someSelected = selectedIds.size > 0;
+  const bulkBusy = approveLinksMutation.isPending || dismissLinksMutation.isPending;
+
+  function toggleAll() {
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(allIds));
+    }
+  }
+
+  function toggleOne(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   return (
     <SectionCard
@@ -141,105 +186,175 @@ function SuggestionsPanel({ indicatorId }: { indicatorId: string }) {
             : "Approved and dismissed suggestions are removed from this queue. New suggestions appear here as ingestion runs."}
         />
       ) : (
-        <div className="divide-y">
-          {q.data.map((event) => {
-            const approveBusy =
-              approveMutation.isPending &&
-              approveMutation.variables?.signalEventId === event.id;
-            const dismissBusy =
-              dismissMutation.isPending &&
-              dismissMutation.variables?.signalEventId === event.id;
-            const isBusy = approveBusy || dismissBusy;
+        <div>
+          {/* Bulk action toolbar */}
+          <div className="mb-3 flex items-center gap-3">
+            <button
+              onClick={toggleAll}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+              aria-label={allSelected ? "Deselect all" : "Select all"}
+            >
+              {allSelected ? (
+                <CheckSquare className="h-4 w-4 text-primary" />
+              ) : (
+                <Square className="h-4 w-4" />
+              )}
+              {allSelected ? "Deselect all" : "Select all"}
+            </button>
+            {someSelected && (
+              <span className="text-xs text-muted-foreground">
+                {selectedIds.size} selected
+              </span>
+            )}
+            <div className="ml-auto flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 border-emerald-300 text-emerald-700 hover:bg-emerald-50 disabled:opacity-40"
+                disabled={!someSelected || bulkBusy}
+                onClick={() =>
+                  approveLinksMutation.mutate({ signalEventIds: Array.from(selectedIds) })
+                }
+              >
+                {approveLinksMutation.isPending ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+                ) : (
+                  <Check className="h-3.5 w-3.5 mr-1" />
+                )}
+                Approve selected
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-muted-foreground disabled:opacity-40"
+                disabled={!someSelected || bulkBusy}
+                onClick={() =>
+                  dismissLinksMutation.mutate({ signalEventIds: Array.from(selectedIds) })
+                }
+              >
+                {dismissLinksMutation.isPending ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+                ) : (
+                  <X className="h-3.5 w-3.5 mr-1" />
+                )}
+                Dismiss selected
+              </Button>
+            </div>
+          </div>
 
-            return (
-              <div key={event.id} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <div className="text-sm font-medium">
-                      {event.title ?? (
-                        <span className="italic text-muted-foreground">Untitled</span>
+          <div className="divide-y">
+            {q.data.map((event) => {
+              const approveBusy =
+                approveMutation.isPending &&
+                approveMutation.variables?.signalEventId === event.id;
+              const dismissBusy =
+                dismissMutation.isPending &&
+                dismissMutation.variables?.signalEventId === event.id;
+              const isBusy = approveBusy || dismissBusy || bulkBusy;
+              const isChecked = selectedIds.has(event.id);
+
+              return (
+                <div key={event.id} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
+                  <button
+                    onClick={() => toggleOne(event.id)}
+                    className="mt-0.5 shrink-0 text-muted-foreground hover:text-foreground"
+                    aria-label={isChecked ? "Deselect" : "Select"}
+                    disabled={bulkBusy}
+                  >
+                    {isChecked ? (
+                      <CheckSquare className="h-4 w-4 text-primary" />
+                    ) : (
+                      <Square className="h-4 w-4" />
+                    )}
+                  </button>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <div className="text-sm font-medium">
+                        {event.title ?? (
+                          <span className="italic text-muted-foreground">Untitled</span>
+                        )}
+                      </div>
+                      {event.status === "expired" && (
+                        <span className="rounded-full border border-orange-200 bg-orange-50 px-2 py-0.5 text-xs text-orange-600">
+                          expired
+                        </span>
+                      )}
+                      {event.canonicalId && (
+                        <span className="rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-xs text-slate-500">
+                          duplicate
+                        </span>
                       )}
                     </div>
-                    {event.status === "expired" && (
-                      <span className="rounded-full border border-orange-200 bg-orange-50 px-2 py-0.5 text-xs text-orange-600">
-                        expired
+                    <div className="mt-0.5 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                      {event.sourceHost && <span>{event.sourceHost}</span>}
+                      <span className="font-mono tabular-nums">
+                        score {event.score.toFixed(2)}
                       </span>
-                    )}
-                    {event.canonicalId && (
-                      <span className="rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-xs text-slate-500">
-                        duplicate
-                      </span>
-                    )}
-                  </div>
-                  <div className="mt-0.5 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                    {event.sourceHost && <span>{event.sourceHost}</span>}
-                    <span className="font-mono tabular-nums">
-                      score {event.score.toFixed(2)}
-                    </span>
-                    {event.confidenceScore !== null && event.confidenceScore !== undefined && (
-                      <span
-                        className={`inline-flex items-center rounded-full px-2 py-0.5 font-medium tabular-nums ${
-                          event.confidenceScore >= 0.66
-                            ? "bg-emerald-100 text-emerald-800"
-                            : event.confidenceScore >= 0.33
-                            ? "bg-amber-100 text-amber-800"
-                            : "bg-slate-100 text-slate-700"
-                        }`}
+                      {event.confidenceScore !== null && event.confidenceScore !== undefined && (
+                        <span
+                          className={`inline-flex items-center rounded-full px-2 py-0.5 font-medium tabular-nums ${
+                            event.confidenceScore >= 0.66
+                              ? "bg-emerald-100 text-emerald-800"
+                              : event.confidenceScore >= 0.33
+                              ? "bg-amber-100 text-amber-800"
+                              : "bg-slate-100 text-slate-700"
+                          }`}
+                        >
+                          conf {event.confidenceScore.toFixed(2)}
+                        </span>
+                      )}
+                      <span>{formatDate(event.createdAt)}</span>
+                    </div>
+                    {event.sourceUrl && (
+                      <a
+                        href={event.sourceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-0.5 inline-flex items-center gap-0.5 text-xs text-blue-600 hover:underline"
                       >
-                        conf {event.confidenceScore.toFixed(2)}
-                      </span>
+                        <ExternalLink className="h-3 w-3 shrink-0" />
+                        {event.sourceHost ?? event.sourceUrl}
+                      </a>
                     )}
-                    <span>{formatDate(event.createdAt)}</span>
                   </div>
-                  {event.sourceUrl && (
-                    <a
-                      href={event.sourceUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-0.5 inline-flex items-center gap-0.5 text-xs text-blue-600 hover:underline"
+                  <div className="flex shrink-0 gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                      disabled={isBusy}
+                      onClick={() =>
+                        approveMutation.mutate({ signalEventId: event.id })
+                      }
                     >
-                      <ExternalLink className="h-3 w-3 shrink-0" />
-                      {event.sourceHost ?? event.sourceUrl}
-                    </a>
-                  )}
+                      {approveBusy ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Check className="mr-1 h-3.5 w-3.5" />
+                      )}
+                      Approve
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 text-muted-foreground"
+                      disabled={isBusy}
+                      onClick={() =>
+                        dismissMutation.mutate({ signalEventId: event.id })
+                      }
+                    >
+                      {dismissBusy ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <X className="mr-1 h-3.5 w-3.5" />
+                      )}
+                      Dismiss
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex shrink-0 gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
-                    disabled={isBusy}
-                    onClick={() =>
-                      approveMutation.mutate({ signalEventId: event.id })
-                    }
-                  >
-                    {approveBusy ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Check className="mr-1 h-3.5 w-3.5" />
-                    )}
-                    Approve
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8 text-muted-foreground"
-                    disabled={isBusy}
-                    onClick={() =>
-                      dismissMutation.mutate({ signalEventId: event.id })
-                    }
-                  >
-                    {dismissBusy ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <X className="mr-1 h-3.5 w-3.5" />
-                    )}
-                    Dismiss
-                  </Button>
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       )}
     </SectionCard>
