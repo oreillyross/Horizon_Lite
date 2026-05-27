@@ -64,9 +64,10 @@ function SuggestionsPanel({ indicatorId }: { indicatorId: string }) {
   const { toast } = useToast();
   const utils = trpc.useUtils();
   const [showDuplicates, setShowDuplicates] = useState(false);
+  const [showExpired, setShowExpired] = useState(false);
 
   const q = trpc.horizon.signals.listSuggestions.useQuery(
-    { indicatorId, showDuplicates },
+    { indicatorId, showDuplicates, showExpired },
     { enabled: Boolean(indicatorId) },
   );
 
@@ -94,8 +95,12 @@ function SuggestionsPanel({ indicatorId }: { indicatorId: string }) {
       right={
         <div className="flex items-center gap-2">
           {q.data && q.data.length > 0 && (
-            <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
-              {q.data.length} pending
+            <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+              showExpired
+                ? "bg-orange-100 text-orange-800"
+                : "bg-amber-100 text-amber-800"
+            }`}>
+              {q.data.length} {showExpired ? "expired" : "pending"}
             </span>
           )}
           <button
@@ -107,6 +112,16 @@ function SuggestionsPanel({ indicatorId }: { indicatorId: string }) {
             }`}
           >
             {showDuplicates ? "Hide duplicates" : "Show duplicates"}
+          </button>
+          <button
+            onClick={() => setShowExpired((v) => !v)}
+            className={`rounded-md border px-2.5 py-1 text-xs font-medium transition-colors ${
+              showExpired
+                ? "border-orange-300 bg-orange-50 text-orange-700"
+                : "border-border text-muted-foreground hover:bg-muted"
+            }`}
+          >
+            {showExpired ? "Hide expired" : "Show expired"}
           </button>
         </div>
       }
@@ -120,8 +135,10 @@ function SuggestionsPanel({ indicatorId }: { indicatorId: string }) {
         <div className="text-sm text-destructive">{q.error.message}</div>
       ) : !q.data || q.data.length === 0 ? (
         <EmptyBox
-          title="No pending suggestions"
-          body="Approved and dismissed suggestions are removed from this queue. New suggestions appear here as ingestion runs."
+          title={showExpired ? "No expired signals" : "No pending suggestions"}
+          body={showExpired
+            ? "Signals expire based on the indicator's time weight. Expired signals appear here."
+            : "Approved and dismissed suggestions are removed from this queue. New suggestions appear here as ingestion runs."}
         />
       ) : (
         <div className="divide-y">
@@ -143,6 +160,11 @@ function SuggestionsPanel({ indicatorId }: { indicatorId: string }) {
                         <span className="italic text-muted-foreground">Untitled</span>
                       )}
                     </div>
+                    {event.status === "expired" && (
+                      <span className="rounded-full border border-orange-200 bg-orange-50 px-2 py-0.5 text-xs text-orange-600">
+                        expired
+                      </span>
+                    )}
                     {event.canonicalId && (
                       <span className="rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-xs text-slate-500">
                         duplicate
