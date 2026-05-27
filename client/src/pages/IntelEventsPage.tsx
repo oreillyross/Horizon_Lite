@@ -163,7 +163,7 @@ const COLUMN_DEFS: ColumnDef[] = [
     renderHeader: () => "Event Type",
     renderCell: (event) => (
       <span className="text-sm text-muted-foreground">
-        {event.eventCodeName ?? event.eventCode ?? "—"}
+        {event.eventCodeName ?? "—"}
       </span>
     ),
   },
