@@ -171,9 +171,9 @@ and handed to a decision-maker.
 
 ### Bulk link approval
 
-- [ ] Add `approveLinks` and `dismissLinks` (plural) tRPC procedures accepting an array of `signalEventId` values
-- [ ] Add checkbox selection to the signal suggestion list on `HorizonIndicatorDetailScreen`
-- [ ] Add "Approve selected" and "Dismiss selected" bulk action buttons; disable when nothing is checked
+- [x] Add `approveLinks` and `dismissLinks` (plural) tRPC procedures accepting an array of `signalEventId` values
+- [x] Add checkbox selection to the signal suggestion list on `HorizonIndicatorDetailScreen`
+- [x] Add "Approve selected" and "Dismiss selected" bulk action buttons; disable when nothing is checked
 
 ### Additional open-source feed
 

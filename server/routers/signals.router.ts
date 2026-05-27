@@ -348,6 +348,36 @@ export const signalsRouter = router({
       return { id: row.id };
     }),
 
+  approveLinks: protectedProcedure
+    .input(z.object({ signalEventIds: z.array(z.string().uuid()).min(1) }))
+    .output(z.object({ count: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.user.analystGroupId) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "No analyst group" });
+      }
+      const rows = await db
+        .update(signalEvents)
+        .set({ status: "approved" })
+        .where(inArray(signalEvents.id, input.signalEventIds))
+        .returning({ id: signalEvents.id });
+      return { count: rows.length };
+    }),
+
+  dismissLinks: protectedProcedure
+    .input(z.object({ signalEventIds: z.array(z.string().uuid()).min(1) }))
+    .output(z.object({ count: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.user.analystGroupId) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "No analyst group" });
+      }
+      const rows = await db
+        .update(signalEvents)
+        .set({ status: "dismissed" })
+        .where(inArray(signalEvents.id, input.signalEventIds))
+        .returning({ id: signalEvents.id });
+      return { count: rows.length };
+    }),
+
   searchIndicators: protectedProcedure
     .input(
       z.object({
