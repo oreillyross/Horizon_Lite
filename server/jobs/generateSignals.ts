@@ -1,6 +1,6 @@
 import { db } from "../db";
-import { sql } from "drizzle-orm";
-import { signalEvents } from "@shared/db";
+import { sql, eq, and, lt } from "drizzle-orm";
+import { signalEvents, indicators } from "@shared/db";
 import { mapIndicator } from "../intel/indicatorScoring";
 
 type SignalGenerationResult = {
@@ -123,8 +123,49 @@ function hourBucket(d = new Date()) {
   return x.toISOString();
 }
 
+const timeWeightDays: Record<string, number> = {
+  day: 1,
+  week: 7,
+  month: 30,
+  year: 365,
+};
+
+function expiresAtFromTimeWeight(timeWeight: string, base = new Date()): Date {
+  const days = timeWeightDays[timeWeight] ?? 7;
+  return new Date(base.getTime() + days * 24 * 60 * 60 * 1000);
+}
+
+const indicatorTimeWeightCache = new Map<string, string>();
+
+async function resolveTimeWeight(indicatorId: string): Promise<string> {
+  if (indicatorTimeWeightCache.has(indicatorId)) {
+    return indicatorTimeWeightCache.get(indicatorId)!;
+  }
+  const [row] = await db
+    .select({ timeWeight: indicators.timeWeight })
+    .from(indicators)
+    .where(eq(indicators.id, indicatorId));
+  const tw = row?.timeWeight ?? "week";
+  indicatorTimeWeightCache.set(indicatorId, tw);
+  return tw;
+}
+
+async function resurfaceExpiredSignals(indicatorId: string, confidenceScore: number, newExpiresAt: Date): Promise<void> {
+  await db
+    .update(signalEvents)
+    .set({ status: "pending", expiresAt: newExpiresAt })
+    .where(
+      and(
+        eq(signalEvents.indicatorId, indicatorId),
+        eq(signalEvents.status, "expired"),
+        lt(signalEvents.confidenceScore, confidenceScore),
+      ),
+    );
+}
+
 export async function generateSignals(): Promise<SignalGenerationResult> {
   console.log("Signal generator running...");
+  indicatorTimeWeightCache.clear();
 
   const bucket = hourBucket();
 
@@ -178,15 +219,18 @@ export async function generateSignals(): Promise<SignalGenerationResult> {
     if (!ev?.url) continue;
 
     const dedupeKey = `theme_spike|${theme}|${bucket}`;
+    const indId = mapIndicator(`THEME_SPIKE ${theme}`);
+    const tw = await resolveTimeWeight(indId);
 
     await db
       .insert(signalEvents)
       .values({
-        indicatorId: mapIndicator(`THEME_SPIKE ${theme}`),
+        indicatorId: indId,
         sourceUrl: ev.url,
         sourceHost: ev.domain,
         title: ev.title ?? `Theme spike: ${theme}`,
         score: velocity,
+        expiresAt: expiresAtFromTimeWeight(tw),
         dedupeKey,
       })
       .onConflictDoNothing();
@@ -243,15 +287,18 @@ export async function generateSignals(): Promise<SignalGenerationResult> {
     if (!ev?.url) continue;
 
     const dedupeKey = `tone_collapse|${theme}|${bucket}`;
+    const indId = mapIndicator(`TONE_COLLAPSE ${theme}`);
+    const tw = await resolveTimeWeight(indId);
 
     await db
       .insert(signalEvents)
       .values({
-        indicatorId: mapIndicator(`TONE_COLLAPSE ${theme}`),
+        indicatorId: indId,
         sourceUrl: ev.url,
         sourceHost: ev.domain,
         title: ev.title ?? `Tone collapse: ${theme}`,
         score: Math.abs(delta),
+        expiresAt: expiresAtFromTimeWeight(tw),
         dedupeKey,
       })
       .onConflictDoNothing();
@@ -316,16 +363,21 @@ export async function generateSignals(): Promise<SignalGenerationResult> {
       }
     }
 
+    const ampIndId = mapIndicator(`AMPLIFICATION ${row.global_event_id}`);
+    const ampTw = await resolveTimeWeight(ampIndId);
+    const ampExpiresAt = expiresAtFromTimeWeight(ampTw);
+
     const inserted = await db
       .insert(signalEvents)
       .values({
-        indicatorId: mapIndicator(`AMPLIFICATION ${row.global_event_id}`),
+        indicatorId: ampIndId,
         sourceUrl: row.source_url,
         sourceHost: null,
         title: `Amplification anomaly (MPS=${mps.toFixed(1)})`,
         score: mps,
         confidenceScore,
         canonicalId,
+        expiresAt: ampExpiresAt,
         dedupeKey,
       })
       .returning({ id: signalEvents.id })
@@ -335,6 +387,9 @@ export async function generateSignals(): Promise<SignalGenerationResult> {
     if (inserted.length > 0 && canonicalId === null && nearKey) {
       nearDupeCache.set(nearKey, inserted[0].id);
     }
+
+    // Re-surface any expired signals for the same indicator if this event has higher confidence
+    await resurfaceExpiredSignals(ampIndId, confidenceScore, ampExpiresAt);
 
     amplifications++;
   }
@@ -383,15 +438,18 @@ export async function generateSignals(): Promise<SignalGenerationResult> {
     if (!(velocity >= 3 && delta <= -1)) continue;
 
     const dedupeKey = `hotspot|${cc}|${bucket}`;
+    const indId = mapIndicator(`HOTSPOT ${cc}`);
+    const tw = await resolveTimeWeight(indId);
 
     await db
       .insert(signalEvents)
       .values({
-        indicatorId: mapIndicator(`HOTSPOT ${cc}`),
+        indicatorId: indId,
         sourceUrl: null,
         sourceHost: null,
         title: `Hotspot ${cc} (velocity=${velocity.toFixed(1)} toneΔ=${delta.toFixed(2)})`,
         score: velocity,
+        expiresAt: expiresAtFromTimeWeight(tw),
         dedupeKey,
       })
       .onConflictDoNothing();

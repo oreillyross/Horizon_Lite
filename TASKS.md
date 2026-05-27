@@ -164,10 +164,10 @@ and handed to a decision-maker.
 
 ### Signal lifecycle
 
-- [ ] Add an `expiresAt timestamp` column to `signalEvents`; set on insert based on the linked indicator's `timeWeight` (day=+1d, week=+7d, month=+30d, year=+365d); run migrations
-- [ ] Add a nightly cleanup step in the GDELT ingest job that sets `status = 'expired'` on rows past `expiresAt`
-- [ ] Add re-surface logic: if a new ingest event matches an expired signal's indicator with higher `confidenceScore`, reset `expiresAt` and set `status = 'pending'`
-- [ ] Hide expired signals from the default queue; add a "Show expired" toggle to the indicator detail panel
+- [x] Add an `expiresAt timestamp` column to `signalEvents`; set on insert based on the linked indicator's `timeWeight` (day=+1d, week=+7d, month=+30d, year=+365d); run migrations
+- [x] Add a nightly cleanup step in the GDELT ingest job that sets `status = 'expired'` on rows past `expiresAt`
+- [x] Add re-surface logic: if a new ingest event matches an expired signal's indicator with higher `confidenceScore`, reset `expiresAt` and set `status = 'pending'`
+- [x] Hide expired signals from the default queue; add a "Show expired" toggle to the indicator detail panel
 
 ### Bulk link approval
 

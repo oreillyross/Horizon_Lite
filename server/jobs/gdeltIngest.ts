@@ -423,6 +423,16 @@ export async function ingestGdelt() {
     console.log(`GKG done. upserted=${upserted} skipped=${skipped}`);
   }
 
+  // Mark pending signals whose expiresAt has passed as expired
+  const expiredResult = await db.execute(sql`
+    UPDATE signal_events
+    SET status = 'expired'
+    WHERE status = 'pending'
+      AND expires_at IS NOT NULL
+      AND expires_at < NOW()
+  `);
+  console.log(`Signal expiry cleanup: ${(expiredResult as any).rowCount ?? 0} rows expired`);
+
   console.log("GDELT ingestion complete ✅");
 
   return {

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { eq, and, inArray, ilike, isNull, SQL } from "drizzle-orm";
+import { eq, and, inArray, ilike, isNull, ne, SQL } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "../trpc";
@@ -260,6 +260,7 @@ export const signalsRouter = router({
     .input(z.object({
       indicatorId: z.string().uuid(),
       showDuplicates: z.boolean().optional().default(false),
+      showExpired: z.boolean().optional().default(false),
     }))
     .output(
       z.array(
@@ -273,6 +274,7 @@ export const signalsRouter = router({
           confidenceScore: z.number().nullable(),
           canonicalId: z.string().uuid().nullable(),
           status: z.string(),
+          expiresAt: z.string().nullable(),
           createdAt: z.string(),
         }),
       ),
@@ -282,11 +284,16 @@ export const signalsRouter = router({
         throw new TRPCError({ code: "FORBIDDEN", message: "No analyst group" });
       }
 
-      const conditions = [
+      const conditions: SQL[] = [
         eq(signalEvents.indicatorId, input.indicatorId),
-        eq(signalEvents.status, "pending"),
         ...(input.showDuplicates ? [] : [isNull(signalEvents.canonicalId)]),
       ];
+
+      if (input.showExpired) {
+        conditions.push(eq(signalEvents.status, "expired"));
+      } else {
+        conditions.push(eq(signalEvents.status, "pending"));
+      }
 
       const rows = await db
         .select()
@@ -304,6 +311,7 @@ export const signalsRouter = router({
         confidenceScore: r.confidenceScore ?? null,
         canonicalId: r.canonicalId ?? null,
         status: r.status,
+        expiresAt: r.expiresAt?.toISOString() ?? null,
         createdAt: r.createdAt.toISOString(),
       }));
     }),

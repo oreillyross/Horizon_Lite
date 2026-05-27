@@ -32,6 +32,8 @@ export const signalEvents = pgTable(
 
     status: text("status").notNull().default("pending"),
 
+    expiresAt: timestamp("expires_at"),
+
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (t) => ({
