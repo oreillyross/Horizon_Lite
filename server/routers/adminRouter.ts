@@ -3,8 +3,9 @@ import { TRPCError } from "@trpc/server";
 import { eq, sql } from "drizzle-orm";
 import { db } from "../db";
 import { protectedProcedure, router } from "../trpc";
-import { users, analystGroups, themes, themeGroupLinks } from "@shared/db";
+import { users, analystGroups, themes, themeGroupLinks, appConfig } from "@shared/db";
 import { ingestGdelt } from "../jobs/gdeltIngest";
+import { ingestAcled, isAcledEnabled } from "../jobs/acledIngest";
 import { generateSignals } from "../jobs/generateSignals";
 
 const isAdminEmail = (email?: string | null) => {
@@ -145,6 +146,69 @@ export const adminRouter = router({
       await ctx.db.delete(analystGroups).where(eq(analystGroups.id, input.id));
       return { ok: true };
     }),
+
+  // CONFIG
+  getConfig: adminProcedure
+    .input(z.object({ key: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const [row] = await ctx.db
+        .select({ value: appConfig.value })
+        .from(appConfig)
+        .where(eq(appConfig.key, input.key))
+        .limit(1);
+      return row?.value ?? null;
+    }),
+
+  setConfig: adminProcedure
+    .input(z.object({ key: z.string(), value: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db
+        .insert(appConfig)
+        .values({ key: input.key, value: input.value })
+        .onConflictDoUpdate({
+          target: appConfig.key,
+          set: { value: input.value, updatedAt: new Date() },
+        });
+      return { ok: true };
+    }),
+
+  // ACLED FEED
+  runAcled: adminProcedure.mutation(async ({}) => {
+    if (!process.env.ACLED_API_KEY || !process.env.ACLED_EMAIL) {
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: "ACLED_API_KEY and ACLED_EMAIL environment variables are not set",
+      });
+    }
+
+    const enabled = await isAcledEnabled();
+    if (!enabled) {
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: "ACLED feed is disabled. Enable it in the Admin panel first.",
+      });
+    }
+
+    const startedAt = Date.now();
+    log("ACLED job started", "acled-job");
+
+    const ingestResult = await ingestAcled();
+    const signalResult = await generateSignals();
+    const durationMs = Date.now() - startedAt;
+
+    log(
+      `ACLED job finished in ${durationMs}ms :: ${JSON.stringify({ ingestResult, signalResult })}`,
+      "acled-job",
+    );
+
+    return {
+      ok: true,
+      job: "acled",
+      durationMs,
+      ingestResult,
+      signalResult,
+    };
+  }),
 
   // THEME LINKS
   listThemeLinks: adminProcedure.query(async ({ ctx }) => {
