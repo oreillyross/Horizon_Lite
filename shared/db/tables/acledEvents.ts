@@ -1,0 +1,30 @@
+import {
+  pgTable,
+  text,
+  integer,
+  doublePrecision,
+  timestamp,
+} from "drizzle-orm/pg-core";
+
+export const acledEvents = pgTable("acled_events", {
+  id: text("id").primaryKey(),
+  eventDate: timestamp("event_date"),
+  year: integer("year"),
+  eventType: text("event_type"),
+  subEventType: text("sub_event_type"),
+  actor1: text("actor1"),
+  actor2: text("actor2"),
+  country: text("country"),
+  isoCode: integer("iso_code"),
+  region: text("region"),
+  admin1: text("admin1"),
+  location: text("location"),
+  latitude: doublePrecision("latitude"),
+  longitude: doublePrecision("longitude"),
+  fatalities: integer("fatalities"),
+  notes: text("notes"),
+  source: text("source"),
+  sourceScale: text("source_scale"),
+  ingestedAt: timestamp("ingested_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});

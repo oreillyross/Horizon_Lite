@@ -3,6 +3,7 @@ import { trpc } from "@/lib/trpc";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 
 type Tab = "users" | "groups" | "links";
 
@@ -34,19 +35,27 @@ export default function AdminScreen() {
       {tab === "groups" && <GroupsPanel />}
       {tab === "links" && <LinksPanel />}
       <div className="space-y-6">
+        <h1 className="text-2xl font-semibold">Admin Jobs</h1>
 
-        <h1 className="text-2xl font-semibold">
-          Admin Jobs
-        </h1>
+        <section className="rounded-lg border bg-background p-4 shadow-sm space-y-4">
+          <h2 className="text-xl font-medium">Ingest feeds</h2>
 
-        <button
-          onClick={() => runGdeltJob.mutate()}
-          className="px-4 py-2 bg-black text-white rounded-md"
-          disabled={runGdeltJob.isPending}
-        >
-          {runGdeltJob.isPending ? "Running..." : "Run GDELT Ingest"}
-        </button>
+          <div className="flex items-center justify-between rounded-md border p-3">
+            <div>
+              <p className="font-medium text-sm">GDELT feed</p>
+              <p className="text-xs text-muted-foreground">Media volume, tone, and event amplification signals</p>
+            </div>
+            <button
+              onClick={() => runGdeltJob.mutate()}
+              className="px-4 py-2 bg-black text-white rounded-md text-sm disabled:opacity-50"
+              disabled={runGdeltJob.isPending}
+            >
+              {runGdeltJob.isPending ? "Running…" : "Run ingest"}
+            </button>
+          </div>
 
+          <AcledFeedPanel />
+        </section>
       </div>
     </main>
   );
@@ -305,6 +314,64 @@ function LinksPanel() {
         </div>
       )}
     </section>
+  );
+}
+
+function AcledFeedPanel() {
+  const utils = trpc.useUtils();
+
+  const enabledQ = trpc.admin.getConfig.useQuery({ key: "acled_enabled" });
+  const setConfig = trpc.admin.setConfig.useMutation({
+    onSuccess: () => utils.admin.getConfig.invalidate({ key: "acled_enabled" }),
+  });
+  const runAcled = trpc.admin.runAcled.useMutation();
+
+  const enabled = enabledQ.data === "true";
+
+  function toggle() {
+    setConfig.mutate({ key: "acled_enabled", value: enabled ? "false" : "true" });
+  }
+
+  return (
+    <div className="flex items-start justify-between rounded-md border p-3 gap-4">
+      <div className="space-y-1 flex-1">
+        <p className="font-medium text-sm">ACLED feed</p>
+        <p className="text-xs text-muted-foreground">
+          Researcher-validated conflict events (battles, explosions, protests) with geo-coordinates and fatality counts.
+          Requires <code className="font-mono">ACLED_API_KEY</code> and <code className="font-mono">ACLED_EMAIL</code> env vars.
+        </p>
+        {runAcled.isError && (
+          <p className="text-xs text-destructive">{runAcled.error.message}</p>
+        )}
+        {runAcled.isSuccess && (
+          <p className="text-xs text-green-600">
+            Ingest complete — {runAcled.data.ingestResult.upserted} events upserted in {runAcled.data.durationMs}ms
+          </p>
+        )}
+      </div>
+
+      <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-2">
+          {enabledQ.isLoading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Switch
+              checked={enabled}
+              onCheckedChange={toggle}
+              disabled={setConfig.isPending}
+            />
+          )}
+          <span className="text-sm text-muted-foreground">{enabled ? "Enabled" : "Disabled"}</span>
+        </div>
+        <button
+          onClick={() => runAcled.mutate()}
+          className="px-4 py-2 bg-black text-white rounded-md text-sm disabled:opacity-50"
+          disabled={runAcled.isPending || !enabled}
+        >
+          {runAcled.isPending ? "Running…" : "Run ingest"}
+        </button>
+      </div>
+    </div>
   );
 }
 

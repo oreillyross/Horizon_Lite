@@ -1,13 +1,15 @@
 import { db } from "../db";
 import { sql, eq, and, lt } from "drizzle-orm";
-import { signalEvents, indicators } from "@shared/db";
+import { signalEvents, indicators, acledEvents } from "@shared/db";
 import { mapIndicator } from "../intel/indicatorScoring";
+import { isAcledEnabled } from "./acledIngest";
 
 type SignalGenerationResult = {
   themeSpikes: number;
   toneCollapses: number;
   amplifications: number;
   hotspots: number;
+  acledConflicts: number;
 };
 
 type ThemeSpikeRow = {
@@ -137,6 +139,48 @@ function expiresAtFromTimeWeight(timeWeight: string, base = new Date()): Date {
 
 const indicatorTimeWeightCache = new Map<string, string>();
 
+// Cache for auto-created indicator UUIDs so we don't hit the DB on every signal
+const autoIndicatorIdCache = new Map<string, string>();
+
+// Create or retrieve an auto-generated indicator by name, returning its UUID.
+// This is required for ACLED signals since their indicators are not pre-seeded.
+async function upsertAutoIndicator(name: string): Promise<string> {
+  const cached = autoIndicatorIdCache.get(name);
+  if (cached) return cached;
+
+  const existing = await db
+    .select({ id: indicators.id })
+    .from(indicators)
+    .where(eq(indicators.name, name))
+    .limit(1);
+
+  if (existing[0]) {
+    autoIndicatorIdCache.set(name, existing[0].id);
+    return existing[0].id;
+  }
+
+  const [created] = await db
+    .insert(indicators)
+    .values({
+      name,
+      category: "infra",
+      strength: 5,
+      timeWeight: "week",
+      decayBehaviour: "linear",
+    })
+    .returning({ id: indicators.id });
+
+  autoIndicatorIdCache.set(name, created.id);
+  return created.id;
+}
+
+type AcledConflictRow = {
+  country: string;
+  event_count: number | string;
+  total_fatalities: number | string;
+  high_severity_count: number | string;
+};
+
 async function resolveTimeWeight(indicatorId: string): Promise<string> {
   if (indicatorTimeWeightCache.has(indicatorId)) {
     return indicatorTimeWeightCache.get(indicatorId)!;
@@ -163,9 +207,79 @@ async function resurfaceExpiredSignals(indicatorId: string, confidenceScore: num
     );
 }
 
+async function generateAcledSignals(bucket: string): Promise<number> {
+  if (!(await isAcledEnabled())) return 0;
+
+  // Query ACLED events from the last 48h grouped by country
+  const result = await db.execute(sql`
+    SELECT
+      country,
+      COUNT(*)::int AS event_count,
+      COALESCE(SUM(fatalities), 0)::int AS total_fatalities,
+      COUNT(*) FILTER (
+        WHERE event_type IN (
+          'Battles',
+          'Explosions/Remote violence',
+          'Violence against civilians'
+        )
+      )::int AS high_severity_count
+    FROM acled_events
+    WHERE event_date >= now() - interval '48 hours'
+      AND country IS NOT NULL
+    GROUP BY country
+    HAVING COUNT(*) FILTER (
+      WHERE event_type IN (
+        'Battles',
+        'Explosions/Remote violence',
+        'Violence against civilians'
+      )
+    ) >= 2
+    ORDER BY high_severity_count DESC, total_fatalities DESC
+    LIMIT 25
+  `);
+
+  let count = 0;
+  for (const row of result.rows as AcledConflictRow[]) {
+    const highSeverity = Number(row.high_severity_count);
+    const fatalities = Number(row.total_fatalities);
+    const eventCount = Number(row.event_count);
+
+    // Confidence: severity density + fatality weight + event count volume, each normalised [0,1]
+    const severityNorm = Math.min(1, highSeverity / 10);
+    const fatalityNorm = Math.min(1, Math.log(1 + fatalities) / Math.log(1001));
+    const countNorm = Math.min(1, Math.log(1 + eventCount) / Math.log(101));
+    const confidenceScore = (severityNorm + fatalityNorm + countNorm) / 3;
+
+    const dedupeKey = `acled_conflict|${row.country}|${bucket}`;
+    const indId = await upsertAutoIndicator(`ACLED CONFLICT ${row.country}`);
+    const tw = await resolveTimeWeight(indId);
+
+    await db
+      .insert(signalEvents)
+      .values({
+        indicatorId: indId,
+        sourceUrl: null,
+        sourceHost: null,
+        title: `ACLED conflict surge: ${row.country} (${highSeverity} high-severity events, ${fatalities} fatalities)`,
+        score: highSeverity,
+        confidenceScore,
+        expiresAt: expiresAtFromTimeWeight(tw),
+        dedupeKey,
+      })
+      .onConflictDoNothing();
+
+    await resurfaceExpiredSignals(indId, confidenceScore, expiresAtFromTimeWeight(tw));
+
+    count++;
+  }
+
+  return count;
+}
+
 export async function generateSignals(): Promise<SignalGenerationResult> {
   console.log("Signal generator running...");
   indicatorTimeWeightCache.clear();
+  autoIndicatorIdCache.clear();
 
   const bucket = hourBucket();
 
@@ -173,6 +287,7 @@ export async function generateSignals(): Promise<SignalGenerationResult> {
   let toneCollapses = 0;
   let amplifications = 0;
   let hotspots = 0;
+  let acledConflicts = 0;
 
   const themeSpikeResult = await db.execute(sql`
     WITH curr AS (
@@ -457,6 +572,8 @@ export async function generateSignals(): Promise<SignalGenerationResult> {
     hotspots++;
   }
 
+  acledConflicts = await generateAcledSignals(bucket);
+
   console.log("Signal generator complete ✅");
 
   return {
@@ -464,5 +581,6 @@ export async function generateSignals(): Promise<SignalGenerationResult> {
     toneCollapses,
     amplifications,
     hotspots,
+    acledConflicts,
   };
 }

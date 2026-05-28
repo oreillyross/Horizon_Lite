@@ -8,6 +8,13 @@
       "when": 1779875162537,
       "tag": "0000_reflective_monster_badoon",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1748476800000,
+      "tag": "0001_acled_appconfig",
+      "breakpoints": true
     }
   ]
 }
