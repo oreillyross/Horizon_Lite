@@ -177,7 +177,7 @@ and handed to a decision-maker.
 
 ### Additional open-source feed
 
-- [ ] Choose a second ingest source (ACLED event API or GDELT GKG v2 document stream); add a one-paragraph ADR comment at the top of the new adapter file recording the choice and why
+- [x] Choose a second ingest source (ACLED event API or GDELT GKG v2 document stream); add a one-paragraph ADR comment at the top of the new adapter file recording the choice and why
 - [ ] Implement the second ingest adapter in `server/ingest/` following the same interface and error-handling pattern as `gdeltIngest.ts`
 - [ ] Wire the adapter into `generateSignals.ts` so its events flow through the same confidence scoring and deduplication logic
 - [ ] Add an enable/disable toggle for the second feed in `AdminScreen` backed by a config row in the database (or an env var if simpler)
