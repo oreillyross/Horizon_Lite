@@ -15,6 +15,13 @@
       "when": 1748476800000,
       "tag": "0001_acled_appconfig",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1779972286518,
+      "tag": "0002_loving_jane_foster",
+      "breakpoints": true
     }
   ]
 }
