@@ -7,9 +7,25 @@ const t = initTRPC.context<TRPCContext>().create({
 });
 
 export const router = t.router;
-export const publicProcedure = t.procedure;
 
-export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
+const logMiddleware = t.middleware(async ({ path, type, next }) => {
+  const start = Date.now();
+  const result = await next();
+  const durationMs = Date.now() - start;
+  const log = {
+    trpc: path,
+    type,
+    durationMs,
+    ok: result.ok,
+    ...(!result.ok && result.error ? { error: result.error.message } : {}),
+  };
+  console.log(JSON.stringify(log));
+  return result;
+});
+
+export const publicProcedure = t.procedure.use(logMiddleware);
+
+export const protectedProcedure = publicProcedure.use(({ ctx, next }) => {
   if (!ctx.user) {
     throw new TRPCError({
       code: "UNAUTHORIZED",

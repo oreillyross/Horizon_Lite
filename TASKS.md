@@ -197,31 +197,31 @@ and the system runs unattended in production without surprises.
 
 ### Unit and component tests
 
-- [ ] Write Vitest unit tests for `generateSignals.ts` confidence scoring — edge cases: zero mentions, negative Goldstein, unknown CAMEO code
-- [ ] Write Vitest unit tests for indicator decay calculation (linear / step / none) using fixed timestamps
-- [ ] Write Vitest unit tests for scenario warmth calculation — verify correct weighting of strength × recency across multiple indicators
-- [ ] Write Vitest unit tests for `generateAssessment` report logic — verify warmer/colder sorting and empty-theme edge case
-- [ ] Write component tests (testing-library) for `HorizonScenarioDetailScreen`: indicator link panel renders, add/remove interactions fire correct tRPC mutations
-- [ ] Write component tests for the signal suggestion review panel: approve and dismiss buttons call the right procedures; optimistic UI updates correctly
+- [x] Write Vitest unit tests for `generateSignals.ts` confidence scoring — edge cases: zero mentions, negative Goldstein, unknown CAMEO code
+- [x] Write Vitest unit tests for indicator decay calculation (linear / step / none) using fixed timestamps
+- [x] Write Vitest unit tests for scenario warmth calculation — verify correct weighting of strength × recency across multiple indicators
+- [x] Write Vitest unit tests for `generateAssessment` report logic — verify warmer/colder sorting and empty-theme edge case
+- [x] Write component tests (testing-library) for `HorizonScenarioDetailScreen`: indicator link panel renders, add/remove interactions fire correct tRPC mutations
+- [x] Write component tests for the signal suggestion review panel: approve and dismiss buttons call the right procedures; optimistic UI updates correctly
 
 ### E2E tests
 
-- [ ] Write a Playwright test: sign up → create theme → add scenario → add indicator → link indicator to scenario → verify all appear on the overview
-- [ ] Write a Playwright test: approve a signal suggestion on the indicator detail page → verify it appears in the scenario evidence chain
-- [ ] Write a Playwright test: generate a Sentinel Assessment → verify warmer/colder sections render → download Markdown export → verify the file is non-empty
+- [x] Write a Playwright test: sign up → create theme → add scenario → add indicator → link indicator to scenario → verify all appear on the overview
+- [x] Write a Playwright test: approve a signal suggestion on the indicator detail page → verify it appears in the scenario evidence chain
+- [x] Write a Playwright test: generate a Sentinel Assessment → verify warmer/colder sections render → download Markdown export → verify the file is non-empty
 
 ### Multi-analyst support
 
-- [ ] Add a group-membership middleware in `server/middleware/` that resolves the authenticated user's `analystGroupId` from session and attaches it to the tRPC context
-- [ ] Guard all `scenarios`, `indicators`, and `themes` procedures: a user may only read/write records that belong to their group (via `analystGroupId` or `themeGroupLinks`)
-- [ ] Restrict theme visibility: `horizonThemes.list` returns only themes linked to the current user's group via `themeGroupLinks`
-- [ ] Add an "Invite analyst" flow in `AdminScreen`: create a new user record, assign them to the current group; send no email for now — show a one-time credential display
+- [x] Add a group-membership middleware in `server/middleware/` that resolves the authenticated user's `analystGroupId` from session and attaches it to the tRPC context
+- [x] Guard all `scenarios`, `indicators`, and `themes` procedures: a user may only read/write records that belong to their group (via `analystGroupId` or `themeGroupLinks`)
+- [x] Restrict theme visibility: `horizonThemes.list` returns only themes linked to the current user's group via `themeGroupLinks`
+- [x] Add an "Invite analyst" flow in `AdminScreen`: create a new user record, assign them to the current group; send no email for now — show a one-time credential display
 
 ### Observability
 
-- [ ] Add structured JSON logging to all tRPC procedures using `pino` (if not already in `package.json`) or plain `JSON.stringify` if keeping dependencies minimal; log: procedure name, duration ms, error if any
-- [ ] Add a `GET /health` Express route returning JSON: `{ db: 'ok'|'error', lastIngestAt: ISO string|null, signalQueueDepth: number }`
-- [ ] Surface the `/health` response on `AdminScreen` as a live status panel (refresh on mount, manual refresh button)
+- [x] Add structured JSON logging to all tRPC procedures using `pino` (if not already in `package.json`) or plain `JSON.stringify` if keeping dependencies minimal; log: procedure name, duration ms, error if any
+- [x] Add a `GET /health` Express route returning JSON: `{ db: 'ok'|'error', lastIngestAt: ISO string|null, signalQueueDepth: number }`
+- [x] Surface the `/health` response on `AdminScreen` as a live status panel (refresh on mount, manual refresh button)
 
 ---
 
