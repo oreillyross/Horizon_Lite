@@ -4,6 +4,7 @@ import { eq, sql } from "drizzle-orm";
 import { db } from "../db";
 import { protectedProcedure, router } from "../trpc";
 import { users, analystGroups, themes, themeGroupLinks, appConfig } from "@shared/db";
+import bcrypt from "bcrypt";
 import { ingestGdelt } from "../jobs/gdeltIngest";
 import { ingestAcled, isAcledEnabled } from "../jobs/acledIngest";
 import { generateSignals } from "../jobs/generateSignals";
@@ -113,6 +114,30 @@ export const adminRouter = router({
         .set({ analystGroupId: input.groupId })
         .where(eq(users.id, input.userId));
       return { ok: true };
+    }),
+
+  inviteAnalyst: adminProcedure
+    .input(z.object({ email: z.string().email(), groupId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const email = input.email.trim().toLowerCase();
+      const existing = await ctx.db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.email, email))
+        .limit(1);
+      if (existing.length > 0) {
+        throw new TRPCError({ code: "CONFLICT", message: "An account with this email already exists" });
+      }
+      const temporaryPassword = Array.from(
+        { length: 16 },
+        () => "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789"[Math.floor(Math.random() * 54)]
+      ).join("");
+      const passwordHash = await bcrypt.hash(temporaryPassword, 12);
+      const [created] = await ctx.db
+        .insert(users)
+        .values({ email, passwordHash, role: "analyst", analystGroupId: input.groupId })
+        .returning({ id: users.id, email: users.email });
+      return { userId: created.id, email: created.email, temporaryPassword };
     }),
 
   // GROUPS

@@ -16,6 +16,7 @@ export default defineConfig({
       "**/.bun/**",
       ".next/**",
       "packages/db/migrations/**",
+      "e2e/**",
     ],
     setupFiles: ["./vitest.setup.ts"],
     coverage: {

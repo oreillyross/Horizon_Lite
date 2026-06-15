@@ -1,9 +1,10 @@
 import { publicProcedure, protectedProcedure, router } from "../trpc";
 import { themeStorage } from "../storage";
 import { db } from "../db";
-import { themes, scenarios } from "@shared/db";
-import { eq, desc, sql } from "drizzle-orm";
+import { themes, scenarios, themeGroupLinks } from "@shared/db";
+import { eq, desc, sql, and } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
+import { resolveGroupId } from "../middleware/groupMembership";
 
 import {
   themeIdSchema,
@@ -36,8 +37,9 @@ export const themesRouter = router({
       }
     }),
 
-  // Horizon-facing procedure — scenario counts included
-  list: protectedProcedure.query(async () => {
+  // Horizon-facing procedure — scenario counts included, filtered to the user's group
+  list: protectedProcedure.query(async ({ ctx }) => {
+    const groupId = resolveGroupId(ctx.user);
     return db
       .select({
         id: themes.id,
@@ -47,7 +49,9 @@ export const themesRouter = router({
         scenarioCount: sql<number>`cast(count(${scenarios.id}) as int)`.as("scenario_count"),
       })
       .from(themes)
-      .leftJoin(scenarios, eq(scenarios.themeId, themes.id))
+      .innerJoin(themeGroupLinks, eq(themeGroupLinks.themeId, themes.id))
+      .leftJoin(scenarios, and(eq(scenarios.themeId, themes.id), eq(scenarios.analystGroupId, groupId)))
+      .where(eq(themeGroupLinks.groupId, groupId))
       .groupBy(themes.id, themes.name, themes.description, themes.updatedAt)
       .orderBy(desc(themes.updatedAt), themes.name);
   }),

@@ -34,6 +34,17 @@ app.set("trust proxy", 1);
 
 app.use(sessionMiddleware());
 
+app.get("/health", async (_req, res) => {
+  try {
+    const { getHealthData } = await import("./routers/health.router");
+    const data = await getHealthData();
+    const status = data.db === "ok" ? 200 : 503;
+    return res.status(status).json(data);
+  } catch (err) {
+    return res.status(503).json({ db: "error", lastIngestAt: null, signalQueueDepth: 0 });
+  }
+});
+
 // POST /api/webcut — server-side article fetch and text extraction.
 // Accepts { url } and returns { text } (plain text, block-level nodes only).
 app.post("/api/webcut", async (req, res) => {

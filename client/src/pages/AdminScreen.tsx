@@ -7,15 +7,54 @@ import { Switch } from "@/components/ui/switch";
 
 type Tab = "users" | "groups" | "links";
 
+function HealthPanel() {
+  const healthQ = trpc.health.useQuery(undefined, { refetchOnMount: true, staleTime: 0 });
+  const data = healthQ.data;
+
+  return (
+    <section className="rounded-lg border bg-background p-4 shadow-sm space-y-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-medium">System health</h2>
+        <Button variant="secondary" size="sm" onClick={() => healthQ.refetch()} disabled={healthQ.isFetching}>
+          {healthQ.isFetching ? <Loader2 className="h-3 w-3 animate-spin" /> : "Refresh"}
+        </Button>
+      </div>
+      {healthQ.isLoading ? (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Checking…</div>
+      ) : (
+        <div className="grid grid-cols-3 gap-3 text-sm">
+          <div className="rounded-md border p-3">
+            <p className="text-xs text-muted-foreground">Database</p>
+            <p className={`font-medium ${data?.db === "ok" ? "text-green-600" : "text-destructive"}`}>
+              {data?.db ?? "unknown"}
+            </p>
+          </div>
+          <div className="rounded-md border p-3">
+            <p className="text-xs text-muted-foreground">Last ingest</p>
+            <p className="font-medium tabular-nums">
+              {data?.lastIngestAt ? new Date(data.lastIngestAt).toLocaleString() : "Never"}
+            </p>
+          </div>
+          <div className="rounded-md border p-3">
+            <p className="text-xs text-muted-foreground">Signal queue depth</p>
+            <p className="font-medium tabular-nums">{data?.signalQueueDepth ?? "—"}</p>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function AdminScreen() {
   const [tab, setTab] = useState<Tab>("users");
-  
+
   const runGdeltJob = trpc.admin.runGdelt.useMutation();
-  
- 
-  
+
+
+
   return (
     <main className="mx-auto w-full max-w-7xl px-6 lg:px-8 py-6 space-y-6">
+      <HealthPanel />
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-semibold">Admin</h1>
@@ -139,7 +178,65 @@ function UsersPanel() {
           </table>
         </div>
       )}
+
+      <InviteAnalystForm groups={groups} />
     </section>
+  );
+}
+
+function InviteAnalystForm({ groups }: { groups: { id: string; name: string }[] }) {
+  const utils = trpc.useUtils();
+  const [email, setEmail] = useState("");
+  const [groupId, setGroupId] = useState(groups[0]?.id ?? "");
+  const [credential, setCredential] = useState<{ email: string; temporaryPassword: string } | null>(null);
+
+  const invite = trpc.admin.inviteAnalyst.useMutation({
+    onSuccess: (data) => {
+      setCredential({ email: data.email, temporaryPassword: data.temporaryPassword });
+      setEmail("");
+      utils.admin.listUsers.invalidate();
+    },
+  });
+
+  return (
+    <div className="space-y-3">
+      <h3 className="text-sm font-medium">Invite analyst</h3>
+      <div className="flex gap-2">
+        <Input
+          type="email"
+          placeholder="analyst@example.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="h-10 flex-1"
+        />
+        <select
+          className="h-10 rounded-md border bg-background px-3 text-sm"
+          value={groupId}
+          onChange={(e) => setGroupId(e.target.value)}
+        >
+          {groups.map((g) => (
+            <option key={g.id} value={g.id}>{g.name}</option>
+          ))}
+        </select>
+        <Button
+          onClick={() => invite.mutate({ email: email.trim(), groupId })}
+          disabled={!email.trim() || !groupId || invite.isPending}
+        >
+          {invite.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Invite"}
+        </Button>
+      </div>
+      {invite.isError && (
+        <p className="text-xs text-destructive">{invite.error.message}</p>
+      )}
+      {credential && (
+        <div className="rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950 p-3 space-y-1">
+          <p className="text-xs font-medium text-amber-800 dark:text-amber-200">One-time credentials — share securely and then dismiss</p>
+          <p className="text-xs font-mono text-amber-900 dark:text-amber-100">Email: {credential.email}</p>
+          <p className="text-xs font-mono text-amber-900 dark:text-amber-100">Temporary password: {credential.temporaryPassword}</p>
+          <button className="text-xs text-amber-600 underline" onClick={() => setCredential(null)}>Dismiss</button>
+        </div>
+      )}
+    </div>
   );
 }
 

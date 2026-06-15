@@ -66,7 +66,7 @@ const CAMEO_WEIGHTS: Record<string, number> = {
 
 // Combine GDELT event fields into a normalised [0,1] confidence score.
 // eventCode category weight (0–1) + |goldstein| / 10 (0–1) + log(1+mentions) / log(10001) (0–1), averaged.
-function computeConfidenceScore(
+export function computeConfidenceScore(
   eventCode: string | null,
   goldstein: number | null,
   numMentions: number | null,
