@@ -1,5 +1,5 @@
 import { useInView } from "react-intersection-observer";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +7,8 @@ import { ToastAction } from "@/components/ui/toast";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import { Flag, SkipForward, Loader2, Inbox, BookOpen, ArrowUp } from "lucide-react";
+import { GdeltSearchBar } from "@/components/GdeltSearchBar";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 
 type TriageItem = {
   globalEventId: string;
@@ -228,6 +230,11 @@ export default function HorizonGdeltTriageScreen() {
   const { toast } = useToast();
   const [removingIds, setRemovingIds] = useState<Set<string>>(new Set());
   const [scrolled, setScrolled] = useState(false);
+  const [rawQuery, setRawQuery] = useState("");
+  const query = useDebouncedValue(rawQuery, 350);
+  // Ref lets the stable mutation callbacks read the current debounced query.
+  const queryRef = useRef<string | undefined>(undefined);
+  queryRef.current = query || undefined;
 
   useEffect(() => {
     function onScroll() {
@@ -237,9 +244,10 @@ export default function HorizonGdeltTriageScreen() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const countNewQuery = trpc.horizon.gdelt.countNew.useQuery(undefined, {
-    refetchInterval: 60_000,
-  });
+  const countNewQuery = trpc.horizon.gdelt.countNew.useQuery(
+    { q: query || undefined },
+    { refetchInterval: 60_000 },
+  );
   const countFlaggedQuery = trpc.horizon.gdelt.countFlagged.useQuery(undefined, {
     refetchInterval: 60_000,
   });
@@ -248,7 +256,7 @@ export default function HorizonGdeltTriageScreen() {
   const flaggedCount = countFlaggedQuery.data?.count ?? 0;
 
   const newQuery = trpc.horizon.gdelt.list.useInfiniteQuery(
-    { limit: 30, status: "new" },
+    { limit: 30, status: "new", q: query || undefined },
     { getNextPageParam: (last) => last.nextCursor ?? undefined },
   );
 
@@ -259,10 +267,11 @@ export default function HorizonGdeltTriageScreen() {
 
   const setStatus = trpc.horizon.gdelt.setStatus.useMutation({
     onMutate: async ({ id }) => {
-      await utils.horizon.gdelt.list.cancel({ limit: 30, status: "new" });
-      const prev = utils.horizon.gdelt.list.getInfiniteData({ limit: 30, status: "new" });
+      const key = { limit: 30, status: "new" as const, q: queryRef.current };
+      await utils.horizon.gdelt.list.cancel(key);
+      const prev = utils.horizon.gdelt.list.getInfiniteData(key);
 
-      utils.horizon.gdelt.list.setInfiniteData({ limit: 30, status: "new" }, (old) => {
+      utils.horizon.gdelt.list.setInfiniteData(key, (old) => {
         if (!old) return old;
         return {
           ...old,
@@ -273,11 +282,11 @@ export default function HorizonGdeltTriageScreen() {
         };
       });
 
-      return { prev };
+      return { prev, key };
     },
     onError: (_err, _vars, ctx) => {
       if (ctx?.prev) {
-        utils.horizon.gdelt.list.setInfiniteData({ limit: 30, status: "new" }, ctx.prev);
+        utils.horizon.gdelt.list.setInfiniteData(ctx.key, ctx.prev);
       }
     },
     onSettled: () => {
@@ -402,6 +411,13 @@ export default function HorizonGdeltTriageScreen() {
           Flag events for deeper reading or skip to clear the queue.
         </div>
       </div>
+
+      <GdeltSearchBar
+        value={rawQuery}
+        onChange={setRawQuery}
+        onClear={() => setRawQuery("")}
+        className="mt-4 mb-2 w-full max-w-xl"
+      />
 
       {/* Flagged events — shown first so the analyst can act on them immediately */}
       {(flaggedItems.length > 0 || flaggedQuery.isLoading) && (

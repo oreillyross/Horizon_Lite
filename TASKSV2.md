@@ -26,9 +26,9 @@ No new npm packages. No schema migrations. No REST routes. One canonical approac
 
 ### 1.1 Add optional `q` input to `horizon.gdelt.list`
 
-- [ ] Open `server/routers/gdelt.router.ts` and locate the `list` procedure.
-- [ ] Add an optional `q: z.string().trim().max(200).optional()` field to the existing input schema.
-- [ ] When `q` is present and non-empty, build a PostgreSQL full-text search condition using
+- [x] Open `server/routers/gdelt.router.ts` and locate the `list` procedure.
+- [x] Add an optional `q: z.string().trim().max(200).optional()` field to the existing input schema.
+- [x] When `q` is present and non-empty, build a PostgreSQL full-text search condition using
   `sql<boolean>` (Drizzle raw SQL helper). The search must cover:
   - `gdelt_events.title` — the analyst-visible headline stored on the event row
   - `gdelt_documents.title` — the highest-confidence article title fetched via the existing
@@ -37,22 +37,22 @@ No new npm packages. No schema migrations. No REST routes. One canonical approac
   - `gdelt_events.action_geo_fullname`, `gdelt_events.action_geo_country_code`
   - A text array contains check on `gdelt_documents.themes` and
     `gdelt_documents.organizations` (join `gdelt_documents` to the lateral alias `d`)
-- [ ] Use `to_tsvector('english', coalesce(...))` + `plainto_tsquery('english', $query)` for
+- [x] Use `to_tsvector('english', coalesce(...))` + `plainto_tsquery('english', $query)` for
   relevance-aware matching. Fall back to `ILIKE '%term%'` only for the array columns where
   `unnest`/`array_to_string` is simpler.
-- [ ] Apply the condition with `AND` so it composes cleanly with the existing status filter and
+- [x] Apply the condition with `AND` so it composes cleanly with the existing status filter and
   cursor pagination.
-- [ ] **Do not** change the procedure's return shape — only the WHERE clause is affected.
-- [ ] Run `npm run build` (server only — TypeScript must compile cleanly) before marking done.
+- [x] **Do not** change the procedure's return shape — only the WHERE clause is affected.
+- [x] Run `npm run build` (server only — TypeScript must compile cleanly) before marking done.
 
 ### 1.2 Add `countNew` awareness of the `q` filter
 
-- [ ] Locate the `countNew` procedure in `server/routers/gdelt.router.ts`.
-- [ ] Add the same optional `q` field so the floating status bar count stays consistent with the
+- [x] Locate the `countNew` procedure in `server/routers/gdelt.router.ts`.
+- [x] Add the same optional `q` field so the floating status bar count stays consistent with the
   filtered view.
-- [ ] Use the same full-text condition helper extracted in 1.1 (extract it as an internal function
+- [x] Use the same full-text condition helper extracted in 1.1 (extract it as an internal function
   or `const` — do not duplicate the SQL).
-- [ ] Confirm TypeScript compiles.
+- [x] Confirm TypeScript compiles.
 
 ---
 
@@ -64,8 +64,8 @@ No new npm packages. No schema migrations. No REST routes. One canonical approac
 
 ### 2.1 Create `GdeltSearchBar` component
 
-- [ ] Create `client/src/components/GdeltSearchBar.tsx`.
-- [ ] Props interface:
+- [x] Create `client/src/components/GdeltSearchBar.tsx`.
+- [x] Props interface:
   ```ts
   interface GdeltSearchBarProps {
     value: string;
@@ -74,36 +74,36 @@ No new npm packages. No schema migrations. No REST routes. One canonical approac
     className?: string;
   }
   ```
-- [ ] Render a `<div role="search">` wrapper containing:
+- [x] Render a `<div role="search">` wrapper containing:
   - A `<label htmlFor="gdelt-search" className="sr-only">Search articles</label>` (visually
     hidden but read by screen readers).
   - A shadcn/ui `<Input>` with `id="gdelt-search"`, `type="search"`,
     `placeholder="Search titles, actors, countries…"`, and `aria-label` omitted (label covers it).
   - A clear button (shadcn/ui `<Button variant="ghost" size="icon">`) that renders only when
     `value.length > 0`; it must have `aria-label="Clear search"` and `type="button"`.
-- [ ] The `<Input>` calls `onChange` on every keystroke. Debouncing happens in the parent.
-- [ ] The clear button calls both `onClear` and focuses the input (`useRef`) so keyboard users
+- [x] The `<Input>` calls `onChange` on every keystroke. Debouncing happens in the parent.
+- [x] The clear button calls both `onClear` and focuses the input (`useRef`) so keyboard users
   stay in context.
-- [ ] Keyboard: pressing `Escape` inside the input calls `onClear` and clears focus from the
+- [x] Keyboard: pressing `Escape` inside the input calls `onClear` and clears focus from the
   button (standard search-widget pattern).
-- [ ] No state inside the component — fully controlled.
+- [x] No state inside the component — fully controlled.
 
 ### 2.2 Wire `GdeltSearchBar` into `HorizonGdeltTriageScreen`
 
-- [ ] Open `client/src/pages/HorizonGdeltTriageScreen.tsx`.
-- [ ] Add state: `const [rawQuery, setRawQuery] = useState('')`.
-- [ ] Derive debounced value: use the existing `useDebounce` hook if one exists in the codebase,
+- [x] Open `client/src/pages/HorizonGdeltTriageScreen.tsx`.
+- [x] Add state: `const [rawQuery, setRawQuery] = useState('')`.
+- [x] Derive debounced value: use the existing `useDebounce` hook if one exists in the codebase,
   otherwise implement a `useMemo`+`useEffect` debounce of 350 ms (matching `IntelEventsPage`
   pattern). Store as `const query = useDebouncedValue(rawQuery, 350)`.
-- [ ] Pass `q: query || undefined` into the `trpc.horizon.gdelt.list` call for the **"new"**
+- [x] Pass `q: query || undefined` into the `trpc.horizon.gdelt.list` call for the **"new"**
   infinite query. Do not pass `q` to the "flagged" query — flagged items are a separate read pane.
-- [ ] Pass `q: query || undefined` to `trpc.horizon.gdelt.countNew` so the badge stays accurate.
-- [ ] Place `<GdeltSearchBar>` immediately below the "GDELT Triage" page heading and above the
+- [x] Pass `q: query || undefined` to `trpc.horizon.gdelt.countNew` so the badge stays accurate.
+- [x] Place `<GdeltSearchBar>` immediately below the "GDELT Triage" page heading and above the
   tab strip / section dividers. Use `mt-4 mb-2` spacing consistent with the rest of the screen.
-- [ ] When `query` changes, reset the infinite query cursor by calling
+- [x] When `query` changes, reset the infinite query cursor by calling
   `newQuery.remove()` then `newQuery.fetchNextPage()` — or simply ensure the tRPC infinite query
   key includes `q` so React Query auto-resets. Verify no stale pages appear.
-- [ ] Visually: full-width on mobile, capped at `max-w-xl` on wider viewports (left-aligned, not
+- [x] Visually: full-width on mobile, capped at `max-w-xl` on wider viewports (left-aligned, not
   centred).
 
 ---
