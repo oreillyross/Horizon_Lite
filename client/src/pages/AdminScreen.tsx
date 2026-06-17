@@ -93,6 +93,8 @@ export default function AdminScreen() {
             </button>
           </div>
 
+          <GdeltSchedulePanel />
+
           <AcledFeedPanel />
         </section>
       </div>
@@ -411,6 +413,75 @@ function LinksPanel() {
         </div>
       )}
     </section>
+  );
+}
+
+const GDELT_FREQUENCY_OPTIONS = [
+  { value: "1", label: "Once a day" },
+  { value: "2", label: "Twice a day" },
+  { value: "4", label: "4 times a day" },
+  { value: "6", label: "6 times a day" },
+];
+
+function GdeltSchedulePanel() {
+  const utils = trpc.useUtils();
+
+  const enabledQ = trpc.admin.getConfig.useQuery({ key: "gdelt_auto_enabled" });
+  const frequencyQ = trpc.admin.getConfig.useQuery({ key: "gdelt_auto_frequency" });
+  const lastRunQ = trpc.admin.getConfig.useQuery({ key: "gdelt_auto_last_run" });
+
+  const setConfig = trpc.admin.setConfig.useMutation({
+    onSuccess: () => {
+      utils.admin.getConfig.invalidate({ key: "gdelt_auto_enabled" });
+      utils.admin.getConfig.invalidate({ key: "gdelt_auto_frequency" });
+    },
+  });
+
+  const enabled = enabledQ.data === "true";
+  const frequency = frequencyQ.data ?? "2";
+
+  function toggle() {
+    setConfig.mutate({ key: "gdelt_auto_enabled", value: enabled ? "false" : "true" });
+  }
+
+  function setFrequency(value: string) {
+    setConfig.mutate({ key: "gdelt_auto_frequency", value });
+  }
+
+  return (
+    <div className="flex items-start justify-between rounded-md border p-3 gap-4">
+      <div className="space-y-1 flex-1">
+        <p className="font-medium text-sm">Automatic GDELT ingest</p>
+        <p className="text-xs text-muted-foreground">
+          Runs the GDELT ingest job on a fixed schedule, in the background, without a manual trigger.
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Last automatic run: {lastRunQ.data ? new Date(lastRunQ.data).toLocaleString() : "Never"}
+        </p>
+      </div>
+
+      <div className="flex items-center gap-3 shrink-0">
+        <select
+          className="h-10 rounded-md border bg-background px-3 text-sm"
+          value={frequency}
+          onChange={(e) => setFrequency(e.target.value)}
+          disabled={setConfig.isPending || !enabled}
+        >
+          {GDELT_FREQUENCY_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+
+        <div className="flex items-center gap-2">
+          {enabledQ.isLoading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Switch checked={enabled} onCheckedChange={toggle} disabled={setConfig.isPending} />
+          )}
+          <span className="text-sm text-muted-foreground">{enabled ? "Enabled" : "Disabled"}</span>
+        </div>
+      </div>
+    </div>
   );
 }
 

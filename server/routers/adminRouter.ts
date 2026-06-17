@@ -1,13 +1,13 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "../db";
 import { protectedProcedure, router } from "../trpc";
 import { users, analystGroups, themes, themeGroupLinks, appConfig } from "@shared/db";
 import bcrypt from "bcrypt";
-import { ingestGdelt } from "../jobs/gdeltIngest";
 import { ingestAcled, isAcledEnabled } from "../jobs/acledIngest";
 import { generateSignals } from "../jobs/generateSignals";
+import { runGdeltJob, GdeltJobLockedError } from "../jobs/runGdeltJob";
 
 const isAdminEmail = (email?: string | null) => {
   const allow = (process.env.ADMIN_EMAILS ?? "")
@@ -35,68 +35,19 @@ function log(message: string, source = "express") {
   console.log(`${formattedTime} [${source}] ${message}`);
 }
 
-const GDELT_JOB_LOCK_ID = 987654321;
-
 export const adminRouter = router({
   runGdelt: adminProcedure.mutation(async ({}) => {
-    let lockAcquired = false;
-
     try {
-      const lockResult = await db.execute(
-        sql`SELECT pg_try_advisory_lock(${GDELT_JOB_LOCK_ID}) as locked`,
-      );
-
-      const locked = Boolean(lockResult.rows[0]?.locked);
-
-      if (!locked) {
-        throw new TRPCError({
-          code: "CONFLICT",
-          message: "Job already Running",
-        });
-      }
-
-      lockAcquired = true;
-
-      const startedAt = Date.now();
-      log("GDELT job started", "gdelt-job");
-
-      const ingestResult = await ingestGdelt();
-      const signalResult = await generateSignals();
-
-      const durationMs = Date.now() - startedAt;
-
-      log(
-        `GDELT job finished in ${durationMs}ms :: ${JSON.stringify({
-          ingestResult,
-          signalResult,
-        })}`,
-        "gdelt-job",
-      );
-
-      return {
-        ok: true,
-        job: "gdelt",
-        durationMs,
-        ingestResult,
-        signalResult,
-      };
+      return await runGdeltJob();
     } catch (error) {
+      if (error instanceof GdeltJobLockedError) {
+        throw new TRPCError({ code: "CONFLICT", message: "Job already Running" });
+      }
       console.error("GDELT job failed:", error);
-
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
         message: error instanceof Error ? error.message : "unknown error",
       });
-    } finally {
-      if (lockAcquired) {
-        try {
-          await db.execute(
-            sql`SELECT pg_advisory_unlock(${GDELT_JOB_LOCK_ID})`,
-          );
-        } catch (unlockError) {
-          console.error("Failed to release GDELT advisory lock:", unlockError);
-        }
-      }
     }
   }),
   // USERS
