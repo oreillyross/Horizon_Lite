@@ -1,4 +1,4 @@
-CREATE TABLE "acled_events" (
+CREATE TABLE IF NOT EXISTS "acled_events" (
 	"id" text PRIMARY KEY NOT NULL,
 	"event_date" timestamp,
 	"year" integer,
@@ -21,7 +21,7 @@ CREATE TABLE "acled_events" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "app_config" (
+CREATE TABLE IF NOT EXISTS "app_config" (
 	"key" text PRIMARY KEY NOT NULL,
 	"value" text NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
