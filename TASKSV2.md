@@ -115,8 +115,8 @@ No new npm packages. No schema migrations. No REST routes. One canonical approac
 
 ### 3.1 Create `useSavedSearches` hook
 
-- [ ] Create `client/src/hooks/useSavedSearches.ts`.
-- [ ] The hook manages `string[]` state backed by `localStorage`:
+- [x] Create `client/src/hooks/useSavedSearches.ts`.
+- [x] The hook manages `string[]` state backed by `localStorage`:
   ```ts
   function useSavedSearches(): {
     saved: string[];
@@ -124,16 +124,16 @@ No new npm packages. No schema migrations. No REST routes. One canonical approac
     remove: (term: string) => void;
   }
   ```
-- [ ] `save(term)` — trims, lowercases for dedup check, prepends to array, deduplicates (case-
+- [x] `save(term)` — trims, lowercases for dedup check, prepends to array, deduplicates (case-
   insensitive), caps at 10 entries, writes back to localStorage.
-- [ ] `remove(term)` — filters the term out, writes back.
-- [ ] Initialise from localStorage on mount. Handle JSON parse errors gracefully (reset to `[]`).
-- [ ] No external dependencies — plain `useState` + `useEffect`.
+- [x] `remove(term)` — filters the term out, writes back.
+- [x] Initialise from localStorage on mount. Handle JSON parse errors gracefully (reset to `[]`).
+- [x] No external dependencies — plain `useState` + `useEffect`.
 
 ### 3.2 Create `SavedSearchPills` component
 
-- [ ] Create `client/src/components/SavedSearchPills.tsx`.
-- [ ] Props:
+- [x] Create `client/src/components/SavedSearchPills.tsx`.
+- [x] Props:
   ```ts
   interface SavedSearchPillsProps {
     pills: string[];
@@ -142,8 +142,8 @@ No new npm packages. No schema migrations. No REST routes. One canonical approac
     onRemove: (term: string) => void;
   }
   ```
-- [ ] Renders a `<div role="list" aria-label="Saved searches">` (or `<ul>`).
-- [ ] Each pill is a `<div role="listitem">` (or `<li>`) containing:
+- [x] Renders a `<div role="list" aria-label="Saved searches">` (or `<ul>`).
+- [x] Each pill is a `<div role="listitem">` (or `<li>`) containing:
   - A trigger `<button>` that applies the search on click and on `Enter`/`Space` keydown.
     - `aria-pressed={activeQuery === pill}` to indicate active state.
     - Visually uses accent/muted colours from the design system. Active pill gets a distinct
@@ -151,24 +151,24 @@ No new npm packages. No schema migrations. No REST routes. One canonical approac
   - An ✕ `<button>` with `aria-label={\`Remove saved search: \${pill}\`}` that calls `onRemove`.
     - Must be separately focusable and activatable via `Enter`/`Space`.
     - On remove, focus moves to the next pill or, if none remain, to the search input.
-- [ ] The two buttons inside each pill must not be nested (keep them siblings inside the listitem
+- [x] The two buttons inside each pill must not be nested (keep them siblings inside the listitem
   wrapper — a `<div>` with `role="group"` and `aria-label={pill}` works well).
-- [ ] When the pill list is empty, render nothing (no empty state UI needed).
-- [ ] Keyboard traversal: standard tab order. Do not implement arrow-key roving tabindex unless
+- [x] When the pill list is empty, render nothing (no empty state UI needed).
+- [x] Keyboard traversal: standard tab order. Do not implement arrow-key roving tabindex unless
   the pill count commonly exceeds 5 — the saved cap is 10, tab is sufficient.
 
 ### 3.3 Wire `useSavedSearches` and `SavedSearchPills` into `HorizonGdeltTriageScreen`
 
-- [ ] In `HorizonGdeltTriageScreen.tsx`, call `useSavedSearches()`.
-- [ ] Add a "Save search" trigger: a small `<Button variant="ghost" size="sm">` icon next to the
+- [x] In `HorizonGdeltTriageScreen.tsx`, call `useSavedSearches()`.
+- [x] Add a "Save search" trigger: a small `<Button variant="ghost" size="sm">` icon next to the
   `GdeltSearchBar`, visible only when `query.length >= 2`. Tooltip text: "Save this search".
   On click, call `save(query)`.
   - Use a bookmark or pin icon from `lucide-react` (already available in the project).
   - `aria-label="Save this search"`.
-- [ ] Render `<SavedSearchPills>` immediately below `<GdeltSearchBar>` (and the save button row).
+- [x] Render `<SavedSearchPills>` immediately below `<GdeltSearchBar>` (and the save button row).
   When a pill is selected, set `rawQuery` to the pill's term (the debounce will trigger the query
   update automatically).
-- [ ] When the clear button in `GdeltSearchBar` is used, `rawQuery` becomes `''` — the active
+- [x] When the clear button in `GdeltSearchBar` is used, `rawQuery` becomes `''` — the active
   pill highlight should disappear (controlled by `activeQuery === pill` comparison).
 
 ---
@@ -177,17 +177,17 @@ No new npm packages. No schema migrations. No REST routes. One canonical approac
 
 ### 4.1 Focus-trap and skip-link check
 
-- [ ] Verify that pressing `Tab` from the page header reaches the search bar first, then the save
+- [x] Verify that pressing `Tab` from the page header reaches the search bar first, then the save
   button (when visible), then the pill list, then the article list entries.
-- [ ] Verify that pressing `Escape` inside the search input clears the query and returns focus to
+- [x] Verify that pressing `Escape` inside the search input clears the query and returns focus to
   the input (not lost into the void).
-- [ ] Verify that the ✕ button on each pill is reachable by Tab and activatable by Enter/Space.
-- [ ] Verify that removing the last pill shifts focus to the search input (implemented in 3.2).
-- [ ] Fix any tab-order or focus-loss issues found.
+- [x] Verify that the ✕ button on each pill is reachable by Tab and activatable by Enter/Space.
+- [x] Verify that removing the last pill shifts focus to the search input (implemented in 3.2).
+- [x] Fix any tab-order or focus-loss issues found.
 
 ### 4.2 ARIA live region for result count
 
-- [ ] Below the search bar (but above pills), add a visually hidden live region:
+- [x] Below the search bar (but above pills), add a visually hidden live region:
   ```tsx
   <p aria-live="polite" aria-atomic="true" className="sr-only">
     {query && !isLoading
@@ -197,14 +197,14 @@ No new npm packages. No schema migrations. No REST routes. One canonical approac
   ```
   where `totalCount` is derived from the first page's total if the backend returns it, or omitted
   if the count is not available without an extra query.
-- [ ] If the `list` procedure does not currently return a total count, skip the count text and
+- [x] If the `list` procedure does not currently return a total count, skip the count text and
   just announce `"Showing results for ${query}"` when the query is non-empty and not loading.
-- [ ] Do not add a separate tRPC call just for this announcement.
+- [x] Do not add a separate tRPC call just for this announcement.
 
 ### 4.3 Final build & type check
 
-- [ ] Run `npm run build` — zero TypeScript errors, zero new ESLint warnings.
-- [ ] Run `npm test` — all existing tests pass. No new tests are required for this slice unless a
+- [x] Run `npm run build` — zero TypeScript errors, zero new ESLint warnings.
+- [x] Run `npm test` — all existing tests pass. No new tests are required for this slice unless a
   test for `useSavedSearches` is trivial to add (it is a pure hook; a Vitest unit test is welcome
   but not mandatory).
 

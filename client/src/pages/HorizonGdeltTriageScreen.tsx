@@ -6,9 +6,12 @@ import { Badge } from "@/components/ui/badge";
 import { ToastAction } from "@/components/ui/toast";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
-import { Flag, SkipForward, Loader2, Inbox, BookOpen, ArrowUp } from "lucide-react";
+import { Flag, SkipForward, Loader2, Inbox, BookOpen, ArrowUp, Bookmark } from "lucide-react";
 import { GdeltSearchBar } from "@/components/GdeltSearchBar";
+import { SavedSearchPills } from "@/components/SavedSearchPills";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { useSavedSearches } from "@/hooks/useSavedSearches";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 type TriageItem = {
   globalEventId: string;
@@ -232,6 +235,7 @@ export default function HorizonGdeltTriageScreen() {
   const [scrolled, setScrolled] = useState(false);
   const [rawQuery, setRawQuery] = useState("");
   const query = useDebouncedValue(rawQuery, 350);
+  const { saved, save, remove } = useSavedSearches();
   // Ref lets the stable mutation callbacks read the current debounced query.
   const queryRef = useRef<string | undefined>(undefined);
   queryRef.current = query || undefined;
@@ -412,12 +416,43 @@ export default function HorizonGdeltTriageScreen() {
         </div>
       </div>
 
-      <GdeltSearchBar
-        value={rawQuery}
-        onChange={setRawQuery}
-        onClear={() => setRawQuery("")}
-        className="mt-4 mb-2 w-full max-w-xl"
-      />
+      <div className="mt-4 mb-2 flex w-full max-w-xl items-center gap-1">
+        <GdeltSearchBar
+          value={rawQuery}
+          onChange={setRawQuery}
+          onClear={() => setRawQuery("")}
+          className="flex-1"
+        />
+        {query.length >= 2 && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                aria-label="Save this search"
+                onClick={() => save(query)}
+              >
+                <Bookmark className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Save this search</TooltipContent>
+          </Tooltip>
+        )}
+      </div>
+
+      <p aria-live="polite" aria-atomic="true" className="sr-only">
+        {query && !newQuery.isLoading ? `Showing results for "${query}"` : null}
+      </p>
+
+      <div className="mb-4">
+        <SavedSearchPills
+          pills={saved}
+          activeQuery={query}
+          onSelect={(term) => setRawQuery(term)}
+          onRemove={remove}
+        />
+      </div>
 
       {/* Flagged events — shown first so the analyst can act on them immediately */}
       {(flaggedItems.length > 0 || flaggedQuery.isLoading) && (
