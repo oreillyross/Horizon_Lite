@@ -3,12 +3,10 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { sessionMiddleware } from "./session";
-import { ingestGdelt } from "./jobs/gdeltIngest";
-import { generateSignals } from "./jobs/generateSignals";
 import { runLifecycleManager } from "./jobs/lifecycleManager";
+import { runGdeltJob, GdeltJobLockedError } from "./jobs/runGdeltJob";
+import { runScheduledGdeltIngest } from "./jobs/gdeltScheduler";
 import { fetchReadable } from "./utils/webcut";
-import { db } from "./db";
-import { sql } from "drizzle-orm";
 import cron from "node-cron";
 
 const app = express();
@@ -62,8 +60,6 @@ app.post("/api/webcut", async (req, res) => {
   }
 });
 
-const GDELT_JOB_LOCK_ID = 987654321;
-
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
     hour: "numeric",
@@ -93,64 +89,18 @@ app.post("/internal/jobs/gdelt", async (req, res) => {
   }
 
 
-  let lockAcquired = false;
-
   try {
-    const lockResult = await db.execute(
-      sql`SELECT pg_try_advisory_lock(${GDELT_JOB_LOCK_ID}) as locked`
-    );
-
-    const locked = Boolean(lockResult.rows[0]?.locked);
-
-    if (!locked) {
-      return res.status(409).json({
-        ok: false,
-        error: "job already running",
-      });
-    }
-
-    lockAcquired = true;
-
-    const startedAt = Date.now();
-    log("GDELT job started", "gdelt-job");
-
-    const ingestResult = await ingestGdelt();
-    const signalResult = await generateSignals();
-
-    const durationMs = Date.now() - startedAt;
-
-    log(
-      `GDELT job finished in ${durationMs}ms :: ${JSON.stringify({
-        ingestResult,
-        signalResult,
-      })}`,
-      "gdelt-job",
-    );
-
-    return res.json({
-      ok: true,
-      job: "gdelt",
-      durationMs,
-      ingestResult,
-      signalResult,
-    });
+    const result = await runGdeltJob();
+    return res.json(result);
   } catch (error) {
+    if (error instanceof GdeltJobLockedError) {
+      return res.status(409).json({ ok: false, error: "job already running" });
+    }
     console.error("GDELT job failed:", error);
-
     return res.status(500).json({
       ok: false,
       error: error instanceof Error ? error.message : "unknown error",
     });
-  } finally {
-    if (lockAcquired) {
-      try {
-        await db.execute(
-          sql`SELECT pg_advisory_unlock(${GDELT_JOB_LOCK_ID})`
-        );
-      } catch (unlockError) {
-        console.error("Failed to release GDELT advisory lock:", unlockError);
-      }
-    }
   }
 });
 
@@ -221,6 +171,19 @@ app.use((req, res, next) => {
       });
 
       log("Lifecycle cron scheduled (daily at 10:00 UTC)", "lifecycle");
+
+      // GDELT auto-ingest: hourly tick checks app_config for the analyst's
+      // configured enabled/frequency and runs the job when it's due.
+      cron.schedule("0 * * * *", () => {
+        runScheduledGdeltIngest().catch((err) =>
+          log(
+            `GDELT scheduler error: ${err instanceof Error ? err.message : err}`,
+            "gdelt-scheduler",
+          ),
+        );
+      });
+
+      log("GDELT auto-ingest scheduler running (hourly check)", "gdelt-scheduler");
     },
   );
 })();
