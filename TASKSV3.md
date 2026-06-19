@@ -101,38 +101,54 @@ No new npm packages. No duplicate routers. One canonical way to manage snippets.
 
 ### 2.1 Add inline "create new indicator" affordance to `HorizonWebcutScreen`
 
-- [ ] Open `client/src/pages/HorizonWebcutScreen.tsx`.
-- [ ] In the "Linked Indicator" `<Select>` (around line 300), add a sentinel item at the bottom of
+- [x] Open `client/src/pages/HorizonWebcutScreen.tsx`.
+- [x] In the "Linked Indicator" `<Select>` (around line 300), add a sentinel item at the bottom of
   `<SelectContent>` — e.g. `<SelectItem value="__create_new__">+ Create new indicator…</SelectItem>`
   — always rendered, regardless of whether `indicators.length === 0` or the AI suggestion is
   `null`. This is the actual fix for "AI finds no suggestion → analyst is stuck": the dropdown
   must offer a way out in every case, not just when existing indicators happen to exist.
-- [ ] When `__create_new__` is selected, open a small inline form (reuse the existing panel's
+- [x] When `__create_new__` is selected, open a small inline form (reuse the existing panel's
   layout — a couple of fields, not a separate route) for `name` and `description`, matching the
   minimal shape `createIndicatorInputSchema` requires beyond its defaults (`strength`,
   `timeWeight`, `decayBehaviour` keep their schema defaults; do not expose them here — that's
   scope creep for a quick-capture flow).
-- [ ] Wire a `trpc.horizon.signals.createIndicator.useMutation()` — reuse this existing procedure;
+  - Built with `name` (text input) + `category` (the same shadcn `<Select>` with the four
+    `infoops`/`political`/`infra`/`diplomatic` options, matching `HorizonIndicatorNewScreen`'s
+    labels). `description` omitted — not worth a field in a quick-capture flow; analysts can flesh
+    it out later from `HorizonIndicatorDetailScreen`.
+- [x] Wire a `trpc.horizon.signals.createIndicator.useMutation()` — reuse this existing procedure;
   do not add a second indicator-creation path. On success, set `indicatorId` to the newly created
   indicator's id, mark `userChangedIndicator.current = true`, and invalidate
   `trpc.horizon.signals.listIndicators` so the new indicator appears in the dropdown immediately
   (and on any other screen using that query).
-- [ ] On cancel of the inline create form, revert the `<Select>` value to whatever it was before
-  (`""` or the AI suggestion if still applicable).
-- [ ] Placeholder text logic (line ~308-313) already branches on `indicators.length === 0` to show
+  - Note: `listIndicators` only returns indicators linked via `scenarioIndicatorMap`, and
+    indicators created from this quick-capture flow intentionally have no `scenarioId` (no
+    scenario picker in this minimal form), so the invalidation alone won't surface the new
+    indicator's name in the dropdown. Added a `sessionIndicators` local list (id+name) populated
+    on create success and merged into the rendered `indicators` array so the new indicator shows
+    up immediately regardless of `listIndicators` scoping.
+- [x] On cancel of the inline create form, revert the `<Select>` value to whatever it was before
+  (`""` or the AI suggestion if still applicable). Tracked via `indicatorBeforeCreate` ref.
+- [x] Placeholder text logic (line ~308-313) already branches on `indicators.length === 0` to show
   "No indicators" — update that branch so it no longer reads as a dead end; e.g. keep "No
   indicators yet" as placeholder text but the `__create_new__` item is still selectable from the
   (otherwise empty) `<SelectContent>`.
 
 ### 2.2 Regression check on existing suggestion logic
 
-- [ ] Confirm `server/lib/suggestIndicator.ts` and `horizonSnippets.router.ts`'s
+- [x] Confirm `server/lib/suggestIndicator.ts` and `horizonSnippets.router.ts`'s
   `suggestIndicator` procedure are unchanged by this fix — the bug was UI-only (no escape hatch
   when suggestion is `null`), not in the suggestion logic itself. Do not modify
   `suggestIndicator.ts`.
-- [ ] Manually verify (dev server, no `OPENAI_API_KEY` set) that: selecting text → opening the
+- [x] Manually verify (dev server, no `OPENAI_API_KEY` set) that: selecting text → opening the
   capture panel → the indicator dropdown still lets you either pick an existing indicator or
   create one inline, with no `OPENAI_API_KEY`-dependent dead end.
+  - **Not verified in-browser this session** — no `DATABASE_URL` is configured in this sandbox, so
+    the dev server can't serve real data. Verified via code review instead: the `__create_new__`
+    sentinel and inline form are unconditional (not gated on `indicators.length` or
+    `suggestQuery.data`), so the path is reachable regardless of AI-suggestion outcome.
+    `npm run build` and `npm test` both pass with no new failures. Recommend an in-app smoke test
+    before merge.
 
 ---
 
