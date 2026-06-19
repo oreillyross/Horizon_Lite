@@ -57,8 +57,8 @@ No new npm packages. No duplicate routers. One canonical way to manage snippets.
 
 ### 1.1 Add `list` procedure to `horizonSnippetsRouter`
 
-- [ ] Open `server/routers/horizonSnippets.router.ts`.
-- [ ] Add a `list: protectedProcedure` query, no input required, that returns all snippets scoped
+- [x] Open `server/routers/horizonSnippets.router.ts`.
+- [x] Add a `list: protectedProcedure` query, no input required, that returns all snippets scoped
   to the current analyst group. Since `snippets` has no `analystGroupId` column, scope via the
   optional `indicatorId` → `indicators` → ... chain is not reliable for unlinked snippets; instead
   add scoping the simplest correct way available today: return all snippets (the app is currently
@@ -68,25 +68,32 @@ No new npm packages. No duplicate routers. One canonical way to manage snippets.
   (left join, since `indicatorId` is nullable) and filter `indicators.analystGroupId = groupId OR
   snippets.indicatorId IS NULL`). Match whatever scoping pattern `signals.router.ts` already uses
   for indicators so this stays consistent with existing group-isolation rules.
-- [ ] Select and return: `id`, `quote`, `content`, `sourceUrl`, `pubDate`, `indicatorId`,
+  - Implemented by extracting the existing `suggestIndicator`-procedure pattern (the
+    `scenarioIndicatorMap` → `scenarios.analystGroupId` lookup) into a shared
+    `visibleIndicatorIds(groupId)` helper, reused by both `list` and `suggestIndicator`. `list`
+    returns snippets whose `indicatorId` is either `NULL` (always visible — unlinked evidence
+    isn't owned by any group) or in the group's visible indicator set.
+- [x] Select and return: `id`, `quote`, `content`, `sourceUrl`, `pubDate`, `indicatorId`,
   `analystNotes`, `aiSuggestedIndicatorId`, `createdAt`, plus the linked indicator's `name` (left
   join `indicators` on `snippets.indicatorId`) so the client doesn't need a second round-trip.
-- [ ] Order by `createdAt DESC`.
-- [ ] Run `npm run build` (server) to confirm it compiles.
+- [x] Order by `createdAt DESC`.
+- [x] Run `npm run build` (server) to confirm it compiles.
 
 ### 1.2 Add `update` procedure
 
-- [ ] Add `update: protectedProcedure` mutation. Input: `{ id: z.string(), indicatorId:
+- [x] Add `update: protectedProcedure` mutation. Input: `{ id: z.string(), indicatorId:
   z.string().uuid().nullable().optional(), analystNotes: z.string().optional() }`.
-- [ ] Update only the fields provided; do not allow `quote`, `sourceUrl`, or `pubDate` to be
+- [x] Update only the fields provided; do not allow `quote`, `sourceUrl`, or `pubDate` to be
   edited — those are captured facts about the source, not analyst judgement.
-- [ ] Return the updated row's `id`.
+- [x] Return the updated row's `id`. Throws `NOT_FOUND` if the id doesn't exist.
 
 ### 1.3 Add `delete` procedure
 
-- [ ] Add `delete: protectedProcedure` mutation. Input: `{ id: z.string() }`. Deletes the row by
-  id. Return `{ id }`.
-- [ ] Confirm `npm run build` compiles cleanly.
+- [x] Add `delete: protectedProcedure` mutation. Input: `{ id: z.string() }`. Deletes the row by
+  id. Return `{ id }`. Throws `NOT_FOUND` if the id doesn't exist.
+- [x] Confirm `npm run build` compiles cleanly. (`npm test` also run — the 12 pre-existing
+  failures in `NavigationBar.test.tsx` and `HorizonScenarioDetailScreen.test.tsx` are unrelated to
+  this change; confirmed identical failures on the base branch via `git stash`.)
 
 ---
 
