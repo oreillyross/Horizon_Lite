@@ -17,6 +17,14 @@ import { Label } from "@/components/ui/label";
 
 type FloatingBtn = { text: string; x: number; y: number };
 type SnippetPanel = { quote: string };
+const CREATE_NEW_INDICATOR = "__create_new__";
+
+const INDICATOR_CATEGORIES = [
+  { value: "political", label: "Political" },
+  { value: "infoops", label: "InfoOps" },
+  { value: "infra", label: "Infrastructure" },
+  { value: "diplomatic", label: "Diplomatic" },
+] as const;
 
 export default function HorizonWebcutScreen() {
   const [, params] = useRoute("/horizon/gdelt/read/:eventId");
@@ -45,6 +53,53 @@ export default function HorizonWebcutScreen() {
   const [sessionCount, setSessionCount] = useState(0);
   // Track whether the analyst has manually touched the indicator dropdown
   const userChangedIndicator = useRef(false);
+
+  // --- inline "create new indicator" affordance ---
+  const utils = trpc.useUtils();
+  const [creatingIndicator, setCreatingIndicator] = useState(false);
+  const [newIndicatorName, setNewIndicatorName] = useState("");
+  const [newIndicatorCategory, setNewIndicatorCategory] = useState("");
+  // Indicators created in this session that have no scenario link yet, so
+  // listIndicators (which only returns scenario-linked indicators) won't
+  // include them — kept locally so the dropdown can still show their name.
+  const [sessionIndicators, setSessionIndicators] = useState<{ id: string; name: string }[]>([]);
+  const indicatorBeforeCreate = useRef("");
+
+  const createIndicator = trpc.horizon.signals.createIndicator.useMutation({
+    onSuccess: (data) => {
+      setSessionIndicators((prev) => [...prev, { id: data.id, name: newIndicatorName.trim() }]);
+      setIndicatorId(data.id);
+      userChangedIndicator.current = true;
+      setCreatingIndicator(false);
+      setNewIndicatorName("");
+      setNewIndicatorCategory("");
+      void utils.horizon.signals.listIndicators.invalidate();
+      toast({ title: "Indicator created" });
+    },
+    onError: (err) => {
+      toast({ title: "Failed to create indicator", description: err.message, variant: "destructive" });
+    },
+  });
+
+  function openCreateIndicator() {
+    indicatorBeforeCreate.current = indicatorId;
+    setCreatingIndicator(true);
+    setNewIndicatorName("");
+    setNewIndicatorCategory("");
+  }
+
+  function cancelCreateIndicator() {
+    setCreatingIndicator(false);
+    setIndicatorId(indicatorBeforeCreate.current);
+  }
+
+  function submitCreateIndicator() {
+    if (!newIndicatorName.trim() || !newIndicatorCategory) return;
+    createIndicator.mutate({
+      name: newIndicatorName.trim(),
+      category: newIndicatorCategory as "political" | "infoops" | "infra" | "diplomatic",
+    });
+  }
 
   // --- AI indicator suggestion ---
   const suggestQuery = trpc.horizon.snippets.suggestIndicator.useQuery(
@@ -102,6 +157,7 @@ export default function HorizonWebcutScreen() {
     if (!floatingBtn) return;
     userChangedIndicator.current = false;
     setIndicatorId("");
+    setCreatingIndicator(false);
     setPanel({ quote: floatingBtn.text });
     setFloatingBtn(null);
     window.getSelection()?.removeAllRanges();
@@ -111,6 +167,7 @@ export default function HorizonWebcutScreen() {
     setPanel(null);
     setIndicatorId("");
     setAnalystNotes("");
+    setCreatingIndicator(false);
     userChangedIndicator.current = false;
   }
 
@@ -131,7 +188,11 @@ export default function HorizonWebcutScreen() {
   const event = eventQuery.data;
   const isLoading = eventQuery.isLoading || (!!event?.sourceUrl && webcutQuery.isLoading);
   const error = eventQuery.error ?? webcutQuery.error;
-  const indicators = indicatorsQuery.data ?? [];
+  const fetchedIndicators = indicatorsQuery.data ?? [];
+  const indicators = [
+    ...fetchedIndicators,
+    ...sessionIndicators.filter((s) => !fetchedIndicators.some((f) => f.id === s.id)),
+  ];
 
   return (
     <div className="mx-auto max-w-3xl px-6 lg:px-8 py-8 pb-64">
@@ -297,29 +358,77 @@ export default function HorizonWebcutScreen() {
                     </Badge>
                   )}
                 </div>
-                <Select
-                  value={indicatorId}
-                  onValueChange={(val) => {
-                    userChangedIndicator.current = true;
-                    setIndicatorId(val);
-                  }}
-                >
-                  <SelectTrigger className="h-8 text-sm">
-                    <SelectValue placeholder={
-                      indicatorsQuery.isLoading ? "Loading…" :
-                      suggestQuery.isLoading ? "AI suggesting…" :
-                      indicators.length === 0 ? "No indicators" :
-                      "Select indicator"
-                    } />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {indicators.map((ind) => (
-                      <SelectItem key={ind.id} value={ind.id}>
-                        {ind.name}
+                {creatingIndicator ? (
+                  <div className="rounded-md border bg-muted/30 p-2 space-y-2">
+                    <input
+                      autoFocus
+                      type="text"
+                      value={newIndicatorName}
+                      onChange={(e) => setNewIndicatorName(e.target.value)}
+                      placeholder="New indicator name"
+                      className="h-8 w-full rounded-md border bg-background px-2 text-sm"
+                    />
+                    <Select value={newIndicatorCategory} onValueChange={setNewIndicatorCategory}>
+                      <SelectTrigger className="h-8 text-sm">
+                        <SelectValue placeholder="Category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {INDICATOR_CATEGORIES.map((c) => (
+                          <SelectItem key={c.value} value={c.value}>
+                            {c.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <div className="flex justify-end gap-2">
+                      <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={cancelCreateIndicator}>
+                        Cancel
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="h-7 text-xs"
+                        onClick={submitCreateIndicator}
+                        disabled={
+                          createIndicator.isPending || !newIndicatorName.trim() || !newIndicatorCategory
+                        }
+                      >
+                        {createIndicator.isPending && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
+                        Create
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <Select
+                    value={indicatorId}
+                    onValueChange={(val) => {
+                      if (val === CREATE_NEW_INDICATOR) {
+                        openCreateIndicator();
+                        return;
+                      }
+                      userChangedIndicator.current = true;
+                      setIndicatorId(val);
+                    }}
+                  >
+                    <SelectTrigger className="h-8 text-sm">
+                      <SelectValue placeholder={
+                        indicatorsQuery.isLoading ? "Loading…" :
+                        suggestQuery.isLoading ? "AI suggesting…" :
+                        indicators.length === 0 ? "No indicators yet" :
+                        "Select indicator"
+                      } />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {indicators.map((ind) => (
+                        <SelectItem key={ind.id} value={ind.id}>
+                          {ind.name}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value={CREATE_NEW_INDICATOR}>
+                        + Create new indicator…
                       </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
 
               {/* Analyst Notes */}
