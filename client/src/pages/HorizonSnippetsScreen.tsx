@@ -223,7 +223,12 @@ function SnippetCard({ snippet, onDeleted }: { snippet: Snippet; onDeleted: () =
     <div className="rounded-lg border bg-background p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <blockquote className="text-sm leading-relaxed text-foreground/90 border-l-2 border-primary/40 pl-3 flex-1">
-          {snippet.quote ?? snippet.content}
+          <Link
+            href={`/horizon/snippets/${snippet.id}`}
+            className="hover:underline"
+          >
+            {snippet.quote ?? snippet.content}
+          </Link>
         </blockquote>
         <div className="flex shrink-0 items-center gap-1">
           <button

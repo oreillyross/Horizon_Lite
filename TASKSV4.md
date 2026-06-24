@@ -25,11 +25,11 @@ Seven UX observations turned into focused subtasks. Work through them one at a t
 - `client/src/pages/HorizonSnippetDetailScreen.tsx` ← new file
 - `client/src/App.tsx`
 
-- [ ] Create `HorizonSnippetDetailScreen.tsx`: a read-only page at `/horizon/snippets/:id` that fetches and displays the full snippet (quote, source URL if present, analyst notes, linked indicator, date). Use the existing `horizon.snippets.list` query or add a `getById` procedure if needed.
-- [ ] Add a `getById` procedure to `horizonSnippets.router.ts` that returns a single snippet by id (with indicator name joined).
-- [ ] Register the route `/horizon/snippets/:id` in `client/src/App.tsx`.
-- [ ] In `SnippetCard`, wrap the blockquote text in a `<Link>` pointing to `/horizon/snippets/${snippet.id}` instead of rendering it as plain text.
-- [ ] Add a unit test for the new detail screen in `client/src/pages/HorizonSnippetDetailScreen.test.tsx`.
+- [x] Create `HorizonSnippetDetailScreen.tsx`: a read-only page at `/horizon/snippets/:id` that fetches and displays the full snippet (quote, source URL if present, analyst notes, linked indicator, date). Use the existing `horizon.snippets.list` query or add a `getById` procedure if needed.
+- [x] Add a `getById` procedure to `horizonSnippets.router.ts` that returns a single snippet by id (with indicator name joined).
+- [x] Register the route `/horizon/snippets/:id` in `client/src/App.tsx`.
+- [x] In `SnippetCard`, wrap the blockquote text in a `<Link>` pointing to `/horizon/snippets/${snippet.id}` instead of rendering it as plain text.
+- [x] Add a unit test for the new detail screen in `client/src/pages/HorizonSnippetDetailScreen.test.tsx`.
 
 ---
 
