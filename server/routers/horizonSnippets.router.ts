@@ -15,7 +15,57 @@ async function visibleIndicatorIds(groupId: string): Promise<string[]> {
   return [...new Set(linkRows.map((r) => r.indicatorId))];
 }
 
+const snippetOutputSchema = z.object({
+  id: z.string(),
+  quote: z.string().nullable(),
+  content: z.string(),
+  sourceUrl: z.string().nullable(),
+  pubDate: z.string().nullable(),
+  indicatorId: z.string().nullable(),
+  indicatorName: z.string().nullable(),
+  analystNotes: z.string().nullable(),
+  aiSuggestedIndicatorId: z.string().nullable(),
+  createdAt: z.string(),
+});
+
 export const horizonSnippetsRouter = router({
+  getById: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .output(snippetOutputSchema)
+    .query(async ({ ctx, input }) => {
+      const groupId = ctx.user.analystGroupId;
+      if (!groupId) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "No analyst group" });
+      }
+
+      const [row] = await db
+        .select({
+          id: snippets.id,
+          quote: snippets.quote,
+          content: snippets.content,
+          sourceUrl: snippets.sourceUrl,
+          pubDate: snippets.pubDate,
+          indicatorId: snippets.indicatorId,
+          indicatorName: indicators.name,
+          analystNotes: snippets.analystNotes,
+          aiSuggestedIndicatorId: snippets.aiSuggestedIndicatorId,
+          createdAt: snippets.createdAt,
+        })
+        .from(snippets)
+        .leftJoin(indicators, eq(indicators.id, snippets.indicatorId))
+        .where(eq(snippets.id, input.id));
+
+      if (!row) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Snippet not found" });
+      }
+
+      return {
+        ...row,
+        pubDate: row.pubDate ? row.pubDate.toISOString() : null,
+        createdAt: row.createdAt.toISOString(),
+      };
+    }),
+
   list: protectedProcedure
     .output(
       z.array(

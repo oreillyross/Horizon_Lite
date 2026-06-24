@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { formatRelativeTime } from "@/lib/formatters";
@@ -77,6 +77,99 @@ export default function HorizonScenariosListScreen() {
     (warmthQuery.data ?? []).map((w) => [w.scenarioId, w.delta])
   );
 
+  // Group rows by theme name; null/undefined theme → "Unassigned" at the end
+  const themeGroups: { themeName: string; scenarios: typeof rows }[] = [];
+  if (rows.length > 0) {
+    const byTheme = new Map<string, typeof rows>();
+    for (const row of rows) {
+      const key = row.themeName ?? "__unassigned__";
+      if (!byTheme.has(key)) byTheme.set(key, []);
+      byTheme.get(key)!.push(row);
+    }
+    for (const [key, items] of byTheme) {
+      if (key !== "__unassigned__") {
+        themeGroups.push({ themeName: key, scenarios: items });
+      }
+    }
+    themeGroups.sort((a, b) => a.themeName.localeCompare(b.themeName));
+    if (byTheme.has("__unassigned__")) {
+      themeGroups.push({ themeName: "Unassigned", scenarios: byTheme.get("__unassigned__")! });
+    }
+  }
+
+  const tableHeaders = (
+    <thead className="bg-muted/40">
+      <tr>
+        <th className="px-4 py-3 text-left font-medium text-muted-foreground w-48">Name</th>
+        <th className="px-4 py-3 text-left font-medium text-muted-foreground">Description</th>
+        <th className="px-4 py-3 text-left font-medium text-muted-foreground w-24">Indicators</th>
+        <th className="px-4 py-3 text-left font-medium text-muted-foreground w-16">Warmth</th>
+        <th className="px-4 py-3 text-left font-medium text-muted-foreground w-28">Updated</th>
+        <th className="px-4 py-3 w-10" />
+      </tr>
+    </thead>
+  );
+
+  function renderScenarioRow(scenario: (typeof rows)[number]) {
+    return (
+      <tr
+        key={scenario.id}
+        className="border-t hover:bg-muted/20 cursor-pointer"
+        onClick={() => setLocation(`/horizon/scenarios/${scenario.id}`)}
+      >
+        <td className="px-4 py-3 font-medium">{scenario.name}</td>
+        <td className="px-4 py-3 text-muted-foreground max-w-xs truncate">
+          {scenario.description}
+        </td>
+        <td className="px-4 py-3 text-center">
+          {scenario.indicatorCount > 0 ? (
+            <Link
+              href={`/horizon/scenarios/${scenario.id}`}
+              onClick={(e: React.MouseEvent) => e.stopPropagation()}
+              className="text-primary hover:underline tabular-nums font-medium"
+            >
+              {scenario.indicatorCount}
+            </Link>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          )}
+        </td>
+        <td className="px-4 py-3 text-center">
+          <WarmthBadge delta={warmthMap.get(scenario.id) ?? 0} />
+        </td>
+        <td className="px-4 py-3 text-muted-foreground tabular-nums">
+          {formatRelativeTime(scenario.updatedAt)}
+        </td>
+        <td
+          className="px-4 py-3"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-7 w-7">
+                <MoreHorizontal className="h-4 w-4" />
+                <span className="sr-only">Actions</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={() => setLocation(`/horizon/scenarios/${scenario.id}`)}
+              >
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onClick={() => setDeleteTargetId(scenario.id)}
+              >
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </td>
+      </tr>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-7xl px-6 lg:px-8 py-8">
       {/* Header */}
@@ -90,86 +183,54 @@ export default function HorizonScenariosListScreen() {
         </Link>
       </div>
 
-      {/* Table */}
-      <div className="mt-6 overflow-x-auto rounded-md border">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/40">
-            <tr>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground w-48">Name</th>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Description</th>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground w-36">Theme</th>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground w-16">Warmth</th>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground w-28">Updated</th>
-              <th className="px-4 py-3 w-10" />
-            </tr>
-          </thead>
-          <tbody>
-            {listQuery.isLoading ? (
-              Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} />)
-            ) : rows.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-4 py-12 text-center">
-                  <div className="text-sm font-medium text-muted-foreground">
-                    No scenarios yet. Create your first threat narrative.
-                  </div>
-                  <Link href="/horizon/scenarios/new">
-                    <Button variant="outline" size="sm" className="mt-4">
-                      New Scenario
-                    </Button>
-                  </Link>
-                </td>
-              </tr>
-            ) : (
-              rows.map((scenario) => (
-                <tr
-                  key={scenario.id}
-                  className="border-t hover:bg-muted/20 cursor-pointer"
-                  onClick={() => setLocation(`/horizon/scenarios/${scenario.id}`)}
-                >
-                  <td className="px-4 py-3 font-medium">{scenario.name}</td>
-                  <td className="px-4 py-3 text-muted-foreground max-w-xs truncate">
-                    {scenario.description}
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground text-sm truncate max-w-[9rem]">
-                    {scenario.themeName ?? <span className="italic">—</span>}
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <WarmthBadge delta={warmthMap.get(scenario.id) ?? 0} />
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground tabular-nums">
-                    {formatRelativeTime(scenario.updatedAt)}
-                  </td>
-                  <td
-                    className="px-4 py-3"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-7 w-7">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Actions</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => setLocation(`/horizon/scenarios/${scenario.id}`)}
-                        >
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="text-destructive focus:text-destructive"
-                          onClick={() => setDeleteTargetId(scenario.id)}
-                        >
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+      {/* Table(s) */}
+      <div className="mt-6 space-y-6">
+        {listQuery.isLoading ? (
+          <div className="overflow-x-auto rounded-md border">
+            <table className="w-full text-sm">
+              {tableHeaders}
+              <tbody>
+                {Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} />)}
+              </tbody>
+            </table>
+          </div>
+        ) : rows.length === 0 ? (
+          <div className="overflow-x-auto rounded-md border">
+            <table className="w-full text-sm">
+              {tableHeaders}
+              <tbody>
+                <tr>
+                  <td colSpan={6} className="px-4 py-12 text-center">
+                    <div className="text-sm font-medium text-muted-foreground">
+                      No scenarios yet. Create your first threat narrative.
+                    </div>
+                    <Link href="/horizon/scenarios/new">
+                      <Button variant="outline" size="sm" className="mt-4">
+                        New Scenario
+                      </Button>
+                    </Link>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          themeGroups.map((group) => (
+            <div key={group.themeName} className="overflow-x-auto rounded-md border">
+              <div className="bg-muted/60 px-4 py-2 border-b">
+                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  {group.themeName}
+                </span>
+              </div>
+              <table className="w-full text-sm">
+                {tableHeaders}
+                <tbody>
+                  {group.scenarios.map(renderScenarioRow)}
+                </tbody>
+              </table>
+            </div>
+          ))
+        )}
       </div>
 
       {/* Delete confirmation dialog */}

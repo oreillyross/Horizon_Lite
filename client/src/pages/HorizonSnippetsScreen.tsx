@@ -6,7 +6,6 @@ import {
   Loader2,
   Plus,
   Trash2,
-  ExternalLink,
   Scissors,
   Pencil,
   X,
@@ -85,7 +84,7 @@ function SnippetEditRow({
   const { toast } = useToast();
   const utils = trpc.useUtils();
 
-  const indicatorsQuery = trpc.horizon.signals.listIndicators.useQuery(undefined, { retry: false });
+  const indicatorsQuery = trpc.horizon.signals.searchIndicators.useQuery({ q: "" }, { retry: false });
   const fetchedIndicators = indicatorsQuery.data ?? [];
 
   const [sessionIndicators, setSessionIndicators] = useState<{ id: string; name: string }[]>([]);
@@ -224,7 +223,12 @@ function SnippetCard({ snippet, onDeleted }: { snippet: Snippet; onDeleted: () =
     <div className="rounded-lg border bg-background p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <blockquote className="text-sm leading-relaxed text-foreground/90 border-l-2 border-primary/40 pl-3 flex-1">
-          {snippet.quote ?? snippet.content}
+          <Link
+            href={`/horizon/snippets/${snippet.id}`}
+            className="hover:underline"
+          >
+            {snippet.quote ?? snippet.content}
+          </Link>
         </blockquote>
         <div className="flex shrink-0 items-center gap-1">
           <button
@@ -279,17 +283,7 @@ function SnippetCard({ snippet, onDeleted }: { snippet: Snippet; onDeleted: () =
             AI suggestion
           </Badge>
         )}
-        {snippet.sourceUrl && (
-          <a
-            href={snippet.sourceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
-          >
-            <ExternalLink className="h-3 w-3" />
-            Source
-          </a>
-        )}
+
         <span className="text-xs text-muted-foreground ml-auto tabular-nums">
           {formatDate(displayDate)}
         </span>
@@ -325,7 +319,7 @@ function AddSnippetDialog({
   const [creatingIndicator, setCreatingIndicator] = useState(false);
   const [sessionIndicators, setSessionIndicators] = useState<{ id: string; name: string }[]>([]);
 
-  const indicatorsQuery = trpc.horizon.signals.listIndicators.useQuery(undefined, { retry: false });
+  const indicatorsQuery = trpc.horizon.signals.searchIndicators.useQuery({ q: "" }, { retry: false });
   const fetchedIndicators = indicatorsQuery.data ?? [];
   const indicators = [
     ...fetchedIndicators,
@@ -411,7 +405,7 @@ function AddSnippetDialog({
                   setSessionIndicators((prev) => [...prev, { id, name }]);
                   setIndicatorId(id);
                   setCreatingIndicator(false);
-                  void utils.horizon.signals.listIndicators.invalidate();
+                  void utils.horizon.signals.searchIndicators.invalidate();
                 }}
                 onCancel={() => setCreatingIndicator(false)}
               />
@@ -520,9 +514,9 @@ export default function HorizonSnippetsScreen() {
               Horizon
             </Link>
             <span className="mx-2">/</span>
-            <span>Snippets</span>
+            <span>Information Snippets</span>
           </div>
-          <div className="mt-2 text-3xl font-semibold">Snippets</div>
+          <div className="mt-2 text-3xl font-semibold">Information Snippets</div>
           <div className="mt-2 text-sm text-muted-foreground">
             Captured quotes and analyst notes, grouped by indicator.
           </div>
