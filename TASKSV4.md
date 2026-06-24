@@ -35,19 +35,19 @@ Seven UX observations turned into focused subtasks. Work through them one at a t
 
 ## Task 4 — Scenarios: Group the list by theme
 **File:** `client/src/pages/HorizonScenariosListScreen.tsx`
-- [ ] Client-side: group the `rows` array by `themeName` (null/undefined → "Unassigned").
-- [ ] Render each theme group with a section heading above its scenario rows.
-- [ ] Preserve the existing table structure inside each group section.
-- [ ] Scenarios with no theme go into a final "Unassigned" group at the bottom.
+- [x] Client-side: group the `rows` array by `themeName` (null/undefined → "Unassigned").
+- [x] Render each theme group with a section heading above its scenario rows.
+- [x] Preserve the existing table structure inside each group section.
+- [x] Scenarios with no theme go into a final "Unassigned" group at the bottom.
 
 ---
 
 ## Task 5 — Scenarios: Replace Theme column with Indicator Count + drill-down link
 **File:** `client/src/pages/HorizonScenariosListScreen.tsx`
-- [ ] Remove the "Theme" `<th>` / `<td>` cells (theme is now shown as the section heading from Task 4).
-- [ ] Add an "Indicators" column showing `scenario.indicatorCount`.
-- [ ] Render the count as a `<Link>` to `/horizon/scenarios/${scenario.id}` (the detail page already shows linked indicators at the bottom — the `#indicators` hash is optional but desirable if the anchor exists).
-- [ ] Show `—` when count is 0 (no link needed in that case).
+- [x] Remove the "Theme" `<th>` / `<td>` cells (theme is now shown as the section heading from Task 4).
+- [x] Add an "Indicators" column showing `scenario.indicatorCount`.
+- [x] Render the count as a `<Link>` to `/horizon/scenarios/${scenario.id}` (the detail page already shows linked indicators at the bottom — the `#indicators` hash is optional but desirable if the anchor exists).
+- [x] Show `—` when count is 0 (no link needed in that case).
 
 ---
 
