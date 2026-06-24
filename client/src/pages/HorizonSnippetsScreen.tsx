@@ -509,9 +509,9 @@ export default function HorizonSnippetsScreen() {
               Horizon
             </Link>
             <span className="mx-2">/</span>
-            <span>Snippets</span>
+            <span>Information Snippets</span>
           </div>
-          <div className="mt-2 text-3xl font-semibold">Snippets</div>
+          <div className="mt-2 text-3xl font-semibold">Information Snippets</div>
           <div className="mt-2 text-sm text-muted-foreground">
             Captured quotes and analyst notes, grouped by indicator.
           </div>

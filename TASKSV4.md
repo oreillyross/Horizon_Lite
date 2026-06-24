@@ -13,9 +13,9 @@ Seven UX observations turned into focused subtasks. Work through them one at a t
 
 ## Task 2 — Snippets: Rename page header to "Information Snippets"
 **File:** `client/src/pages/HorizonSnippetsScreen.tsx`
-- [ ] Change the breadcrumb label from `"Snippets"` → `"Information Snippets"`.
-- [ ] Change the `<div>` page title from `"Snippets"` → `"Information Snippets"`.
-- [ ] Change the subtitle description to match the new name if needed.
+- [x] Change the breadcrumb label from `"Snippets"` → `"Information Snippets"`.
+- [x] Change the `<div>` page title from `"Snippets"` → `"Information Snippets"`.
+- [x] Change the subtitle description to match the new name if needed.
 
 ---
 
