@@ -8,9 +8,23 @@ import {
   Trash2,
   ExternalLink,
   Scissors,
+  Pencil,
+  X,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import {
   Dialog,
   DialogContent,
@@ -28,12 +42,271 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { IndicatorQuickCreate } from "@/components/IndicatorQuickCreate";
 
 function Skeleton({ className }: { className?: string }) {
   return <div className={`animate-pulse rounded-md bg-muted ${className ?? ""}`} />;
 }
 
 const NO_INDICATOR = "__none__";
+const CREATE_NEW_INDICATOR = "__create_new__";
+
+type Snippet = {
+  id: string;
+  quote: string | null;
+  content: string | null;
+  sourceUrl: string | null;
+  pubDate: string | null;
+  indicatorId: string | null;
+  indicatorName: string | null;
+  analystNotes: string | null;
+  aiSuggestedIndicatorId: string | null;
+  createdAt: string;
+};
+
+function formatDate(value: string | null | undefined): string {
+  if (!value) return "";
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(value));
+}
+
+// Inline editor for changing a snippet's indicator and notes
+function SnippetEditRow({
+  snippet,
+  onDone,
+}: {
+  snippet: Snippet;
+  onDone: () => void;
+}) {
+  const { toast } = useToast();
+  const utils = trpc.useUtils();
+
+  const indicatorsQuery = trpc.horizon.signals.listIndicators.useQuery(undefined, { retry: false });
+  const fetchedIndicators = indicatorsQuery.data ?? [];
+
+  const [sessionIndicators, setSessionIndicators] = useState<{ id: string; name: string }[]>([]);
+  const indicators = [
+    ...fetchedIndicators,
+    ...sessionIndicators.filter((s) => !fetchedIndicators.some((f) => f.id === s.id)),
+  ];
+
+  const [indicatorId, setIndicatorId] = useState<string>(snippet.indicatorId ?? NO_INDICATOR);
+  const [analystNotes, setAnalystNotes] = useState<string>(snippet.analystNotes ?? "");
+  const [creatingIndicator, setCreatingIndicator] = useState(false);
+  const indicatorBeforeCreate = { current: indicatorId };
+
+  const updateSnippet = trpc.horizon.snippets.update.useMutation({
+    onSuccess: () => {
+      toast({ title: "Snippet updated" });
+      void utils.horizon.snippets.list.invalidate();
+      onDone();
+    },
+    onError: (err) => {
+      toast({ title: "Failed to update snippet", description: err.message, variant: "destructive" });
+    },
+  });
+
+  function handleSave() {
+    updateSnippet.mutate({
+      id: snippet.id,
+      indicatorId: indicatorId && indicatorId !== NO_INDICATOR ? indicatorId : null,
+      analystNotes: analystNotes.trim() || undefined,
+    });
+  }
+
+  return (
+    <div className="mt-3 rounded-md border bg-muted/20 p-3 space-y-3">
+      <div>
+        <Label className="text-xs text-muted-foreground mb-1 block">Linked Indicator</Label>
+        {creatingIndicator ? (
+          <IndicatorQuickCreate
+            onCreated={(id, name) => {
+              setSessionIndicators((prev) => [...prev, { id, name }]);
+              setIndicatorId(id);
+              setCreatingIndicator(false);
+            }}
+            onCancel={() => {
+              setCreatingIndicator(false);
+              setIndicatorId(indicatorBeforeCreate.current);
+            }}
+          />
+        ) : (
+          <Select
+            value={indicatorId}
+            onValueChange={(val) => {
+              if (val === CREATE_NEW_INDICATOR) {
+                indicatorBeforeCreate.current = indicatorId;
+                setCreatingIndicator(true);
+                return;
+              }
+              setIndicatorId(val);
+            }}
+          >
+            <SelectTrigger className="h-8 text-sm">
+              <SelectValue placeholder={
+                indicatorsQuery.isLoading ? "Loading…" :
+                indicators.length === 0 ? "No indicators yet" :
+                "Select indicator"
+              } />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NO_INDICATOR}>None</SelectItem>
+              {indicators.map((ind) => (
+                <SelectItem key={ind.id} value={ind.id}>
+                  {ind.name}
+                </SelectItem>
+              ))}
+              <SelectItem value={CREATE_NEW_INDICATOR}>+ Create new indicator…</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
+      </div>
+
+      <div>
+        <Label className="text-xs text-muted-foreground mb-1 block">
+          Analyst Notes <span className="text-muted-foreground/60">(optional)</span>
+        </Label>
+        <Textarea
+          value={analystNotes}
+          onChange={(e) => setAnalystNotes(e.target.value)}
+          rows={2}
+          className="text-sm resize-none"
+          placeholder="Your notes…"
+        />
+      </div>
+
+      <div className="flex justify-end gap-2">
+        <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={onDone}>
+          <X className="h-3 w-3 mr-1" />
+          Cancel
+        </Button>
+        <Button
+          size="sm"
+          className="h-7 text-xs"
+          onClick={handleSave}
+          disabled={updateSnippet.isPending}
+        >
+          {updateSnippet.isPending && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
+          Save
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function SnippetCard({ snippet, onDeleted }: { snippet: Snippet; onDeleted: () => void }) {
+  const { toast } = useToast();
+  const utils = trpc.useUtils();
+  const [editing, setEditing] = useState(false);
+
+  const deleteSnippet = trpc.horizon.snippets.delete.useMutation({
+    onSuccess: () => {
+      toast({ title: "Snippet deleted" });
+      void utils.horizon.snippets.list.invalidate();
+      onDeleted();
+    },
+    onError: (err) => {
+      toast({ title: "Failed to delete snippet", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const isAiSuggested =
+    !!snippet.aiSuggestedIndicatorId &&
+    snippet.aiSuggestedIndicatorId === snippet.indicatorId;
+
+  const displayDate = snippet.pubDate ?? snippet.createdAt;
+
+  return (
+    <div className="rounded-lg border bg-background p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <blockquote className="text-sm leading-relaxed text-foreground/90 border-l-2 border-primary/40 pl-3 flex-1">
+          {snippet.quote ?? snippet.content}
+        </blockquote>
+        <div className="flex shrink-0 items-center gap-1">
+          <button
+            onClick={() => setEditing((v) => !v)}
+            className="rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            aria-label="Edit snippet"
+          >
+            {editing ? <X className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
+          </button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <button
+                disabled={deleteSnippet.isPending}
+                className="rounded p-1 text-muted-foreground hover:text-destructive hover:bg-muted transition-colors"
+                aria-label="Delete snippet"
+              >
+                {deleteSnippet.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+              </button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete snippet?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete this captured snippet. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  onClick={() => deleteSnippet.mutate({ id: snippet.id })}
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        {isAiSuggested && (
+          <Badge
+            variant="outline"
+            className="text-xs gap-1 border-violet-300 text-violet-600 dark:border-violet-700 dark:text-violet-400"
+          >
+            <Sparkles className="h-3 w-3" />
+            AI suggestion
+          </Badge>
+        )}
+        {snippet.sourceUrl && (
+          <a
+            href={snippet.sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
+          >
+            <ExternalLink className="h-3 w-3" />
+            Source
+          </a>
+        )}
+        <span className="text-xs text-muted-foreground ml-auto tabular-nums">
+          {formatDate(displayDate)}
+        </span>
+      </div>
+
+      {snippet.analystNotes && !editing && (
+        <div className="mt-2 text-xs text-muted-foreground italic">{snippet.analystNotes}</div>
+      )}
+
+      {editing && (
+        <SnippetEditRow snippet={snippet} onDone={() => setEditing(false)} />
+      )}
+    </div>
+  );
+}
+
+// ---- Add Snippet Dialog ----
 
 function AddSnippetDialog({
   open,
@@ -49,25 +322,36 @@ function AddSnippetDialog({
   const [sourceUrl, setSourceUrl] = useState("");
   const [indicatorId, setIndicatorId] = useState("");
   const [analystNotes, setAnalystNotes] = useState("");
+  const [creatingIndicator, setCreatingIndicator] = useState(false);
+  const [sessionIndicators, setSessionIndicators] = useState<{ id: string; name: string }[]>([]);
 
-  const indicatorsQuery = trpc.horizon.signals.listIndicators.useQuery(undefined, {
-    retry: false,
-  });
-  const indicators = indicatorsQuery.data ?? [];
+  const indicatorsQuery = trpc.horizon.signals.listIndicators.useQuery(undefined, { retry: false });
+  const fetchedIndicators = indicatorsQuery.data ?? [];
+  const indicators = [
+    ...fetchedIndicators,
+    ...sessionIndicators.filter((s) => !fetchedIndicators.some((f) => f.id === s.id)),
+  ];
+  const utils = trpc.useUtils();
 
   const createSnippet = trpc.horizon.snippets.create.useMutation({
     onSuccess: () => {
       toast({ title: "Snippet added" });
-      setQuote("");
-      setSourceUrl("");
-      setIndicatorId("");
-      setAnalystNotes("");
+      resetForm();
       onSaved();
     },
     onError: (err) => {
       toast({ title: "Failed to add snippet", description: err.message, variant: "destructive" });
     },
   });
+
+  function resetForm() {
+    setQuote("");
+    setSourceUrl("");
+    setIndicatorId("");
+    setAnalystNotes("");
+    setCreatingIndicator(false);
+    setSessionIndicators([]);
+  }
 
   function handleSave() {
     if (!quote.trim()) return;
@@ -80,10 +364,7 @@ function AddSnippetDialog({
   }
 
   function handleClose() {
-    setQuote("");
-    setSourceUrl("");
-    setIndicatorId("");
-    setAnalystNotes("");
+    resetForm();
     onClose();
   }
 
@@ -124,26 +405,45 @@ function AddSnippetDialog({
             <Label className="text-xs text-muted-foreground mb-1 block">
               Linked Indicator <span className="text-muted-foreground/60">(optional)</span>
             </Label>
-            <Select
-              value={indicatorId}
-              onValueChange={setIndicatorId}
-            >
-              <SelectTrigger className="h-8 text-sm">
-                <SelectValue placeholder={
-                  indicatorsQuery.isLoading ? "Loading…" :
-                  indicators.length === 0 ? "No indicators yet" :
-                  "Select indicator"
-                } />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={NO_INDICATOR}>None</SelectItem>
-                {indicators.map((ind) => (
-                  <SelectItem key={ind.id} value={ind.id}>
-                    {ind.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {creatingIndicator ? (
+              <IndicatorQuickCreate
+                onCreated={(id, name) => {
+                  setSessionIndicators((prev) => [...prev, { id, name }]);
+                  setIndicatorId(id);
+                  setCreatingIndicator(false);
+                  void utils.horizon.signals.listIndicators.invalidate();
+                }}
+                onCancel={() => setCreatingIndicator(false)}
+              />
+            ) : (
+              <Select
+                value={indicatorId}
+                onValueChange={(val) => {
+                  if (val === CREATE_NEW_INDICATOR) {
+                    setCreatingIndicator(true);
+                    return;
+                  }
+                  setIndicatorId(val);
+                }}
+              >
+                <SelectTrigger className="h-8 text-sm">
+                  <SelectValue placeholder={
+                    indicatorsQuery.isLoading ? "Loading…" :
+                    indicators.length === 0 ? "No indicators yet" :
+                    "Select indicator"
+                  } />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NO_INDICATOR}>None</SelectItem>
+                  {indicators.map((ind) => (
+                    <SelectItem key={ind.id} value={ind.id}>
+                      {ind.name}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value={CREATE_NEW_INDICATOR}>+ Create new indicator…</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           <div>
@@ -178,26 +478,37 @@ function AddSnippetDialog({
   );
 }
 
+// ---- Main screen ----
+
 export default function HorizonSnippetsScreen() {
-  const { toast } = useToast();
   const [addOpen, setAddOpen] = useState(false);
-
   const utils = trpc.useUtils();
+
   const snippetsQuery = trpc.horizon.snippets.list.useQuery();
-  const snippets = snippetsQuery.data ?? [];
+  const snippets: Snippet[] = (snippetsQuery.data ?? []) as Snippet[];
 
-  const deleteSnippet = trpc.horizon.snippets.delete.useMutation({
-    onSuccess: () => {
-      toast({ title: "Snippet deleted" });
-      void utils.horizon.snippets.list.invalidate();
-    },
-    onError: (err) => {
-      toast({ title: "Failed to delete snippet", description: err.message, variant: "destructive" });
-    },
-  });
+  // Group by indicator: linked → sorted by indicator name; unlinked at end
+  const groups: { indicatorName: string | null; indicatorId: string | null; items: Snippet[] }[] = [];
+  const byIndicator = new Map<string | null, Snippet[]>();
 
-  function handleDelete(id: string) {
-    deleteSnippet.mutate({ id });
+  for (const s of snippets) {
+    const key = s.indicatorId ?? null;
+    if (!byIndicator.has(key)) byIndicator.set(key, []);
+    byIndicator.get(key)!.push(s);
+  }
+
+  // linked groups sorted by name
+  const linked = [...byIndicator.entries()]
+    .filter(([k]) => k !== null)
+    .sort(([, a], [, b]) => (a[0].indicatorName ?? "").localeCompare(b[0].indicatorName ?? ""));
+
+  for (const [key, items] of linked) {
+    groups.push({ indicatorId: key, indicatorName: items[0].indicatorName, items });
+  }
+
+  // unlinked bucket at end
+  if (byIndicator.has(null)) {
+    groups.push({ indicatorId: null, indicatorName: null, items: byIndicator.get(null)! });
   }
 
   return (
@@ -213,7 +524,7 @@ export default function HorizonSnippetsScreen() {
           </div>
           <div className="mt-2 text-3xl font-semibold">Snippets</div>
           <div className="mt-2 text-sm text-muted-foreground">
-            Captured quotes and analyst notes linked to indicators.
+            Captured quotes and analyst notes, grouped by indicator.
           </div>
         </div>
 
@@ -251,9 +562,13 @@ export default function HorizonSnippetsScreen() {
         ) : snippets.length === 0 ? (
           <div className="rounded-md border bg-muted p-8 text-center">
             <Scissors className="h-8 w-8 mx-auto text-muted-foreground/50 mb-3" />
-            <div className="text-sm font-medium">No snippets yet</div>
+            <div className="text-sm font-medium">No snippets captured yet.</div>
             <div className="mt-1 text-sm text-muted-foreground">
-              Capture snippets from articles in GDELT Triage, or add one manually.
+              Capture snippets from articles in{" "}
+              <Link href="/horizon/gdelt/triage" className="underline hover:text-foreground">
+                GDELT Triage
+              </Link>
+              , or add one manually.
             </div>
             <Button size="sm" className="mt-4" onClick={() => setAddOpen(true)}>
               <Plus className="h-4 w-4 mr-1.5" />
@@ -261,55 +576,22 @@ export default function HorizonSnippetsScreen() {
             </Button>
           </div>
         ) : (
-          <div className="space-y-3">
-            {snippets.map((s) => (
-              <div key={s.id} className="rounded-lg border bg-background p-4 shadow-sm">
-                <div className="flex items-start justify-between gap-3">
-                  <blockquote className="text-sm leading-relaxed text-foreground/90 border-l-2 border-primary/40 pl-3 flex-1">
-                    {s.quote ?? s.content}
-                  </blockquote>
-                  <button
-                    onClick={() => handleDelete(s.id)}
-                    disabled={deleteSnippet.isPending}
-                    className="shrink-0 rounded p-1 text-muted-foreground hover:text-destructive hover:bg-muted transition-colors"
-                    aria-label="Delete snippet"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+          <div className="space-y-8">
+            {groups.map((group) => (
+              <section key={group.indicatorId ?? "__unlinked__"}>
+                <h2 className="mb-3 text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                  {group.indicatorName ?? "Unlinked"}
+                </h2>
+                <div className="space-y-3">
+                  {group.items.map((s) => (
+                    <SnippetCard
+                      key={s.id}
+                      snippet={s}
+                      onDeleted={() => void utils.horizon.snippets.list.invalidate()}
+                    />
+                  ))}
                 </div>
-
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  {s.indicatorName && (
-                    <Badge variant="outline" className="text-xs">
-                      {s.indicatorName}
-                    </Badge>
-                  )}
-                  {s.sourceUrl && (
-                    <a
-                      href={s.sourceUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
-                    >
-                      <ExternalLink className="h-3 w-3" />
-                      Source
-                    </a>
-                  )}
-                  <span className="text-xs text-muted-foreground ml-auto tabular-nums">
-                    {new Intl.DateTimeFormat("en-GB", {
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric",
-                    }).format(new Date(s.createdAt))}
-                  </span>
-                </div>
-
-                {s.analystNotes && (
-                  <div className="mt-2 text-xs text-muted-foreground italic">
-                    {s.analystNotes}
-                  </div>
-                )}
-              </div>
+              </section>
             ))}
           </div>
         )}

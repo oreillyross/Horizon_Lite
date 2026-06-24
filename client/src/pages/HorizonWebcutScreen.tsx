@@ -14,17 +14,11 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { IndicatorQuickCreate } from "@/components/IndicatorQuickCreate";
 
 type FloatingBtn = { text: string; x: number; y: number };
 type SnippetPanel = { quote: string };
 const CREATE_NEW_INDICATOR = "__create_new__";
-
-const INDICATOR_CATEGORIES = [
-  { value: "political", label: "Political" },
-  { value: "infoops", label: "InfoOps" },
-  { value: "infra", label: "Infrastructure" },
-  { value: "diplomatic", label: "Diplomatic" },
-] as const;
 
 export default function HorizonWebcutScreen() {
   const [, params] = useRoute("/horizon/gdelt/read/:eventId");
@@ -55,50 +49,21 @@ export default function HorizonWebcutScreen() {
   const userChangedIndicator = useRef(false);
 
   // --- inline "create new indicator" affordance ---
-  const utils = trpc.useUtils();
   const [creatingIndicator, setCreatingIndicator] = useState(false);
-  const [newIndicatorName, setNewIndicatorName] = useState("");
-  const [newIndicatorCategory, setNewIndicatorCategory] = useState("");
   // Indicators created in this session that have no scenario link yet, so
   // listIndicators (which only returns scenario-linked indicators) won't
   // include them — kept locally so the dropdown can still show their name.
   const [sessionIndicators, setSessionIndicators] = useState<{ id: string; name: string }[]>([]);
   const indicatorBeforeCreate = useRef("");
 
-  const createIndicator = trpc.horizon.signals.createIndicator.useMutation({
-    onSuccess: (data) => {
-      setSessionIndicators((prev) => [...prev, { id: data.id, name: newIndicatorName.trim() }]);
-      setIndicatorId(data.id);
-      userChangedIndicator.current = true;
-      setCreatingIndicator(false);
-      setNewIndicatorName("");
-      setNewIndicatorCategory("");
-      void utils.horizon.signals.listIndicators.invalidate();
-      toast({ title: "Indicator created" });
-    },
-    onError: (err) => {
-      toast({ title: "Failed to create indicator", description: err.message, variant: "destructive" });
-    },
-  });
-
   function openCreateIndicator() {
     indicatorBeforeCreate.current = indicatorId;
     setCreatingIndicator(true);
-    setNewIndicatorName("");
-    setNewIndicatorCategory("");
   }
 
   function cancelCreateIndicator() {
     setCreatingIndicator(false);
     setIndicatorId(indicatorBeforeCreate.current);
-  }
-
-  function submitCreateIndicator() {
-    if (!newIndicatorName.trim() || !newIndicatorCategory) return;
-    createIndicator.mutate({
-      name: newIndicatorName.trim(),
-      category: newIndicatorCategory as "political" | "infoops" | "infra" | "diplomatic",
-    });
   }
 
   // --- AI indicator suggestion ---
@@ -359,44 +324,15 @@ export default function HorizonWebcutScreen() {
                   )}
                 </div>
                 {creatingIndicator ? (
-                  <div className="rounded-md border bg-muted/30 p-2 space-y-2">
-                    <input
-                      autoFocus
-                      type="text"
-                      value={newIndicatorName}
-                      onChange={(e) => setNewIndicatorName(e.target.value)}
-                      placeholder="New indicator name"
-                      className="h-8 w-full rounded-md border bg-background px-2 text-sm"
-                    />
-                    <Select value={newIndicatorCategory} onValueChange={setNewIndicatorCategory}>
-                      <SelectTrigger className="h-8 text-sm">
-                        <SelectValue placeholder="Category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {INDICATOR_CATEGORIES.map((c) => (
-                          <SelectItem key={c.value} value={c.value}>
-                            {c.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={cancelCreateIndicator}>
-                        Cancel
-                      </Button>
-                      <Button
-                        size="sm"
-                        className="h-7 text-xs"
-                        onClick={submitCreateIndicator}
-                        disabled={
-                          createIndicator.isPending || !newIndicatorName.trim() || !newIndicatorCategory
-                        }
-                      >
-                        {createIndicator.isPending && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
-                        Create
-                      </Button>
-                    </div>
-                  </div>
+                  <IndicatorQuickCreate
+                    onCreated={(id, name) => {
+                      setSessionIndicators((prev) => [...prev, { id, name }]);
+                      setIndicatorId(id);
+                      userChangedIndicator.current = true;
+                      setCreatingIndicator(false);
+                    }}
+                    onCancel={cancelCreateIndicator}
+                  />
                 ) : (
                   <Select
                     value={indicatorId}
