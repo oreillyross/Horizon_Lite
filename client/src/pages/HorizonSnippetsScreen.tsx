@@ -84,7 +84,7 @@ function SnippetEditRow({
   const { toast } = useToast();
   const utils = trpc.useUtils();
 
-  const indicatorsQuery = trpc.horizon.signals.listIndicators.useQuery(undefined, { retry: false });
+  const indicatorsQuery = trpc.horizon.signals.searchIndicators.useQuery({ q: "" }, { retry: false });
   const fetchedIndicators = indicatorsQuery.data ?? [];
 
   const [sessionIndicators, setSessionIndicators] = useState<{ id: string; name: string }[]>([]);
@@ -319,7 +319,7 @@ function AddSnippetDialog({
   const [creatingIndicator, setCreatingIndicator] = useState(false);
   const [sessionIndicators, setSessionIndicators] = useState<{ id: string; name: string }[]>([]);
 
-  const indicatorsQuery = trpc.horizon.signals.listIndicators.useQuery(undefined, { retry: false });
+  const indicatorsQuery = trpc.horizon.signals.searchIndicators.useQuery({ q: "" }, { retry: false });
   const fetchedIndicators = indicatorsQuery.data ?? [];
   const indicators = [
     ...fetchedIndicators,
@@ -405,7 +405,7 @@ function AddSnippetDialog({
                   setSessionIndicators((prev) => [...prev, { id, name }]);
                   setIndicatorId(id);
                   setCreatingIndicator(false);
-                  void utils.horizon.signals.listIndicators.invalidate();
+                  void utils.horizon.signals.searchIndicators.invalidate();
                 }}
                 onCancel={() => setCreatingIndicator(false)}
               />

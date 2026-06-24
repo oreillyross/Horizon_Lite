@@ -56,9 +56,9 @@ Seven UX observations turned into focused subtasks. Work through them one at a t
 
 The inline edit row and the "Add Snippet" dialog both call `trpc.horizon.signals.listIndicators`, which only returns indicators that are already joined through `scenarioIndicatorMap`. If none exist yet (or if the group's scenarios have no indicator links), the dropdown shows empty.
 
-- [ ] In `SnippetEditRow` and `AddSnippetDialog`, replace the `listIndicators` query with `trpc.horizon.signals.searchIndicators.useQuery({ q: "" })` so the full indicator pool (all indicators accessible to the group) is shown.
-- [ ] Because `searchIndicators` returns `{ id, name, category, strength }` (no `indicatorName` field on snippet), verify the `SelectItem` label still renders correctly — it uses `ind.name` which is present in both schemas.
-- [ ] Remove the `indicatorsQuery.isLoading` / `indicators.length === 0` placeholder text changes if they become redundant.
+- [x] In `SnippetEditRow` and `AddSnippetDialog`, replace the `listIndicators` query with `trpc.horizon.signals.searchIndicators.useQuery({ q: "" })` so the full indicator pool (all indicators accessible to the group) is shown.
+- [x] Because `searchIndicators` returns `{ id, name, category, strength }` (no `indicatorName` field on snippet), verify the `SelectItem` label still renders correctly — it uses `ind.name` which is present in both schemas.
+- [x] Remove the `indicatorsQuery.isLoading` / `indicators.length === 0` placeholder text changes if they become redundant.
 
 ---
 
