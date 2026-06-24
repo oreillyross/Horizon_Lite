@@ -18,6 +18,7 @@ const BASE_NAV_ITEMS: Omit<SubNavItem, "badge">[] = [
   { linkName: "Reports", href: "/horizon/reports" },
   { linkName: "Intel Feed", href: "/intel/feed" },
   { linkName: "Events", href: "/intel/events" },
+  { linkName: "Snippets", href: "/horizon/snippets" },
   { linkName: "GDELT Triage", href: "/horizon/gdelt/triage" },
 ];
 

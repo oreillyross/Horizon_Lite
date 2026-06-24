@@ -29,6 +29,7 @@ import IntelFeed from "@/pages/IntelFeed"
 import IntelEventsPage from "@/pages/IntelEventsPage"
 import HorizonGdeltTriageScreen from "@/pages/HorizonGdeltTriageScreen"
 import HorizonWebcutScreen from "@/pages/HorizonWebcutScreen"
+import HorizonSnippetsScreen from "@/pages/HorizonSnippetsScreen"
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -110,6 +111,12 @@ function Router() {
       <Route path="/intel/events">
         <RequireAuth>
           <IntelEventsPage />
+        </RequireAuth>
+      </Route>
+
+      <Route path="/horizon/snippets">
+        <RequireAuth>
+          <HorizonSnippetsScreen />
         </RequireAuth>
       </Route>
 
