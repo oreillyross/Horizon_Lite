@@ -6,7 +6,6 @@ import {
   Loader2,
   Plus,
   Trash2,
-  ExternalLink,
   Scissors,
   Pencil,
   X,
@@ -279,17 +278,7 @@ function SnippetCard({ snippet, onDeleted }: { snippet: Snippet; onDeleted: () =
             AI suggestion
           </Badge>
         )}
-        {snippet.sourceUrl && (
-          <a
-            href={snippet.sourceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
-          >
-            <ExternalLink className="h-3 w-3" />
-            Source
-          </a>
-        )}
+
         <span className="text-xs text-muted-foreground ml-auto tabular-nums">
           {formatDate(displayDate)}
         </span>
