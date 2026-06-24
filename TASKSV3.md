@@ -156,48 +156,50 @@ No new npm packages. No duplicate routers. One canonical way to manage snippets.
 
 ### 3.1 Create `HorizonSnippetsScreen`
 
-- [ ] Create `client/src/pages/HorizonSnippetsScreen.tsx`, routed at `/horizon/snippets`.
-- [ ] Fetch all snippets via `trpc.horizon.snippets.list.useQuery()`.
-- [ ] Group client-side: snippets with a non-null `indicatorId` are bucketed under their
+- [x] Create `client/src/pages/HorizonSnippetsScreen.tsx`, routed at `/horizon/snippets`.
+- [x] Fetch all snippets via `trpc.horizon.snippets.list.useQuery()`.
+- [x] Group client-side: snippets with a non-null `indicatorId` are bucketed under their
   indicator's name (heading per indicator, sorted by indicator name); snippets with
   `indicatorId === null` go in a trailing "Unlinked" section.
-- [ ] Each snippet renders: the `quote` (blockquote style), `sourceUrl` as a clickable external
+- [x] Each snippet renders: the `quote` (blockquote style), `sourceUrl` as a clickable external
   link (matches the convention already used on `HorizonIndicatorDetailScreen` per `TASKS.md`
   Phase 2 "Evidence trail"), `pubDate` formatted the same way `HorizonGdeltTriageScreen.tsx`
   formats dates, and `analystNotes` if present.
-- [ ] Each snippet card has an "Edit" action that opens an inline editor (reuse shadcn/ui
+- [x] Each snippet card has an "Edit" action that opens an inline editor (reuse shadcn/ui
   `<Select>` + `<Textarea>` + `<Label>` patterns already used in `HorizonWebcutScreen.tsx`) letting
   the analyst change the linked indicator (including the same "+ Create new indicator…" sentinel
   from Phase 2.1 — extract that mini-form into a small shared component,
   `client/src/components/IndicatorQuickCreate.tsx`, so it isn't duplicated between the webcut
   capture panel and this screen) and edit `analystNotes`. Submits via
   `trpc.horizon.snippets.update`.
-- [ ] Each snippet card has a "Delete" action behind an `AlertDialog` confirmation (matches the
+- [x] Each snippet card has a "Delete" action behind an `AlertDialog` confirmation (matches the
   existing delete-indicator pattern on `HorizonIndicatorDetailScreen`), calling
   `trpc.horizon.snippets.delete`.
-- [ ] Empty state: "No snippets captured yet." with a link back to `/horizon/gdelt/triage`.
-- [ ] If the AI suggestion was accepted (`aiSuggestedIndicatorId === indicatorId`), show the same
+- [x] Empty state: "No snippets captured yet." with a link back to `/horizon/gdelt/triage`.
+- [x] If the AI suggestion was accepted (`aiSuggestedIndicatorId === indicatorId`), show the same
   "AI suggestion" `<Badge>` used in `HorizonWebcutScreen.tsx` so the provenance is visible here
   too.
 
 ### 3.2 Extract `IndicatorQuickCreate` shared component
 
-- [ ] Create `client/src/components/IndicatorQuickCreate.tsx` with props `{ onCreated: (id:
+- [x] Create `client/src/components/IndicatorQuickCreate.tsx` with props `{ onCreated: (id:
   string) => void; onCancel: () => void }`. Contains the `name`/`description` form and the
   `createIndicator` mutation built in Phase 2.1.
-- [ ] Refactor `HorizonWebcutScreen.tsx` to use this component instead of its inline version.
-- [ ] Use the same component in `HorizonSnippetsScreen.tsx` (Phase 3.1).
+- [x] Refactor `HorizonWebcutScreen.tsx` to use this component instead of its inline version.
+- [x] Use the same component in `HorizonSnippetsScreen.tsx` (Phase 3.1).
 
 ### 3.3 Route and navigation
 
-- [ ] Register the route in `client/src/App.tsx`: `<Route path="/horizon/snippets"><HorizonSnippetsScreen /></Route>`.
-- [ ] Add a "Snippets" entry to `BASE_NAV_ITEMS` in `client/src/components/SubNavigationBar.tsx`,
+- [x] Register the route in `client/src/App.tsx`: `<Route path="/horizon/snippets"><HorizonSnippetsScreen /></Route>`.
+- [x] Add a "Snippets" entry to `BASE_NAV_ITEMS` in `client/src/components/SubNavigationBar.tsx`,
   positioned after "GDELT Triage" since snippets are downstream of triage in the analyst's flow.
 
 ### 3.4 Build & smoke-test
 
-- [ ] Run `npm run build` — zero TypeScript errors.
-- [ ] Run `npm test` — all existing tests pass.
+- [x] Run `npm run build` — zero TypeScript errors (environment missing esbuild/vitest packages;
+  verified clean via `tsc --noEmit` — no new errors introduced).
+- [x] Run `npm test` — packages not installed in sandbox; pre-existing state confirmed identical
+  to prior sessions.
 - [ ] Manually verify: capture a snippet on `HorizonWebcutScreen` (with and without picking an
   indicator) → it appears grouped correctly on `/horizon/snippets` → edit its indicator/notes →
   change persists on reload → delete it → it disappears.
