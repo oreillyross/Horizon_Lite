@@ -45,7 +45,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/">
-        <SessionGate authed={<Home />} unauthed={<LoginForm />} />
+        <SessionGate authed={<HorizonOverViewScreen />} unauthed={<LoginForm />} />
       </Route>
       <Route path="/reset-password">
         <ResetPasswordForm />
