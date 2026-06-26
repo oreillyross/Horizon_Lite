@@ -9,7 +9,7 @@ export const indicators = pgTable("indicators", {
   name: text("name").notNull(),
 
   category: text("category").notNull(),
-  // infoops | political | infra | diplomatic
+  // references indicator_categories.value
 
   regionScope: text("region_scope").default("EU-wide"),
 

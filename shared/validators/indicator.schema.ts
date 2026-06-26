@@ -5,9 +5,7 @@ export const createIndicatorInputSchema = z.object({
     .string()
     .min(1, "Name is required")
     .max(120, "Name must be 120 characters or fewer"),
-  category: z.enum(["infoops", "political", "infra", "diplomatic"], {
-    required_error: "Category is required",
-  }),
+  category: z.string().min(1, "Category is required"),
   description: z.string().max(2000, "Description must be 2000 characters or fewer").optional(),
   regionScope: z.string().max(100).optional(),
   strength: z
