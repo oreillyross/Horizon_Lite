@@ -3,7 +3,8 @@ import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 import { db } from "../db";
 import { protectedProcedure, router } from "../trpc";
-import { users, analystGroups, themes, themeGroupLinks, appConfig } from "@shared/db";
+import { users, analystGroups, themes, themeGroupLinks, appConfig, indicatorCategories, indicators } from "@shared/db";
+import { count } from "drizzle-orm";
 import bcrypt from "bcrypt";
 import { ingestAcled, isAcledEnabled } from "../jobs/acledIngest";
 import { generateSignals } from "../jobs/generateSignals";
@@ -185,6 +186,61 @@ export const adminRouter = router({
       signalResult,
     };
   }),
+
+  // INDICATOR CATEGORIES
+  listIndicatorCategories: adminProcedure.query(async ({ ctx }) => {
+    return ctx.db
+      .select()
+      .from(indicatorCategories)
+      .orderBy(indicatorCategories.label);
+  }),
+
+  createIndicatorCategory: adminProcedure
+    .input(z.object({ value: z.string().min(1).max(60), label: z.string().min(1).max(80) }))
+    .mutation(async ({ ctx, input }) => {
+      const value = input.value.trim().toLowerCase().replace(/\s+/g, "_");
+      const [row] = await ctx.db
+        .insert(indicatorCategories)
+        .values({ value, label: input.label.trim() })
+        .returning();
+      return row;
+    }),
+
+  updateIndicatorCategory: adminProcedure
+    .input(z.object({ id: z.string().uuid(), label: z.string().min(1).max(80) }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db
+        .update(indicatorCategories)
+        .set({ label: input.label.trim() })
+        .where(eq(indicatorCategories.id, input.id));
+      return { ok: true };
+    }),
+
+  deleteIndicatorCategory: adminProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const [cat] = await ctx.db
+        .select()
+        .from(indicatorCategories)
+        .where(eq(indicatorCategories.id, input.id))
+        .limit(1);
+      if (!cat) throw new TRPCError({ code: "NOT_FOUND", message: "Category not found" });
+
+      const [usage] = await ctx.db
+        .select({ n: count() })
+        .from(indicators)
+        .where(eq(indicators.category, cat.value));
+
+      if ((usage?.n ?? 0) > 0) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: `Cannot delete: ${usage!.n} indicator${usage!.n === 1 ? "" : "s"} still use this category. Reassign them first.`,
+        });
+      }
+
+      await ctx.db.delete(indicatorCategories).where(eq(indicatorCategories.id, input.id));
+      return { ok: true };
+    }),
 
   // THEME LINKS
   listThemeLinks: adminProcedure.query(async ({ ctx }) => {

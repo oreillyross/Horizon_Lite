@@ -10,12 +10,7 @@ export type Momentum = z.infer<typeof MomentumSchema>;
 export const IndicatorStatusSchema = z.enum(["normal", "watching", "triggered"]);
 export type IndicatorStatus = z.infer<typeof IndicatorStatusSchema>;
 
-export const IndicatorCategorySchema = z.enum([
-  "infoops",
-  "political",
-  "infra",
-  "diplomatic",
-]);
+export const IndicatorCategorySchema = z.string().min(1);
 export type IndicatorCategory = z.infer<typeof IndicatorCategorySchema>;
 
 /** Common */

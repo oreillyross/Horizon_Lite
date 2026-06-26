@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 
-type Tab = "users" | "groups" | "links";
+type Tab = "users" | "groups" | "links" | "categories";
 
 function HealthPanel() {
   const healthQ = trpc.health.useQuery(undefined, { refetchOnMount: true, staleTime: 0 });
@@ -67,12 +67,14 @@ export default function AdminScreen() {
           <TabButton active={tab === "users"} onClick={() => setTab("users")}>Users</TabButton>
           <TabButton active={tab === "groups"} onClick={() => setTab("groups")}>Groups</TabButton>
           <TabButton active={tab === "links"} onClick={() => setTab("links")}>Links</TabButton>
+          <TabButton active={tab === "categories"} onClick={() => setTab("categories")}>Categories</TabButton>
         </nav>
       </header>
 
       {tab === "users" && <UsersPanel />}
       {tab === "groups" && <GroupsPanel />}
       {tab === "links" && <LinksPanel />}
+      {tab === "categories" && <CategoriesPanel />}
       <div className="space-y-6">
         <h1 className="text-2xl font-semibold">Admin Jobs</h1>
 
@@ -539,6 +541,120 @@ function AcledFeedPanel() {
           {runAcled.isPending ? "Running…" : "Run ingest"}
         </button>
       </div>
+    </div>
+  );
+}
+
+function CategoriesPanel() {
+  const utils = trpc.useUtils();
+  const catsQ = trpc.admin.listIndicatorCategories.useQuery();
+
+  const createCat = trpc.admin.createIndicatorCategory.useMutation({
+    onSuccess: () => utils.admin.listIndicatorCategories.invalidate(),
+  });
+  const updateCat = trpc.admin.updateIndicatorCategory.useMutation({
+    onSuccess: () => utils.admin.listIndicatorCategories.invalidate(),
+  });
+  const deleteCat = trpc.admin.deleteIndicatorCategory.useMutation({
+    onSuccess: () => utils.admin.listIndicatorCategories.invalidate(),
+    onError: (err) => alert(err.message),
+  });
+
+  const [newValue, setNewValue] = useState("");
+  const [newLabel, setNewLabel] = useState("");
+
+  if (catsQ.isLoading) {
+    return <div className="flex items-center gap-2 text-sm"><Loader2 className="h-4 w-4 animate-spin" /> Loading…</div>;
+  }
+  if (catsQ.isError) return <div className="text-sm text-destructive">{catsQ.error.message}</div>;
+
+  const cats = catsQ.data ?? [];
+
+  return (
+    <section className="rounded-lg border bg-background p-4 shadow-sm space-y-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-xl font-medium">Indicator categories</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Categories used when creating indicators. Deleting a category that is still in use is blocked — reassign affected indicators first.
+          </p>
+        </div>
+      </div>
+
+      {cats.length === 0 ? (
+        <EmptyState title="No categories yet" />
+      ) : (
+        <div className="space-y-2">
+          {cats.map((cat: any) => (
+            <CategoryRow
+              key={cat.id}
+              cat={cat}
+              onRename={(label: string) => updateCat.mutate({ id: cat.id, label })}
+              onDelete={() => deleteCat.mutate({ id: cat.id })}
+              busy={updateCat.isPending || deleteCat.isPending}
+            />
+          ))}
+        </div>
+      )}
+
+      <div className="space-y-2 pt-2 border-t">
+        <h3 className="text-sm font-medium">Add category</h3>
+        <div className="flex gap-2">
+          <Input
+            placeholder="value (e.g. economic)"
+            value={newValue}
+            onChange={(e) => setNewValue(e.target.value)}
+            className="h-10 w-48"
+          />
+          <Input
+            placeholder="label (e.g. Economic)"
+            value={newLabel}
+            onChange={(e) => setNewLabel(e.target.value)}
+            className="h-10 flex-1"
+          />
+          <Button
+            onClick={() => {
+              createCat.mutate({ value: newValue.trim(), label: newLabel.trim() });
+              setNewValue("");
+              setNewLabel("");
+            }}
+            disabled={!newValue.trim() || !newLabel.trim() || createCat.isPending}
+          >
+            {createCat.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add"}
+          </Button>
+        </div>
+        {createCat.isError && (
+          <p className="text-xs text-destructive">{createCat.error.message}</p>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function CategoryRow({ cat, onRename, onDelete, busy }: any) {
+  const [editing, setEditing] = useState(false);
+  const [label, setLabel] = useState(cat.label);
+
+  return (
+    <div className="flex items-center justify-between rounded-md border p-3">
+      <div className="flex items-center gap-3">
+        <span className="font-mono text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">{cat.value}</span>
+        {editing ? (
+          <>
+            <Input className="h-9 w-56" value={label} onChange={(e) => setLabel(e.target.value)} />
+            <Button onClick={() => { onRename(label.trim()); setEditing(false); }} disabled={!label.trim() || busy}>Save</Button>
+            <Button variant="secondary" onClick={() => { setLabel(cat.label); setEditing(false); }} disabled={busy}>Cancel</Button>
+          </>
+        ) : (
+          <span className="font-medium">{cat.label}</span>
+        )}
+      </div>
+      {!editing && (
+        <div className="flex gap-2">
+          <Button variant="secondary" size="sm" onClick={() => setEditing(true)} disabled={busy}>Rename</Button>
+          <Button variant="destructive" size="sm" onClick={onDelete} disabled={busy}>Delete</Button>
+        </div>
+      )}
     </div>
   );
 }

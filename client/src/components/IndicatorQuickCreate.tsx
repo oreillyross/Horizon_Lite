@@ -11,13 +11,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const INDICATOR_CATEGORIES = [
-  { value: "political", label: "Political" },
-  { value: "infoops", label: "InfoOps" },
-  { value: "infra", label: "Infrastructure" },
-  { value: "diplomatic", label: "Diplomatic" },
-] as const;
-
 interface Props {
   onCreated: (id: string, name: string) => void;
   onCancel: () => void;
@@ -28,6 +21,8 @@ export function IndicatorQuickCreate({ onCreated, onCancel }: Props) {
   const utils = trpc.useUtils();
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
+
+  const categoriesQ = trpc.admin.listIndicatorCategories.useQuery();
 
   const createIndicator = trpc.horizon.signals.createIndicator.useMutation({
     onSuccess: (data) => {
@@ -42,10 +37,7 @@ export function IndicatorQuickCreate({ onCreated, onCancel }: Props) {
 
   function handleSubmit() {
     if (!name.trim() || !category) return;
-    createIndicator.mutate({
-      name: name.trim(),
-      category: category as "political" | "infoops" | "infra" | "diplomatic",
-    });
+    createIndicator.mutate({ name: name.trim(), category });
   }
 
   return (
@@ -63,7 +55,7 @@ export function IndicatorQuickCreate({ onCreated, onCancel }: Props) {
           <SelectValue placeholder="Category" />
         </SelectTrigger>
         <SelectContent>
-          {INDICATOR_CATEGORIES.map((c) => (
+          {categoriesQ.data?.map((c) => (
             <SelectItem key={c.value} value={c.value}>
               {c.label}
             </SelectItem>
