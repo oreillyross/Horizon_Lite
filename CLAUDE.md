@@ -2,6 +2,8 @@
 
 > This file is the authoritative guide for Claude working in this repository.
 > If anything in another document contradicts this file, this file wins.
+>
+> NEVER EVER LOOK IN THE ARCHIVE FOLDER. This is old md files and dont count towards understanding the project. I Repeat NEVER look there.
 
 ---
 
