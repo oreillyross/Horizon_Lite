@@ -40,7 +40,7 @@ These are non-negotiable. Do not deviate.
 3. Read only the context needed for that subtask — do not read ahead.
 4. Implement the subtask fully.
 5. Mark it complete (`- [x]`) in `TASKS.md`.
-6. Commit the change with a clear message.
+6. Commit the change with a clear message. Follow the convention as described in the Scoped Commits.mhtml file always. 
 7. Report back to the user and wait for the next instruction.
 
 ### When to ask vs. proceed

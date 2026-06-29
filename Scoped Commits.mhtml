@@ -1,0 +1,178 @@
+From: <Saved by Blink>
+Snapshot-Content-Location: https://scopedcommits.com/
+Subject: Scoped Commits
+Date: Mon, 29 Jun 2026 11:49:01 +0200
+MIME-Version: 1.0
+Content-Type: multipart/related;
+	type="text/html";
+	boundary="----MultipartBoundary--CBFAnMz81kZWBvpMVK616cWBQ9x7aSHZB4f7xLynFf----"
+
+
+------MultipartBoundary--CBFAnMz81kZWBvpMVK616cWBQ9x7aSHZB4f7xLynFf----
+Content-Type: text/html
+Content-ID: <frame-D20CE0628C4CA43C4A25975ABAF7EF0D@mhtml.blink>
+Content-Transfer-Encoding: quoted-printable
+Content-Location: https://scopedcommits.com/
+
+<!DOCTYPE html><html><head><meta http-equiv=3D"Content-Type" content=3D"tex=
+t/html; charset=3DUTF-8"><link rel=3D"stylesheet" type=3D"text/css" href=3D=
+"cid:css-07ed1705-0cab-4444-9d9f-5265d4908d0a@mhtml.blink" /><title>Scoped =
+Commits</title><meta name=3D"viewport" content=3D"width=3Ddevice-width,init=
+ial-scale=3D1"><link rel=3D"canonical" href=3D"https://scopedcommits.com/">=
+</head><body><div class=3D"container"><header><h1>Scoped Commits</h1><h3>A =
+commit format focused on what matters</h3></header><main><p>Scoped Commits =
+is a loose standard for formatting commit messages that focuses on making t=
+he commit log quickly understandable to contributors.</p><p>Normal commit m=
+essages should be formatted as follows:</p><pre><code>&lt;scope&gt;: &lt;de=
+scription&gt;
+
+[optional body]
+
+[optional trailer(s)]</code></pre><ul><li><code>&lt;scope&gt;</code> =E2=80=
+=94 the subsystem, area, or module that the commit touches</li><li><code>&l=
+t;description&gt;</code> =E2=80=94 a short description of the changes made<=
+/li><li><code>[optional body]</code> =E2=80=94 detailed information about t=
+he changes</li><li><code>[optional trailer(s)]</code> =E2=80=94 additional =
+metadata about the commit</li></ul><p>Reverts, merges, and other special co=
+mmits can be formatted however you like.</p><p>Projects using Scoped Commit=
+s often provide additional rules defining the valid scopes and how to forma=
+t the description, body, and trailers of the commit message. Projects may a=
+lso choose to enforce formatting rules for special commits.</p><h2>Examples=
+</h2><h3>Linux</h3><pre><code>i2c: virtio: mark device ready before registe=
+ring the adapter</code></pre><p><a href=3D"https://github.com/torvalds/linu=
+x/commit/1d774589f924">View Commit</a> | <a href=3D"https://www.kernel.org/=
+doc/html/v4.14/process/submitting-patches.html">Formatting Documentation</a=
+></p><h3>FreeBSD</h3><pre><code>linuxulator: Return EINVAL for invalid inot=
+ify flags</code></pre><p><a href=3D"https://github.com/freebsd/freebsd-src/=
+commit/f77d37cffdf3">View Commit</a> | <a href=3D"https://freebsdfoundation=
+.org/wp-content/uploads/2020/11/Writing-Commit-Messages.pdf">Formatting Doc=
+umentation</a></p><h3>Git</h3><pre><code>gitlab-ci: update macOS image</cod=
+e></pre><p><a href=3D"https://github.com/git/git/commit/62319b49bbe7">View =
+Commit</a> | <a href=3D"https://git-scm.com/docs/SubmittingPatches">Formatt=
+ing Documentation</a></p><h3>Go</h3><pre><code>net/http/cookiejar: add godo=
+c links</code></pre><p><a href=3D"https://github.com/golang/go/commit/517d4=
+d3c7976">View Commit</a> | <a href=3D"https://go.dev/wiki/CommitMessage">Fo=
+rmatting Documentation</a></p><h3>nixpkgs</h3><pre><code>xwayland: 24.1.11 =
+-&gt; 24.1.12</code></pre><p><a href=3D"https://github.com/NixOS/nixpkgs/co=
+mmit/7bf858875a54">View Commit</a> | <a href=3D"https://github.com/NixOS/ni=
+xpkgs/blob/master/CONTRIBUTING.md">Formatting Documentation</a></p><h2>Why =
+Use Scoped Commits?</h2><p>The <em>scope</em> of a change (the subject of t=
+he change) is the most important part of a commit message. To demonstrate t=
+his, let=E2=80=99s consider why each one of the following stakeholders care=
+ about the scope of the change:</p><ul><li><p><strong>Contributors:</strong=
+> when you are a contributor to a project, you often need to read the commi=
+t log to identify changes in the codebase relevant to a certain area of the=
+ code. There are many reasons for this including:</p><ul><li>Wanting to cat=
+ch up on what has happened since the last time you contributed.</li><li>Try=
+ing to understand where the project=E2=80=99s overall inertia is.</li><li>L=
+ooking for commits that might conflict with your in-progress work when pull=
+ing or rebasing.</li></ul><p>As you read the commit log, you=E2=80=99re loo=
+king at <em>what areas</em> were touched.</p></li><li><p><strong>Debuggers:=
+</strong> when investigating a bug, you often want to look through the comm=
+it log to see what changes might have touched areas related to the componen=
+t where the bug manifested. Once again, the scope is the most important pie=
+ce of information.</p></li><li><p><strong>Incident responders:</strong> whe=
+n production is down, scanning the commit log for changes that were made ar=
+ound the time of the outage is an effective way to identify what areas may =
+be causing the problem. Scope is once again the most important piece of inf=
+ormation you can have at this point. For example, if you see a commit relat=
+ed to the <code>auth</code> scope at the tip of the spike of inbound API er=
+rors, it=E2=80=99s a likely culprit for the problem.</p></li></ul><p>Scoped=
+ Commits puts the most important part of the commit message up front, makin=
+g it easy for all stakeholders to quickly scan the commit log and identify =
+relevant changes.</p><h2>FAQ</h2><h3>What about Conventional Commits?</h3><=
+ul><li><a href=3D"https://sumnerevans.com/posts/software-engineering/stop-u=
+sing-conventional-commits/">Stop Using Conventional Commits - Sumner Evans<=
+/a></li><li><a href=3D"https://richvdh.org/conventional-commits-considered-=
+harmful.html">Conventional Commits, considered harmful - richvdh.org</a></l=
+i><li><a href=3D"https://lr0.org/blog/p/cc/">Conventional Commits considere=
+d harmful | La Vita Nouva</a></li></ul><h3>How do I generate a changelog us=
+ing Scoped Commits?</h3><p><strong>Don=E2=80=99t.</strong> Commit logs and =
+changelogs serve different audiences. Commit logs are for contributors who =
+need to understand how the codebase evolved. Changelogs are for users who n=
+eed to understand what changed between releases. Here are some articles whi=
+ch concur with this point:</p><ul><li><a href=3D"https://keepachangelog.com=
+/en/1.0.0/#log-diffs">Keep a Changelog: Don=E2=80=99t let your friends dump=
+ git logs into changelogs</a></li><li><a href=3D"https://agateau.com/2022/y=
+our-git-log-is-not-a-changelog/">Your git log is not a changelog! | agateau=
+.com</a></li><li><a href=3D"https://sophiabits.com/blog/conventional-change=
+logs-suck">Conventional changelogs suck | Sophia Willows</a></li><li><a hre=
+f=3D"https://common-changelog.org/#41-verbatim-copying-of-content">Common C=
+hangelog =C2=A7 4.1: Verbatim copying of content</a></li></ul><h3>What if m=
+y commit covers multiple scopes?</h3><p>If your commit covers multiple scop=
+es, try one of the following approaches:</p><ul><li>Use a more general scop=
+e that encompasses all the relevant scopes.</li><li>List both scopes, separ=
+ated by a comma.</li><li>If the commit touches the entire tree, you can use=
+ a scope such as <code>treewide</code>, <code>all</code>, or <code>global</=
+code>.</li></ul><p>If all else fails, just call the commit a =E2=80=9Cspeci=
+al commit=E2=80=9D, ignore the scope, and write a good description.</p><h3>=
+How does Scoped Commits handle revert commits?</h3><p>Revert commits can be=
+ formatted however you like. You can use the default Git format for revert =
+commits, or you can use a custom format that includes the scope of the orig=
+inal commit being reverted.</p><h3>Where should I put the ticket number?</h=
+3><p>Often, commits need to be associated with a Jira or Linear ticket. Thi=
+s is often done by including the ticket number in the commit message. You c=
+an put it anywhere you want within the message, however here are a few sugg=
+estions:</p><ul><li><p>Include it in parentheses after the scope. For examp=
+le:</p><pre><code>auth (PROJ-123): fix login bug
+
+This commit fixes the login bug by...</code></pre></li><li><p>Include it in=
+ the body/trailer of the commit message. For example:</p><pre><code>auth: f=
+ix login bug
+
+This commit fixes the login bug by...
+
+Jira-Ticket: PROJ-123</code></pre></li></ul></main><footer><small>=C2=A9=EF=
+=B8=8E 2026 <a href=3D"https://nevarro.space/">Nevarro LLC</a>. All rights =
+reserved. <a href=3D"https://github.com/nevarro-space/scopedcommits.com">So=
+urce Code</a>.</small></footer></div></body></html>
+------MultipartBoundary--CBFAnMz81kZWBvpMVK616cWBQ9x7aSHZB4f7xLynFf----
+Content-Type: text/css
+Content-Transfer-Encoding: quoted-printable
+Content-Location: cid:css-07ed1705-0cab-4444-9d9f-5265d4908d0a@mhtml.blink
+
+@charset "utf-8";
+
+@font-face { font-family: iosevka; font-style: normal; font-display: swap; =
+font-weight: 400; src: url("https://cdn.jsdelivr.net/fontsource/fonts/iosev=
+ka@latest/latin-400-normal.woff2") format("woff2"), url("https://cdn.jsdeli=
+vr.net/fontsource/fonts/iosevka@latest/latin-400-normal.woff") format("woff=
+"); }
+
+:root { --bg: #222; --fg: #eee; --fg-muted: #aaa; --fg-subtle: #777; --bord=
+er: #444; --code-bg: #333; --link: #84B4FF; }
+
+@media (prefers-color-scheme: light) {
+  :root { --bg: #f9f9f9; --fg: #111; --fg-muted: #555; --fg-subtle: #888; -=
+-border: #ccc; --code-bg: #ebebeb; --link: #0055cc; }
+}
+
+body { background-color: var(--bg); color: var(--fg); font-family: Iosevka,=
+ monospace; line-height: 1.4; font-size: 1.1rem; width: 100%; display: flex=
+; justify-content: center; margin: 0px; }
+
+.container { max-width: 800px; min-width: 0px; width: 100%; padding: 0px 1.=
+5rem; box-sizing: border-box; }
+
+a, a:hover, a:visited, a:active { color: var(--link); text-decoration: none=
+; }
+
+a:hover { text-decoration: underline; }
+
+header {
+  margin-bottom: 2rem; border-bottom: 1px solid var(--border);
+  & h1 { margin-top: 4rem; margin-bottom: 0px; }
+  & h3 { margin-top: 0px; color: var(--fg-muted); }
+}
+
+pre, code { font-family: inherit; font-size: 1rem; }
+
+pre { background-color: var(--code-bg); padding: 1rem; border-radius: 8px; =
+overflow-x: auto; }
+
+:not(pre) > code { border-radius: 4px; background-color: var(--code-bg); pa=
+dding: 1px 0.5rem; }
+
+footer { color: var(--fg-subtle); border-top: 1px solid var(--border); text=
+-align: center; margin: 2rem 0px; padding-top: 2rem; }
+------MultipartBoundary--CBFAnMz81kZWBvpMVK616cWBQ9x7aSHZB4f7xLynFf------
