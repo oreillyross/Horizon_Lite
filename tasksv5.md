@@ -2,4 +2,5 @@ Your task is to look at the below user observations, and rewrite this tasksv5.md
 
 1. in the Admin screen under catrogires I get this 
 Failed query: select "id", "value", "label", "created_at" from "indicator_categories" order by "indicator_categories"."label" params: Could it be related to a failed migration?
-2. 
+
+2.  
