@@ -89,7 +89,7 @@ describe("NavigationBar", () => {
     renderNavWithRouter("/");
     expect(screen.queryByText("Snippets")).not.toBeInTheDocument();
     expect(screen.queryByText("Themes")).not.toBeInTheDocument();
-    expect(screen.queryByText("Trends")).not.toBeInTheDocument();
+    expect(screen.queryByText("Overview")).not.toBeInTheDocument();
   });
 });
 
@@ -108,18 +108,22 @@ describe("SubNavigationBar", () => {
 
   it("renders all navigation items", () => {
     renderSubNavWithRouter("/");
-    expect(screen.getByText("Snippets")).toBeInTheDocument();
+    expect(screen.getByText("Overview")).toBeInTheDocument();
     expect(screen.getByText("Themes")).toBeInTheDocument();
-    expect(screen.getByText("Tags")).toBeInTheDocument();
-    expect(screen.getByText("Trends")).toBeInTheDocument();
+    expect(screen.getByText("Scenarios")).toBeInTheDocument();
+    expect(screen.getByText("Signals")).toBeInTheDocument();
+    expect(screen.getByText("Updates")).toBeInTheDocument();
+    expect(screen.getByText("Reports")).toBeInTheDocument();
     expect(screen.getByText("Intel Feed")).toBeInTheDocument();
-    expect(screen.getByText("Sources")).toBeInTheDocument();
+    expect(screen.getByText("Events")).toBeInTheDocument();
+    expect(screen.getByText("Snippets")).toBeInTheDocument();
+    expect(screen.getByText("GDELT Triage")).toBeInTheDocument();
   });
 
-  it("highlights Snippets link when on /snippet/show", () => {
-    renderSubNavWithRouter("/snippet/show");
+  it("highlights Snippets link when on /horizon/snippets", () => {
+    renderSubNavWithRouter("/horizon/snippets");
 
-    const snippetsLink = screen.getByTestId("subnav-link-snippet-show");
+    const snippetsLink = screen.getByTestId("subnav-link-horizon-snippets");
     expect(snippetsLink).toHaveClass("bg-muted");
     expect(snippetsLink).toHaveClass("text-foreground");
 
@@ -136,20 +140,20 @@ describe("SubNavigationBar", () => {
     expect(themesLink).toHaveClass("text-foreground");
   });
 
-  it("highlights Tags link when on /tags/show", () => {
-    renderSubNavWithRouter("/tags/show");
+  it("highlights Events link when on /intel/events", () => {
+    renderSubNavWithRouter("/intel/events");
 
-    const tagsLink = screen.getByTestId("subnav-link-tags-show");
-    expect(tagsLink).toHaveClass("bg-muted");
-    expect(tagsLink).toHaveClass("text-foreground");
+    const eventsLink = screen.getByTestId("subnav-link-intel-events");
+    expect(eventsLink).toHaveClass("bg-muted");
+    expect(eventsLink).toHaveClass("text-foreground");
   });
 
-  it("highlights Trends link when on /horizon/overview", () => {
+  it("highlights Overview link when on /horizon/overview", () => {
     renderSubNavWithRouter("/horizon/overview");
 
-    const trendsLink = screen.getByTestId("subnav-link-horizon-overview");
-    expect(trendsLink).toHaveClass("bg-muted");
-    expect(trendsLink).toHaveClass("text-foreground");
+    const overviewLink = screen.getByTestId("subnav-link-horizon-overview");
+    expect(overviewLink).toHaveClass("bg-muted");
+    expect(overviewLink).toHaveClass("text-foreground");
   });
 
   it("highlights Intel Feed link when on /intel/feed", () => {
@@ -160,18 +164,18 @@ describe("SubNavigationBar", () => {
     expect(intelLink).toHaveClass("text-foreground");
   });
 
-  it("highlights Sources link when on /sources/recent", () => {
-    renderSubNavWithRouter("/sources/recent");
+  it("highlights GDELT Triage link when on /horizon/gdelt/triage", () => {
+    renderSubNavWithRouter("/horizon/gdelt/triage");
 
-    const sourcesLink = screen.getByTestId("subnav-link-sources-recent");
-    expect(sourcesLink).toHaveClass("bg-muted");
-    expect(sourcesLink).toHaveClass("text-foreground");
+    const triageLink = screen.getByTestId("subnav-link-horizon-gdelt-triage");
+    expect(triageLink).toHaveClass("bg-muted");
+    expect(triageLink).toHaveClass("text-foreground");
   });
 
-  it("highlights Snippets for nested routes under /snippet/show", () => {
-    renderSubNavWithRouter("/snippet/show/123");
+  it("highlights Snippets for nested routes under /horizon/snippets", () => {
+    renderSubNavWithRouter("/horizon/snippets/123");
 
-    const snippetsLink = screen.getByTestId("subnav-link-snippet-show");
+    const snippetsLink = screen.getByTestId("subnav-link-horizon-snippets");
     expect(snippetsLink).toHaveClass("bg-muted");
     expect(snippetsLink).toHaveClass("text-foreground");
   });
@@ -179,18 +183,18 @@ describe("SubNavigationBar", () => {
   it("shows no highlight on unknown routes", () => {
     renderSubNavWithRouter("/unknown");
 
-    expect(screen.getByTestId("subnav-link-snippet-show")).not.toHaveClass("bg-muted");
+    expect(screen.getByTestId("subnav-link-horizon-snippets")).not.toHaveClass("bg-muted");
     expect(screen.getByTestId("subnav-link-themes")).not.toHaveClass("bg-muted");
-    expect(screen.getByTestId("subnav-link-tags-show")).not.toHaveClass("bg-muted");
+    expect(screen.getByTestId("subnav-link-intel-events")).not.toHaveClass("bg-muted");
     expect(screen.getByTestId("subnav-link-horizon-overview")).not.toHaveClass("bg-muted");
     expect(screen.getByTestId("subnav-link-intel-feed")).not.toHaveClass("bg-muted");
-    expect(screen.getByTestId("subnav-link-sources-recent")).not.toHaveClass("bg-muted");
+    expect(screen.getByTestId("subnav-link-horizon-gdelt-triage")).not.toHaveClass("bg-muted");
   });
 
   it("has CSS transition classes for smooth highlighting", () => {
-    renderSubNavWithRouter("/snippet/show");
+    renderSubNavWithRouter("/horizon/snippets");
 
-    const snippetsLink = screen.getByTestId("subnav-link-snippet-show");
+    const snippetsLink = screen.getByTestId("subnav-link-horizon-snippets");
     expect(snippetsLink).toHaveClass("transition-colors");
   });
 });
