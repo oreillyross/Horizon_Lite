@@ -17,6 +17,17 @@ vi.mock("@/lib/trpc", () => ({
         })),
       },
     },
+    horizon: {
+      gdelt: {
+        countNew: {
+          useQuery: vi.fn(() => ({
+            data: { count: 0 },
+            isLoading: false,
+            error: null,
+          })),
+        },
+      },
+    },
   },
 }));
 
