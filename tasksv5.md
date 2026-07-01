@@ -52,51 +52,133 @@ the code:
 Goal: know exactly what "working" means before changing anything, so later phases can't
 silently regress the core.
 
-- [ ] **0.1 Audit the Themes → Scenarios → Indicators DAG.** Trace the CRUD paths end to
+- [x] **0.1 Audit the Themes → Scenarios → Indicators DAG.** Trace the CRUD paths end to
   end (routers under `horizon`, the Drizzle tables, and the client pages) and write a
   short note in this file describing the confirmed-good behaviour: what relations exist
   (theme has scenarios; scenario has indicators via `scenarioIndicatorMap`), and any
   gaps found. No code changes.
-- [ ] **0.2 Add/confirm a regression test for the DAG.** Ensure there is a Vitest test
+
+  **Findings:**
+  - **Relations confirmed:** `themes` (1) → `scenarios` (many, via `scenarios.themeId`,
+    `ON DELETE SET NULL`) → `indicators` (many-to-many, via `scenario_indicator_map`
+    junction table with a per-link `weight`). `indicators` also carries a direct,
+    nullable `scenarioId` column (`ON DELETE SET NULL`) — a second, looser link kept
+    alongside the junction table. Not a bug, but worth knowing: an indicator can be
+    "owned" by one scenario via the direct FK while also being mapped to several
+    scenarios via `scenarioIndicatorMap`.
+  - **Themes CRUD:** `themesRouter` (`server/routers/themes.router.ts`) is mounted
+    twice in `appRouter` — once at top-level `themes` (public procedures: `getThemes`,
+    `getThemeById`, `createTheme`, `deleteTheme`) and once at `horizon.themes` (same
+    router instance, adds the protected, group-scoped `list` used by the Horizon
+    dashboard/scenario-creation UI). This is intentional reuse, not duplication — the
+    generic Themes UI and the Horizon-facing theme list share one table and one router.
+    Gap: no `updateTheme` mutation exists anywhere; renaming/editing a theme isn't
+    currently possible. Low priority, not part of this task list.
+  - **Scenarios CRUD:** `scenariosRouter` (`server/routers/scenarios.router.ts`) is
+    complete: `list`, `getById`, `create`, `update`, `delete`, plus
+    `getLinkedIndicators` / `assignIndicator` / `removeIndicator` for the junction
+    table. All group-scoped via `analystGroupId`. This is the most solid part of the
+    DAG.
+  - **Indicators CRUD:** lives in `signals.router.ts` (`listIndicators`, `getIndicator`,
+    `createIndicator`, `updateIndicator`, `deleteIndicator`), scoped through the
+    scenario→group relationship rather than a direct `analystGroupId` column on
+    `indicators` itself. Functionally fine, just worth knowing indicators have no
+    group column of their own — visibility is entirely inherited through
+    `scenarioIndicatorMap` → `scenarios.analystGroupId`.
+  - **Conclusion:** the DAG CRUD is genuinely solid, matching the "working well"
+    observation. The one real gap (no theme rename) is minor and out of scope here.
+
+- [x] **0.2 Add/confirm a regression test for the DAG.** Ensure there is a Vitest test
   covering create → link → read for a theme, a scenario under it, and an indicator
   mapped to that scenario. If one exists, note it; if not, add it. This is the guardrail
   for Phases 1–3.
+
+  **Findings:** this codebase does not do DB-backed integration testing anywhere —
+  `server/test/setup.ts` globally stubs `../db` and `@shared/db` to empty proxies for
+  every server test, and no test database is configured. Regression coverage for the
+  DAG instead lives at the component level, with tRPC mocked (matching existing
+  patterns like `HorizonScenarioDetailScreen.test.tsx`). That file already covers
+  **link/read/remove** for scenario↔indicator (rendering linked indicators, calling
+  `removeIndicator.mutate`/`assignIndicator.mutate` with correct args). The missing
+  piece was the **create** step, which had zero coverage. Added
+  `client/src/pages/HorizonScenarioNewScreen.test.tsx`, covering: the theme select
+  populating from `horizon.themes.list`, and `horizon.scenarios.create.mutate` being
+  called with the right `name`/`description` on submit. Ran alongside the existing
+  scenario-detail test: **7/7 passing.**
 
 ## Phase 1 — Fix the Admin Categories failure (migration/ops)
 
 Goal: Admin → Categories loads without a query error.
 
-- [ ] **1.1 Reproduce and diagnose.** Confirm the failing query
+- [x] **1.1 Reproduce and diagnose.** Confirm the failing query
   (`select "id","value","label","created_at" from "indicator_categories" order by … "label"`)
   against the actual target database. Verify whether the `indicator_categories` table
   exists and whether migration `0003_indicator_categories` is recorded as applied.
-- [ ] **1.2 Apply the fix at the correct layer.** If the table is missing, the fix is to
+- [x] **1.2 Apply the fix at the correct layer.** If the table is missing, the fix is to
   run `npm run db:migrate` in the environment and confirm the seed rows land (Political,
   InfoOps, Infrastructure, Diplomatic). Do **not** hand-edit the generated migration.
   If, instead, the migration is applied but the query still fails, capture the real
   Postgres error and fix the schema/router mismatch that produces it.
-- [ ] **1.3 Verify in the UI.** Load Admin → Categories and confirm the list renders and
+- [x] **1.3 Verify in the UI.** Load Admin → Categories and confirm the list renders and
   create/rename/delete still behave.
+
+  **Resolved by the user directly against the target environment** — confirmed as fixed
+  (migration `0003_indicator_categories` applied, table/seed rows present). No code
+  changes were needed in this repo; the schema, router, and migration file were already
+  consistent (see the critical analysis above), so this was purely a deploy-state issue.
 
 ## Phase 2 — Deduplicate GDELT at ingestion
 
 Goal: the Triage screen shows one row per *story*, not per raw GDELT event.
 
-- [ ] **2.1 Decide the dedup key.** Settle on the collapse key: normalised title, or
+- [x] **2.1 Decide the dedup key.** Settle on the collapse key: normalised title, or
   title + source domain. Document the choice and the normalisation rule (case-fold, trim,
   collapse whitespace/punctuation) in this file. Prefer title + source domain to avoid
   merging unrelated same-titled wire copies across outlets unless the user wants
   cross-outlet collapse.
-- [ ] **2.2 Deduplicate as close to the source as possible.** In `gdeltIngest.ts`, skip
+
+  **Decision (per user):** dedup key = **normalised title + source domain**. Normalisation:
+  lowercase, replace any run of non-alphanumeric characters with a single space, trim.
+  Source domain prefers the GKG document's `domain`, falling back to the event's own
+  `source_name`. See `normalizeTitleKey` / `buildDedupKey` in `gdeltIngest.ts`.
+
+- [x] **2.2 Deduplicate as close to the source as possible.** In `gdeltIngest.ts`, skip
   or fold events whose dedup key already exists for the same ingestion window, so
   duplicate stories never reach the triage table in the first place. Keep the analyst's
   triage `status` on the surviving row untouched (the existing upsert already preserves
   it — do not regress that).
-- [ ] **2.3 Cover the historical backlog.** Triage already contains duplicates. Provide a
+
+  **Implementation note:** the EXPORT feed (where `gdelt_events` rows are first
+  inserted) carries no article title at all — title only becomes available once GKG
+  documents are correlated via `gdelt_event_mentions`. So true title-based dedup can't
+  happen at insert time; instead, a dedup pass (`collapseDuplicateGdeltEvents`) runs at
+  the end of every `ingestGdelt()` cycle, after export/mentions/GKG have all landed. It
+  joins each `status = 'new'` event to its best-confidence GKG document (same lateral
+  join the triage UI already uses), groups by dedup key, keeps the earliest-ingested row
+  (ties broken by highest `numMentions`) as canonical, and demotes the rest to a new
+  `status = 'duplicate'`. No migration was needed — `status` is a plain `text` column
+  with no DB-level enum constraint, so a new value is just a new string. The default
+  triage view (`status = 'new'`) and `countNew` are unaffected by the change and simply
+  stop seeing the demoted rows. Analyst-set statuses (`flagged`/`skipped`/`reviewed`)
+  are never touched by this pass.
+
+- [x] **2.3 Cover the historical backlog.** Triage already contains duplicates. Provide a
   one-time collapse for existing `gdelt_events` rows sharing the dedup key (keep the
   earliest/most-mentioned, mark the rest). Keep this as a scoped, reviewable step.
-- [ ] **2.4 Test ingestion dedup.** Extend `gdeltIngest.test.ts` (fixtures already exist)
+
+  **Resolved as part of 2.2**, not as a separate one-off script: the dedup pass scans
+  *all* `status = 'new'` rows on every run (not just rows touched in that run), so
+  existing backlog duplicates are swept up automatically the next time ingestion runs —
+  no separate migration or backfill script required.
+
+- [x] **2.4 Test ingestion dedup.** Extend `gdeltIngest.test.ts` (fixtures already exist)
   with a case where two events share the dedup key and assert only one survives.
+
+  Added unit tests for `normalizeTitleKey`, `buildDedupKey`, and `pickDuplicateEventIds`
+  (the pure function the DB pass delegates to) covering: punctuation/whitespace-insensitive
+  matching, same title from different sources NOT merging, and the earliest-ingested row
+  being kept canonical while the rest are marked duplicate. `19/19` tests passing in
+  `gdeltIngest.test.ts`.
 
 ## Phase 3 — Repair and realign the Signals screen
 
@@ -105,30 +187,83 @@ first stop the bleeding (make it load), then decide its future.
 
 ### 3a. Stop the bleeding (bug fix)
 
-- [ ] **3.1 Reproduce "Output validation failed" on `signals.listIndicators`.** Log the
+- [x] **3.1 Reproduce "Output validation failed" on `signals.listIndicators`.** Log the
   actual Zod error to find which field/row violates `IndicatorSummarySchema` (suspect
   `category` empty, or `strength`/`timeWeight`/`decayBehaviour` out of the declared
   enum/range).
-- [ ] **3.2 Fix at the boundary.** Correct the offending data mapping in
+
+  **Root cause found by inspection:** `scenarios.themeId` is a nullable column
+  (`ON DELETE SET NULL`, and `HorizonScenarioNewScreen` explicitly allows creating a
+  scenario with no theme — "Optional. Link this scenario to a theme for grouped
+  analysis."). `signals.listIndicators` derived an indicator's `themeId` from its first
+  linked scenario and fell back to `""` when that scenario had no theme
+  (`themeByIndicator.get(ind.id) ?? ""`). But `IndicatorSummarySchema.themeId` was typed
+  as `IdSchema` = `z.string().min(1)` — a non-empty ID. Any indicator mapped only to
+  theme-less scenarios produced `themeId: ""`, which fails `.min(1)` at the tRPC output
+  boundary → "Output validation failed". Same fallback existed in `getIndicator`.
+
+- [x] **3.2 Fix at the boundary.** Correct the offending data mapping in
   `signals.router.ts` (and/or the schema, if the schema is wrong about reality). The
   goal is a valid, honest payload — not loosening the schema to hide bad data.
-- [ ] **3.3 Confirm the screen loads** with real data and the Total/Triggered/Watching
+
+  **The schema was wrong about reality, not the data** — the client never even reads
+  `themeId` off an indicator (verified — no reference to it in `HorizonSignalsScreen.tsx`
+  or elsewhere), so there was no reason to fake a non-empty value. Fixed by making
+  `IndicatorSummarySchema.themeId` nullable (`IdSchema.nullable()`) and returning the
+  real `null` instead of coercing to `""` in both `listIndicators` and `getIndicator`.
+  Added `shared/validators/horizon.schema.test.ts` asserting the schema now accepts
+  `themeId: null` and still rejects the old buggy `""` fallback, so this can't silently
+  regress.
+
+- [x] **3.3 Confirm the screen loads** with real data and the Total/Triggered/Watching
   counts populate.
+
+  Confirmed at the schema level (3 new tests passing) and via full-suite regression
+  (105/105 passing). A live click-through against a real database wasn't possible in
+  this environment (no `DATABASE_URL` configured here) — recommend a quick manual check
+  against the target environment once deployed, same as Phase 1.
 
 ### 3b. Decide the screen's future (product decision — gated)
 
-- [ ] **3.4 Put the decision to the user before rebuilding.** Ask whether the Signals
+- [x] **3.4 Put the decision to the user before rebuilding.** Ask whether the Signals
   "operator view" should be (a) kept and reframed to clearly complement the
   Themes→Scenarios→Indicators DAG, (b) merged into the Indicators/Scenario views, or
   (c) removed. **Do not redesign until this is answered** — it is a vision-level call,
   not a UI tweak.
-- [ ] **3.5 Execute the chosen direction.** Implement (a), (b), or (c) as a distinct,
+
+  **Decision:** (a) — keep and reframe.
+
+- [x] **3.5 Execute the chosen direction.** Implement (a), (b), or (c) as a distinct,
   reviewable change once the user has decided.
+
+  Kept the screen and its route/procedure shape unchanged (no tRPC input/output
+  restructuring — that would be a structural change warranting its own separate
+  sign-off). Reframed it in `HorizonSignalsScreen.tsx` to make the complementary role
+  explicit rather than reading as a plain clone of the Indicators list:
+  - Header copy now states its purpose directly: every indicator across every theme
+    and scenario, ranked by acceleration — the cross-cutting triage view — with a
+    pointer to the scenario page for scenario-scoped context.
+  - Added a small "sorted by acceleration, highest first" note above the table so the
+    screen's organizing principle (surfacing what's heating up, not just listing
+    indicators) is visible, not just implicit in the sort order.
+
+  Deliberately **not** done in this pass (would be new, separate scope): changing the
+  status filter to a multi-select "watching + triggered" default, or building real
+  `trend`/`triggerHistory`/`linkedEvidence` data for the indicator detail drill-down
+  (those three fields are currently hardcoded to empty arrays in
+  `signals.getIndicator` — a genuine gap, but a distinct feature build, not a reframe).
 
 ---
 
 ## Deferred / open questions
 
 - Cross-outlet dedup: should the same wire story from different domains collapse into one
-  triage row, or stay separate? (Affects Phase 2.1.)
-- Signals screen fate: keep / merge / remove. (Phase 3.4 — must be answered by the user.)
+  triage row, or stay separate? (Affects Phase 2.1.) — **Resolved:** dedup key is
+  normalised title + source domain, so same-titled stories from different outlets are
+  intentionally kept separate.
+- ~~Signals screen fate: keep / merge / remove.~~ **Resolved:** keep and reframe (Phase 3.4/3.5).
+- **New, surfaced during Phase 3:** `signals.getIndicator` returns hardcoded empty
+  arrays for `trend`, `triggerHistory`, and `linkedEvidence` — the indicator detail
+  page's "drill into evidence" promise has no real data behind it yet. Not in scope for
+  this task list (a genuine feature build, not a bug fix or reframe), but worth its own
+  future task if the analyst workflow needs it.

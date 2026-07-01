@@ -61,8 +61,11 @@ export default function HorizonSignalsScreen() {
             <span>Signals</span>
           </div>
           <div className="mt-2 text-3xl font-semibold">Signals</div>
-          <div className="mt-2 text-sm text-muted-foreground">
-            Operator view. Track indicator acceleration and drill into evidence.
+          <div className="mt-2 max-w-2xl text-sm text-muted-foreground">
+            Every indicator across every theme and scenario, ranked by acceleration —
+            the cross-cutting view for spotting what's heating up anywhere in the
+            portfolio. For an indicator's role within a single scenario, open that
+            scenario's page instead.
           </div>
         </div>
 
@@ -186,7 +189,12 @@ export default function HorizonSignalsScreen() {
             </div>
           )
         ) : (
-          <div className="overflow-x-auto rounded-lg border bg-background shadow-sm">
+          <div className="rounded-lg border bg-background shadow-sm">
+            <div className="px-4 pt-3 text-xs text-muted-foreground">
+              Sorted by acceleration, highest first — the fastest-moving indicators
+              surface regardless of which theme or scenario they belong to.
+            </div>
+          <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="text-left text-xs text-muted-foreground">
                 <tr className="border-b">
@@ -259,6 +267,7 @@ export default function HorizonSignalsScreen() {
                   ))}
               </tbody>
             </table>
+          </div>
           </div>
         )}
       </div>

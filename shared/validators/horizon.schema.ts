@@ -46,7 +46,7 @@ export type PressurePoint = z.infer<typeof PressurePointSchema>;
 
 export const IndicatorSummarySchema = z.object({
   id: IdSchema,
-  themeId: IdSchema,
+  themeId: IdSchema.nullable(),
   name: z.string().min(1),
   category: IndicatorCategorySchema,
   status: IndicatorStatusSchema,

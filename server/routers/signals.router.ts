@@ -87,14 +87,16 @@ export const signalsRouter = router({
         .from(indicators)
         .where(and(...indConditions));
 
-      // Build per-indicator scenario maps and derive themeId from first link
+      // Build per-indicator scenario maps and derive themeId from first link.
+      // A scenario's themeId is nullable (a scenario can exist without a theme),
+      // so an indicator mapped only to theme-less scenarios has no themeId either.
       const mappedScenariosById = new Map<string, { scenarioId: string; weight: number; scenarioName: string }[]>();
-      const themeByIndicator = new Map<string, string>();
+      const themeByIndicator = new Map<string, string | null>();
 
       for (const link of linkRows) {
         if (!mappedScenariosById.has(link.indicatorId)) {
           mappedScenariosById.set(link.indicatorId, []);
-          themeByIndicator.set(link.indicatorId, link.themeId ?? "");
+          themeByIndicator.set(link.indicatorId, link.themeId ?? null);
         }
         mappedScenariosById.get(link.indicatorId)!.push({
           scenarioId: link.scenarioId,
@@ -105,7 +107,7 @@ export const signalsRouter = router({
 
       return indRows.map((ind) => ({
         id: ind.id,
-        themeId: themeByIndicator.get(ind.id) ?? "",
+        themeId: themeByIndicator.get(ind.id) ?? null,
         name: ind.name,
         category: ind.category as z.infer<typeof IndicatorCategorySchema>,
         status: (ind.status ?? "normal") as z.infer<typeof IndicatorStatusSchema>,
@@ -158,7 +160,7 @@ export const signalsRouter = router({
       return {
         indicator: {
           id: ind.id,
-          themeId: themeId ?? "",
+          themeId,
           name: ind.name,
           category: ind.category as z.infer<typeof IndicatorCategorySchema>,
           status: (ind.status ?? "normal") as z.infer<typeof IndicatorStatusSchema>,

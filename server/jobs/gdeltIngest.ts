@@ -2,7 +2,7 @@ import AdmZip from "adm-zip";
 import { createHash } from "node:crypto";
 import { db } from "../db";
 import { gdeltEvents, gdeltEventMentions, gdeltDocuments } from "@shared/db";
-import { sql } from "drizzle-orm";
+import { sql, inArray } from "drizzle-orm";
 
 const LASTUPDATE = "http://data.gdeltproject.org/gdeltv2/lastupdate.txt";
 
@@ -254,6 +254,98 @@ export function parseGkgRow(cols: string[]) {
   };
 }
 
+// ---- Story deduplication (dedup key: normalised title + source domain)
+//
+// GDELT assigns a new GlobalEventID per mention, so the same underlying story
+// legitimately produces many event rows. The EXPORT feed alone carries no
+// title, so a title-based key can only be computed once GKG documents are
+// correlated (via mentions). We re-scan all 'new' rows on every ingestion
+// run rather than just the rows touched this run, which also sweeps up any
+// pre-existing duplicates already sitting in the triage backlog.
+export function normalizeTitleKey(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+export function buildDedupKey(title: string, source: string | null): string {
+  return `${normalizeTitleKey(title)}|${(source ?? "").toLowerCase()}`;
+}
+
+export interface DedupCandidateRow {
+  globalEventId: string;
+  title: string;
+  source: string | null;
+  ingestedAt: Date;
+  numMentions: number | null;
+}
+
+// Groups candidate rows by dedup key and returns the globalEventIds that
+// should be marked as duplicates — every row in a group except the one kept
+// canonical (earliest ingested, most-mentioned as tiebreak).
+export function pickDuplicateEventIds(rows: DedupCandidateRow[]): Set<string> {
+  const groups = new Map<string, DedupCandidateRow[]>();
+  for (const row of rows) {
+    const key = buildDedupKey(row.title, row.source);
+    const list = groups.get(key);
+    if (list) list.push(row);
+    else groups.set(key, [row]);
+  }
+
+  const duplicates = new Set<string>();
+  for (const group of groups.values()) {
+    if (group.length <= 1) continue;
+    const sorted = [...group].sort((a, b) => {
+      const byTime = a.ingestedAt.getTime() - b.ingestedAt.getTime();
+      if (byTime !== 0) return byTime;
+      return (b.numMentions ?? 0) - (a.numMentions ?? 0);
+    });
+    for (const dup of sorted.slice(1)) duplicates.add(dup.globalEventId);
+  }
+  return duplicates;
+}
+
+async function collapseDuplicateGdeltEvents(): Promise<number> {
+  const result = await db.execute(sql`
+    SELECT e.global_event_id                    AS "globalEventId",
+           COALESCE(e.title, d.title)            AS title,
+           COALESCE(d.domain, e.source_name)     AS source,
+           e.ingested_at                         AS "ingestedAt",
+           e.num_mentions                        AS "numMentions"
+    FROM gdelt_events e
+    LEFT JOIN LATERAL (
+      SELECT gd.title, gd.domain
+      FROM gdelt_event_mentions gem
+      JOIN gdelt_documents gd ON gd.url = gem.url
+      WHERE gem.global_event_id = e.global_event_id
+        AND gd.title IS NOT NULL
+      ORDER BY gem.confidence DESC NULLS LAST
+      LIMIT 1
+    ) d ON true
+    WHERE e.status = 'new'
+      AND COALESCE(e.title, d.title) IS NOT NULL
+  `);
+
+  const rows = (result.rows as any[]).map((r) => ({
+    globalEventId: r.globalEventId as string,
+    title: r.title as string,
+    source: (r.source as string | null) ?? null,
+    ingestedAt: new Date(r.ingestedAt),
+    numMentions: r.numMentions === null || r.numMentions === undefined ? null : Number(r.numMentions),
+  }));
+
+  const duplicateIds = pickDuplicateEventIds(rows);
+  if (duplicateIds.size === 0) return 0;
+
+  await db
+    .update(gdeltEvents)
+    .set({ status: "duplicate", updatedAt: new Date() })
+    .where(inArray(gdeltEvents.globalEventId, [...duplicateIds]));
+
+  return duplicateIds.size;
+}
+
 let exportUpserted = 0;
 let mentionsInserted = 0;
 let mentionsSkippedMissingEvent = 0;
@@ -423,6 +515,10 @@ export async function ingestGdelt() {
     console.log(`GKG done. upserted=${upserted} skipped=${skipped}`);
   }
 
+  // -------- deduplicate near-identical stories (normalised title + source)
+  const duplicatesMarked = await collapseDuplicateGdeltEvents();
+  console.log(`Duplicate story cleanup: ${duplicatesMarked} events marked duplicate`);
+
   // Mark pending signals whose expiresAt has passed as expired
   const expiredResult = await db.execute(sql`
     UPDATE signal_events
@@ -446,6 +542,9 @@ export async function ingestGdelt() {
     gkg: {
       upserted: gkgUpserted,
       skipped: gkgSkipped,
+    },
+    dedup: {
+      duplicatesMarked,
     },
   };
 }
