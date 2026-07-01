@@ -52,15 +52,59 @@ the code:
 Goal: know exactly what "working" means before changing anything, so later phases can't
 silently regress the core.
 
-- [ ] **0.1 Audit the Themes → Scenarios → Indicators DAG.** Trace the CRUD paths end to
+- [x] **0.1 Audit the Themes → Scenarios → Indicators DAG.** Trace the CRUD paths end to
   end (routers under `horizon`, the Drizzle tables, and the client pages) and write a
   short note in this file describing the confirmed-good behaviour: what relations exist
   (theme has scenarios; scenario has indicators via `scenarioIndicatorMap`), and any
   gaps found. No code changes.
-- [ ] **0.2 Add/confirm a regression test for the DAG.** Ensure there is a Vitest test
+
+  **Findings:**
+  - **Relations confirmed:** `themes` (1) → `scenarios` (many, via `scenarios.themeId`,
+    `ON DELETE SET NULL`) → `indicators` (many-to-many, via `scenario_indicator_map`
+    junction table with a per-link `weight`). `indicators` also carries a direct,
+    nullable `scenarioId` column (`ON DELETE SET NULL`) — a second, looser link kept
+    alongside the junction table. Not a bug, but worth knowing: an indicator can be
+    "owned" by one scenario via the direct FK while also being mapped to several
+    scenarios via `scenarioIndicatorMap`.
+  - **Themes CRUD:** `themesRouter` (`server/routers/themes.router.ts`) is mounted
+    twice in `appRouter` — once at top-level `themes` (public procedures: `getThemes`,
+    `getThemeById`, `createTheme`, `deleteTheme`) and once at `horizon.themes` (same
+    router instance, adds the protected, group-scoped `list` used by the Horizon
+    dashboard/scenario-creation UI). This is intentional reuse, not duplication — the
+    generic Themes UI and the Horizon-facing theme list share one table and one router.
+    Gap: no `updateTheme` mutation exists anywhere; renaming/editing a theme isn't
+    currently possible. Low priority, not part of this task list.
+  - **Scenarios CRUD:** `scenariosRouter` (`server/routers/scenarios.router.ts`) is
+    complete: `list`, `getById`, `create`, `update`, `delete`, plus
+    `getLinkedIndicators` / `assignIndicator` / `removeIndicator` for the junction
+    table. All group-scoped via `analystGroupId`. This is the most solid part of the
+    DAG.
+  - **Indicators CRUD:** lives in `signals.router.ts` (`listIndicators`, `getIndicator`,
+    `createIndicator`, `updateIndicator`, `deleteIndicator`), scoped through the
+    scenario→group relationship rather than a direct `analystGroupId` column on
+    `indicators` itself. Functionally fine, just worth knowing indicators have no
+    group column of their own — visibility is entirely inherited through
+    `scenarioIndicatorMap` → `scenarios.analystGroupId`.
+  - **Conclusion:** the DAG CRUD is genuinely solid, matching the "working well"
+    observation. The one real gap (no theme rename) is minor and out of scope here.
+
+- [x] **0.2 Add/confirm a regression test for the DAG.** Ensure there is a Vitest test
   covering create → link → read for a theme, a scenario under it, and an indicator
   mapped to that scenario. If one exists, note it; if not, add it. This is the guardrail
   for Phases 1–3.
+
+  **Findings:** this codebase does not do DB-backed integration testing anywhere —
+  `server/test/setup.ts` globally stubs `../db` and `@shared/db` to empty proxies for
+  every server test, and no test database is configured. Regression coverage for the
+  DAG instead lives at the component level, with tRPC mocked (matching existing
+  patterns like `HorizonScenarioDetailScreen.test.tsx`). That file already covers
+  **link/read/remove** for scenario↔indicator (rendering linked indicators, calling
+  `removeIndicator.mutate`/`assignIndicator.mutate` with correct args). The missing
+  piece was the **create** step, which had zero coverage. Added
+  `client/src/pages/HorizonScenarioNewScreen.test.tsx`, covering: the theme select
+  populating from `horizon.themes.list`, and `horizon.scenarios.create.mutate` being
+  called with the right `name`/`description` on submit. Ran alongside the existing
+  scenario-detail test: **7/7 passing.**
 
 ## Phase 1 — Fix the Admin Categories failure (migration/ops)
 
