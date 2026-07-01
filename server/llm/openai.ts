@@ -1,3 +1,5 @@
+import { logger } from "../logger";
+
 type OpenAIJsonResponse = {
   output_text?: string; // some SDKs
   // We'll treat the whole body as unknown and parse robustly.
@@ -14,6 +16,8 @@ export async function callOpenAIJson({
 }): Promise<string> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error("Missing OPENAI_API_KEY");
+
+  const start = Date.now();
 
   // Using the Responses API shape (works via plain fetch).
   const res = await fetch("https://api.openai.com/v1/responses", {
@@ -32,6 +36,11 @@ export async function callOpenAIJson({
       text: { format: { type: "json_object" } },
     }),
   });
+
+  logger.info(
+    { module: "openai", model, statusCode: res.status, durationMs: Date.now() - start },
+    "OpenAI call complete",
+  );
 
   if (!res.ok) {
     const msg = await res.text().catch(() => "");

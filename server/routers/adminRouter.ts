@@ -9,6 +9,7 @@ import bcrypt from "bcrypt";
 import { ingestAcled, isAcledEnabled } from "../jobs/acledIngest";
 import { generateSignals } from "../jobs/generateSignals";
 import { runGdeltJob, GdeltJobLockedError } from "../jobs/runGdeltJob";
+import { logger } from "../logger";
 
 const isAdminEmail = (email?: string | null) => {
   const allow = (process.env.ADMIN_EMAILS ?? "")
@@ -25,17 +26,6 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   return next();
 });
 
-function log(message: string, source = "express") {
-  const formattedTime = new Date().toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: true,
-  });
-
-  console.log(`${formattedTime} [${source}] ${message}`);
-}
-
 export const adminRouter = router({
   runGdelt: adminProcedure.mutation(async ({}) => {
     try {
@@ -44,7 +34,7 @@ export const adminRouter = router({
       if (error instanceof GdeltJobLockedError) {
         throw new TRPCError({ code: "CONFLICT", message: "Job already Running" });
       }
-      console.error("GDELT job failed:", error);
+      logger.error({ module: "admin-router", err: error instanceof Error ? error.message : error }, "GDELT job failed");
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
         message: error instanceof Error ? error.message : "unknown error",
@@ -167,15 +157,15 @@ export const adminRouter = router({
     }
 
     const startedAt = Date.now();
-    log("ACLED job started", "acled-job");
+    logger.info({ module: "acled-job" }, "ACLED job started");
 
     const ingestResult = await ingestAcled();
     const signalResult = await generateSignals();
     const durationMs = Date.now() - startedAt;
 
-    log(
-      `ACLED job finished in ${durationMs}ms :: ${JSON.stringify({ ingestResult, signalResult })}`,
-      "acled-job",
+    logger.info(
+      { module: "acled-job", durationMs, ingestResult, signalResult },
+      "ACLED job finished",
     );
 
     return {
