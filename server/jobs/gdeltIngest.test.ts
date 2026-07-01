@@ -11,6 +11,10 @@ import {
   parseMentionsRow,
   parseGkgRow,
   extractDomain,
+  normalizeTitleKey,
+  buildDedupKey,
+  pickDuplicateEventIds,
+  type DedupCandidateRow,
 } from "./gdeltIngest";
 
 const FIXTURES = resolve(__dirname, "__fixtures__");
@@ -135,5 +139,75 @@ describe("extractDomain", () => {
 
   it("returns null for an invalid URL", () => {
     expect(extractDomain("not-a-url")).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Story deduplication (normalised title + source domain)
+// ---------------------------------------------------------------------------
+
+describe("normalizeTitleKey", () => {
+  it("lowercases and collapses punctuation/whitespace differences", () => {
+    expect(normalizeTitleKey("Russia Escalates Rhetoric, Again!")).toBe(
+      normalizeTitleKey("russia escalates rhetoric again"),
+    );
+  });
+});
+
+describe("buildDedupKey", () => {
+  it("combines the normalised title with the lowercased source", () => {
+    expect(buildDedupKey("Some Title", "Reuters.com")).toBe(
+      buildDedupKey("some   title", "reuters.com"),
+    );
+  });
+
+  it("treats a null source as an empty string, not distinct titles as equal", () => {
+    expect(buildDedupKey("Title A", null)).not.toBe(buildDedupKey("Title B", null));
+  });
+});
+
+describe("pickDuplicateEventIds", () => {
+  const row = (overrides: Partial<DedupCandidateRow>): DedupCandidateRow => ({
+    globalEventId: "id",
+    title: "Russia escalates rhetoric",
+    source: "reuters.com",
+    ingestedAt: new Date("2024-01-15T00:00:00Z"),
+    numMentions: 1,
+    ...overrides,
+  });
+
+  it("keeps only one event per (normalised title + source) group, dropping the rest as duplicates", () => {
+    const rows: DedupCandidateRow[] = [
+      row({ globalEventId: "a", ingestedAt: new Date("2024-01-15T00:00:00Z") }),
+      row({ globalEventId: "b", title: "RUSSIA ESCALATES RHETORIC!", ingestedAt: new Date("2024-01-15T01:00:00Z") }),
+      row({ globalEventId: "c", title: "russia   escalates rhetoric", ingestedAt: new Date("2024-01-15T02:00:00Z") }),
+    ];
+
+    const duplicates = pickDuplicateEventIds(rows);
+
+    expect(duplicates.size).toBe(2);
+    expect(duplicates.has("a")).toBe(false); // earliest ingested — kept canonical
+    expect(duplicates.has("b")).toBe(true);
+    expect(duplicates.has("c")).toBe(true);
+  });
+
+  it("does not merge the same title from different sources", () => {
+    const rows: DedupCandidateRow[] = [
+      row({ globalEventId: "a", source: "reuters.com" }),
+      row({ globalEventId: "b", source: "bbc.co.uk" }),
+    ];
+
+    const duplicates = pickDuplicateEventIds(rows);
+
+    expect(duplicates.size).toBe(0);
+  });
+
+  it("returns an empty set when every key is unique", () => {
+    const rows: DedupCandidateRow[] = [
+      row({ globalEventId: "a", title: "Story one" }),
+      row({ globalEventId: "b", title: "Story two" }),
+    ];
+
+    expect(pickDuplicateEventIds(rows).size).toBe(0);
   });
 });

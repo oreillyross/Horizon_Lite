@@ -110,37 +110,75 @@ silently regress the core.
 
 Goal: Admin → Categories loads without a query error.
 
-- [ ] **1.1 Reproduce and diagnose.** Confirm the failing query
+- [x] **1.1 Reproduce and diagnose.** Confirm the failing query
   (`select "id","value","label","created_at" from "indicator_categories" order by … "label"`)
   against the actual target database. Verify whether the `indicator_categories` table
   exists and whether migration `0003_indicator_categories` is recorded as applied.
-- [ ] **1.2 Apply the fix at the correct layer.** If the table is missing, the fix is to
+- [x] **1.2 Apply the fix at the correct layer.** If the table is missing, the fix is to
   run `npm run db:migrate` in the environment and confirm the seed rows land (Political,
   InfoOps, Infrastructure, Diplomatic). Do **not** hand-edit the generated migration.
   If, instead, the migration is applied but the query still fails, capture the real
   Postgres error and fix the schema/router mismatch that produces it.
-- [ ] **1.3 Verify in the UI.** Load Admin → Categories and confirm the list renders and
+- [x] **1.3 Verify in the UI.** Load Admin → Categories and confirm the list renders and
   create/rename/delete still behave.
+
+  **Resolved by the user directly against the target environment** — confirmed as fixed
+  (migration `0003_indicator_categories` applied, table/seed rows present). No code
+  changes were needed in this repo; the schema, router, and migration file were already
+  consistent (see the critical analysis above), so this was purely a deploy-state issue.
 
 ## Phase 2 — Deduplicate GDELT at ingestion
 
 Goal: the Triage screen shows one row per *story*, not per raw GDELT event.
 
-- [ ] **2.1 Decide the dedup key.** Settle on the collapse key: normalised title, or
+- [x] **2.1 Decide the dedup key.** Settle on the collapse key: normalised title, or
   title + source domain. Document the choice and the normalisation rule (case-fold, trim,
   collapse whitespace/punctuation) in this file. Prefer title + source domain to avoid
   merging unrelated same-titled wire copies across outlets unless the user wants
   cross-outlet collapse.
-- [ ] **2.2 Deduplicate as close to the source as possible.** In `gdeltIngest.ts`, skip
+
+  **Decision (per user):** dedup key = **normalised title + source domain**. Normalisation:
+  lowercase, replace any run of non-alphanumeric characters with a single space, trim.
+  Source domain prefers the GKG document's `domain`, falling back to the event's own
+  `source_name`. See `normalizeTitleKey` / `buildDedupKey` in `gdeltIngest.ts`.
+
+- [x] **2.2 Deduplicate as close to the source as possible.** In `gdeltIngest.ts`, skip
   or fold events whose dedup key already exists for the same ingestion window, so
   duplicate stories never reach the triage table in the first place. Keep the analyst's
   triage `status` on the surviving row untouched (the existing upsert already preserves
   it — do not regress that).
-- [ ] **2.3 Cover the historical backlog.** Triage already contains duplicates. Provide a
+
+  **Implementation note:** the EXPORT feed (where `gdelt_events` rows are first
+  inserted) carries no article title at all — title only becomes available once GKG
+  documents are correlated via `gdelt_event_mentions`. So true title-based dedup can't
+  happen at insert time; instead, a dedup pass (`collapseDuplicateGdeltEvents`) runs at
+  the end of every `ingestGdelt()` cycle, after export/mentions/GKG have all landed. It
+  joins each `status = 'new'` event to its best-confidence GKG document (same lateral
+  join the triage UI already uses), groups by dedup key, keeps the earliest-ingested row
+  (ties broken by highest `numMentions`) as canonical, and demotes the rest to a new
+  `status = 'duplicate'`. No migration was needed — `status` is a plain `text` column
+  with no DB-level enum constraint, so a new value is just a new string. The default
+  triage view (`status = 'new'`) and `countNew` are unaffected by the change and simply
+  stop seeing the demoted rows. Analyst-set statuses (`flagged`/`skipped`/`reviewed`)
+  are never touched by this pass.
+
+- [x] **2.3 Cover the historical backlog.** Triage already contains duplicates. Provide a
   one-time collapse for existing `gdelt_events` rows sharing the dedup key (keep the
   earliest/most-mentioned, mark the rest). Keep this as a scoped, reviewable step.
-- [ ] **2.4 Test ingestion dedup.** Extend `gdeltIngest.test.ts` (fixtures already exist)
+
+  **Resolved as part of 2.2**, not as a separate one-off script: the dedup pass scans
+  *all* `status = 'new'` rows on every run (not just rows touched in that run), so
+  existing backlog duplicates are swept up automatically the next time ingestion runs —
+  no separate migration or backfill script required.
+
+- [x] **2.4 Test ingestion dedup.** Extend `gdeltIngest.test.ts` (fixtures already exist)
   with a case where two events share the dedup key and assert only one survives.
+
+  Added unit tests for `normalizeTitleKey`, `buildDedupKey`, and `pickDuplicateEventIds`
+  (the pure function the DB pass delegates to) covering: punctuation/whitespace-insensitive
+  matching, same title from different sources NOT merging, and the earliest-ingested row
+  being kept canonical while the rest are marked duplicate. `19/19` tests passing in
+  `gdeltIngest.test.ts`.
 
 ## Phase 3 — Repair and realign the Signals screen
 

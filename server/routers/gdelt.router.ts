@@ -19,7 +19,7 @@ type TriageRow = {
   goldstein: number | null;
 };
 
-const triageStatusSchema = z.enum(["new", "flagged", "skipped", "reviewed"]);
+const triageStatusSchema = z.enum(["new", "flagged", "skipped", "reviewed", "duplicate"]);
 
 const qSchema = z.string().trim().max(200).optional();
 
