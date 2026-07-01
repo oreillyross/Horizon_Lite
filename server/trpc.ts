@@ -1,6 +1,9 @@
 import { initTRPC, TRPCError } from "@trpc/server";
+import { SpanStatusCode } from "@opentelemetry/api";
 import superjson from "superjson";
 import type { TRPCContext  } from "./trpc/context";
+import { logger, summarizeValue } from "./logger";
+import { tracer } from "./otel/tracer";
 
 const t = initTRPC.context<TRPCContext>().create({
   transformer: superjson,
@@ -8,19 +11,36 @@ const t = initTRPC.context<TRPCContext>().create({
 
 export const router = t.router;
 
-const logMiddleware = t.middleware(async ({ path, type, next }) => {
-  const start = Date.now();
-  const result = await next();
-  const durationMs = Date.now() - start;
-  const log = {
-    trpc: path,
-    type,
-    durationMs,
-    ok: result.ok,
-    ...(!result.ok && result.error ? { error: result.error.message } : {}),
-  };
-  console.log(JSON.stringify(log));
-  return result;
+// One middleware instruments every procedure on every router: a span named
+// trpc.<path> plus a structured log line carrying an input shape summary
+// (not the raw payload) and the trace/span id via the pino mixin.
+const logMiddleware = t.middleware(async ({ path, type, getRawInput, next }) => {
+  return tracer.startActiveSpan(`trpc.${path}`, { attributes: { "trpc.type": type } }, async (span) => {
+    const start = Date.now();
+    const rawInput = await getRawInput().catch(() => undefined);
+    const result = await next();
+    const durationMs = Date.now() - start;
+
+    const logFields = {
+      trpc: path,
+      type,
+      durationMs,
+      ok: result.ok,
+      input: summarizeValue(rawInput),
+      ...(!result.ok ? { err: result.error.message } : {}),
+    };
+
+    if (result.ok) {
+      logger.info(logFields, "trpc.call");
+    } else {
+      span.recordException(result.error);
+      span.setStatus({ code: SpanStatusCode.ERROR, message: result.error.message });
+      logger.warn(logFields, "trpc.call");
+    }
+
+    span.end();
+    return result;
+  });
 });
 
 export const publicProcedure = t.procedure.use(logMiddleware);

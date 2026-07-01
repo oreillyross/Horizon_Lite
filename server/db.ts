@@ -1,6 +1,7 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import * as schema from "@shared/db";
+import { logger } from "./logger";
 
 const { Pool } = pg;
 
@@ -11,7 +12,7 @@ if (!process.env.DATABASE_URL) {
 }
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-console.log("migration:SESSION_DB_URL_HOST", new URL(process.env.DATABASE_URL!).host);
-console.log("migration:SESSION_DB_URL_DB", new URL(process.env.DATABASE_URL!).pathname);
+const dbUrl = new URL(process.env.DATABASE_URL);
+logger.info({ module: "db", host: dbUrl.host, database: dbUrl.pathname }, "Connecting to database");
 
 export const db = drizzle(pool, { schema });

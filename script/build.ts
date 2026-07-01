@@ -3,7 +3,10 @@ import { build as viteBuild } from "vite";
 import { rm, readFile } from "fs/promises";
 
 // server deps to bundle to reduce openat(2) syscalls
-// which helps cold start times
+// which helps cold start times.
+// express and pg are deliberately left out: OpenTelemetry's auto-instrumentation
+// patches them via require()-time interception, which only works if they stay
+// real node_modules requires instead of being inlined into the bundle.
 const allowlist = [
   "@google/generative-ai",
   "axios",
@@ -12,7 +15,6 @@ const allowlist = [
   "date-fns",
   "drizzle-orm",
   "drizzle-zod",
-  "express",
   "express-rate-limit",
   "express-session",
   "jsonwebtoken",
@@ -23,7 +25,6 @@ const allowlist = [
   "openai",
   "passport",
   "passport-local",
-  "pg",
   "stripe",
   "uuid",
   "ws",

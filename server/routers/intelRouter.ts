@@ -3,6 +3,7 @@ import { router, publicProcedure } from "../trpc";
 import { sql } from "drizzle-orm";
 import { db } from "../db";
 import { paginateBy } from "../utils/paginate";
+import { logger } from "../logger";
 
 type FeedRow = {
   url: string;
@@ -74,7 +75,7 @@ export const intelRouter = router({
 
         return paginateBy<FeedRow>(baseQuery, input.limit, input.sortBy, input.cursor);
       } catch (err) {
-        console.error("searchDocuments error:", err);
+        logger.error({ module: "intel-router", err: err instanceof Error ? err.message : err }, "searchDocuments failed");
         throw err;
       }
     }),

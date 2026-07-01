@@ -2,6 +2,7 @@
 import { JSDOM } from "jsdom";
 import { Readability } from "@mozilla/readability";
 import sanitizeHtml from "sanitize-html";
+import { logger } from "../logger";
 
 type FetchReadableResult = {
   url: string;
@@ -56,6 +57,7 @@ export async function fetchReadable(urlInput: string): Promise<FetchReadableResu
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
   let html: string;
+  const start = Date.now();
   try {
     const res = await fetch(url.toString(), {
       signal: controller.signal,
@@ -66,6 +68,11 @@ export async function fetchReadable(urlInput: string): Promise<FetchReadableResu
         accept: "text/html,application/xhtml+xml",
       },
     });
+
+    logger.info(
+      { module: "webcut", host: url.host, statusCode: res.status, durationMs: Date.now() - start },
+      "webcut fetch complete",
+    );
 
     if (!res.ok) {
       throw new Error(`Fetch failed: ${res.status} ${res.statusText}`);
@@ -83,6 +90,12 @@ export async function fetchReadable(urlInput: string): Promise<FetchReadableResu
       throw new Error("Page too large to load.");
     }
     html = new TextDecoder("utf-8").decode(buf);
+  } catch (err) {
+    logger.warn(
+      { module: "webcut", host: url.host, durationMs: Date.now() - start, err: err instanceof Error ? err.message : err },
+      "webcut fetch failed",
+    );
+    throw err;
   } finally {
     clearTimeout(timeout);
   }

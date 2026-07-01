@@ -2,6 +2,7 @@
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import { Pool } from "pg";
+import { logger } from "./logger";
 
 const PgSession = connectPgSimple(session);
 
@@ -9,8 +10,8 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
-console.log("SESSION_DB_URL_HOST", new URL(process.env.DATABASE_URL!).host);
-console.log("SESSION_DB_URL_DB", new URL(process.env.DATABASE_URL!).pathname);
+const sessionDbUrl = new URL(process.env.DATABASE_URL!);
+logger.info({ module: "session", host: sessionDbUrl.host, database: sessionDbUrl.pathname }, "Session store connecting to database");
 
 
 export function sessionMiddleware() {
