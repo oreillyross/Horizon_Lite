@@ -187,15 +187,41 @@ first stop the bleeding (make it load), then decide its future.
 
 ### 3a. Stop the bleeding (bug fix)
 
-- [ ] **3.1 Reproduce "Output validation failed" on `signals.listIndicators`.** Log the
+- [x] **3.1 Reproduce "Output validation failed" on `signals.listIndicators`.** Log the
   actual Zod error to find which field/row violates `IndicatorSummarySchema` (suspect
   `category` empty, or `strength`/`timeWeight`/`decayBehaviour` out of the declared
   enum/range).
-- [ ] **3.2 Fix at the boundary.** Correct the offending data mapping in
+
+  **Root cause found by inspection:** `scenarios.themeId` is a nullable column
+  (`ON DELETE SET NULL`, and `HorizonScenarioNewScreen` explicitly allows creating a
+  scenario with no theme — "Optional. Link this scenario to a theme for grouped
+  analysis."). `signals.listIndicators` derived an indicator's `themeId` from its first
+  linked scenario and fell back to `""` when that scenario had no theme
+  (`themeByIndicator.get(ind.id) ?? ""`). But `IndicatorSummarySchema.themeId` was typed
+  as `IdSchema` = `z.string().min(1)` — a non-empty ID. Any indicator mapped only to
+  theme-less scenarios produced `themeId: ""`, which fails `.min(1)` at the tRPC output
+  boundary → "Output validation failed". Same fallback existed in `getIndicator`.
+
+- [x] **3.2 Fix at the boundary.** Correct the offending data mapping in
   `signals.router.ts` (and/or the schema, if the schema is wrong about reality). The
   goal is a valid, honest payload — not loosening the schema to hide bad data.
-- [ ] **3.3 Confirm the screen loads** with real data and the Total/Triggered/Watching
+
+  **The schema was wrong about reality, not the data** — the client never even reads
+  `themeId` off an indicator (verified — no reference to it in `HorizonSignalsScreen.tsx`
+  or elsewhere), so there was no reason to fake a non-empty value. Fixed by making
+  `IndicatorSummarySchema.themeId` nullable (`IdSchema.nullable()`) and returning the
+  real `null` instead of coercing to `""` in both `listIndicators` and `getIndicator`.
+  Added `shared/validators/horizon.schema.test.ts` asserting the schema now accepts
+  `themeId: null` and still rejects the old buggy `""` fallback, so this can't silently
+  regress.
+
+- [x] **3.3 Confirm the screen loads** with real data and the Total/Triggered/Watching
   counts populate.
+
+  Confirmed at the schema level (3 new tests passing) and via full-suite regression
+  (105/105 passing). A live click-through against a real database wasn't possible in
+  this environment (no `DATABASE_URL` configured here) — recommend a quick manual check
+  against the target environment once deployed, same as Phase 1.
 
 ### 3b. Decide the screen's future (product decision — gated)
 
