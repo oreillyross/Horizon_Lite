@@ -1,3 +1,4 @@
+import "./otel/tracing";
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
@@ -8,6 +9,7 @@ import { runGdeltJob, GdeltJobLockedError } from "./jobs/runGdeltJob";
 import { runScheduledGdeltIngest } from "./jobs/gdeltScheduler";
 import { fetchReadable } from "./utils/webcut";
 import cron from "node-cron";
+import { logger, summarizeValue } from "./logger";
 
 const app = express();
 const httpServer = createServer(app);
@@ -60,17 +62,6 @@ app.post("/api/webcut", async (req, res) => {
   }
 });
 
-export function log(message: string, source = "express") {
-  const formattedTime = new Date().toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: true,
-  });
-
-  console.log(`${formattedTime} [${source}] ${message}`);
-}
-
 // Cron schedule: twice daily at 06:00 UTC and 18:00 UTC.
 // Hook for external schedulers — call with X-Job-Secret header matching JOB_SECRET env var.
 app.post("/internal/jobs/gdelt", async (req, res) => {
@@ -96,7 +87,7 @@ app.post("/internal/jobs/gdelt", async (req, res) => {
     if (error instanceof GdeltJobLockedError) {
       return res.status(409).json({ ok: false, error: "job already running" });
     }
-    console.error("GDELT job failed:", error);
+    logger.error({ err: error instanceof Error ? error.message : error }, "GDELT job failed");
     return res.status(500).json({
       ok: false,
       error: error instanceof Error ? error.message : "unknown error",
@@ -116,15 +107,19 @@ app.use((req, res, next) => {
   };
 
   res.on("finish", () => {
-    const duration = Date.now() - start;
+    const durationMs = Date.now() - start;
 
     if (path.startsWith("/api") || path.startsWith("/internal/jobs")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-
-      log(logLine);
+      logger.info(
+        {
+          method: req.method,
+          path,
+          statusCode: res.statusCode,
+          durationMs,
+          ...(capturedJsonResponse ? { response: summarizeValue(capturedJsonResponse) } : {}),
+        },
+        "http.request",
+      );
     }
   });
 
@@ -157,33 +152,33 @@ app.use((req, res, next) => {
       reusePort: true,
     },
     () => {
-      log(`serving on port ${port}`);
+      logger.info({ port }, "serving");
 
       // Data lifecycle: HOT→WARM→COLD archival, runs daily at 10:00 UTC
-    cron.schedule("0 10 * * *", () => {
-        log("Lifecycle cron triggered", "lifecycle");
+      cron.schedule("0 10 * * *", () => {
+        logger.info({ module: "lifecycle" }, "Lifecycle cron triggered");
         runLifecycleManager().catch((err) =>
-          log(
-            `Lifecycle cron error: ${err instanceof Error ? err.message : err}`,
-            "lifecycle",
+          logger.error(
+            { module: "lifecycle", err: err instanceof Error ? err.message : err },
+            "Lifecycle cron error",
           ),
         );
       });
 
-      log("Lifecycle cron scheduled (daily at 10:00 UTC)", "lifecycle");
+      logger.info({ module: "lifecycle" }, "Lifecycle cron scheduled (daily at 10:00 UTC)");
 
       // GDELT auto-ingest: hourly tick checks app_config for the analyst's
       // configured enabled/frequency and runs the job when it's due.
       cron.schedule("0 * * * *", () => {
         runScheduledGdeltIngest().catch((err) =>
-          log(
-            `GDELT scheduler error: ${err instanceof Error ? err.message : err}`,
-            "gdelt-scheduler",
+          logger.error(
+            { module: "gdelt-scheduler", err: err instanceof Error ? err.message : err },
+            "GDELT scheduler error",
           ),
         );
       });
 
-      log("GDELT auto-ingest scheduler running (hourly check)", "gdelt-scheduler");
+      logger.info({ module: "gdelt-scheduler" }, "GDELT auto-ingest scheduler running (hourly check)");
     },
   );
 })();
