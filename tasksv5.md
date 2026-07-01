@@ -225,18 +225,45 @@ first stop the bleeding (make it load), then decide its future.
 
 ### 3b. Decide the screen's future (product decision — gated)
 
-- [ ] **3.4 Put the decision to the user before rebuilding.** Ask whether the Signals
+- [x] **3.4 Put the decision to the user before rebuilding.** Ask whether the Signals
   "operator view" should be (a) kept and reframed to clearly complement the
   Themes→Scenarios→Indicators DAG, (b) merged into the Indicators/Scenario views, or
   (c) removed. **Do not redesign until this is answered** — it is a vision-level call,
   not a UI tweak.
-- [ ] **3.5 Execute the chosen direction.** Implement (a), (b), or (c) as a distinct,
+
+  **Decision:** (a) — keep and reframe.
+
+- [x] **3.5 Execute the chosen direction.** Implement (a), (b), or (c) as a distinct,
   reviewable change once the user has decided.
+
+  Kept the screen and its route/procedure shape unchanged (no tRPC input/output
+  restructuring — that would be a structural change warranting its own separate
+  sign-off). Reframed it in `HorizonSignalsScreen.tsx` to make the complementary role
+  explicit rather than reading as a plain clone of the Indicators list:
+  - Header copy now states its purpose directly: every indicator across every theme
+    and scenario, ranked by acceleration — the cross-cutting triage view — with a
+    pointer to the scenario page for scenario-scoped context.
+  - Added a small "sorted by acceleration, highest first" note above the table so the
+    screen's organizing principle (surfacing what's heating up, not just listing
+    indicators) is visible, not just implicit in the sort order.
+
+  Deliberately **not** done in this pass (would be new, separate scope): changing the
+  status filter to a multi-select "watching + triggered" default, or building real
+  `trend`/`triggerHistory`/`linkedEvidence` data for the indicator detail drill-down
+  (those three fields are currently hardcoded to empty arrays in
+  `signals.getIndicator` — a genuine gap, but a distinct feature build, not a reframe).
 
 ---
 
 ## Deferred / open questions
 
 - Cross-outlet dedup: should the same wire story from different domains collapse into one
-  triage row, or stay separate? (Affects Phase 2.1.)
-- Signals screen fate: keep / merge / remove. (Phase 3.4 — must be answered by the user.)
+  triage row, or stay separate? (Affects Phase 2.1.) — **Resolved:** dedup key is
+  normalised title + source domain, so same-titled stories from different outlets are
+  intentionally kept separate.
+- ~~Signals screen fate: keep / merge / remove.~~ **Resolved:** keep and reframe (Phase 3.4/3.5).
+- **New, surfaced during Phase 3:** `signals.getIndicator` returns hardcoded empty
+  arrays for `trend`, `triggerHistory`, and `linkedEvidence` — the indicator detail
+  page's "drill into evidence" promise has no real data behind it yet. Not in scope for
+  this task list (a genuine feature build, not a bug fix or reframe), but worth its own
+  future task if the analyst workflow needs it.
