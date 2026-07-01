@@ -29,6 +29,13 @@
       "when": 1751000000000,
       "tag": "0003_indicator_categories",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1782897151327,
+      "tag": "0004_flaky_meltdown",
+      "breakpoints": true
     }
   ]
 }
