@@ -3,6 +3,8 @@ import { sql, eq, and, lt } from "drizzle-orm";
 import { signalEvents, indicators, acledEvents } from "@shared/db";
 import { mapIndicator } from "../intel/indicatorScoring";
 import { isAcledEnabled } from "./acledIngest";
+import { withSpan } from "../otel/tracer";
+import { logger } from "../logger";
 
 type SignalGenerationResult = {
   themeSpikes: number;
@@ -277,310 +279,355 @@ async function generateAcledSignals(bucket: string): Promise<number> {
 }
 
 export async function generateSignals(): Promise<SignalGenerationResult> {
-  console.log("Signal generator running...");
-  indicatorTimeWeightCache.clear();
-  autoIndicatorIdCache.clear();
+  return withSpan("signals.generate", {}, async () => {
+    logger.info({ module: "generate-signals" }, "Signal generator running...");
+    indicatorTimeWeightCache.clear();
+    autoIndicatorIdCache.clear();
 
-  const bucket = hourBucket();
+    const bucket = hourBucket();
 
-  let themeSpikes = 0;
-  let toneCollapses = 0;
-  let amplifications = 0;
-  let hotspots = 0;
-  let acledConflicts = 0;
+    const themeSpikes = await withSpan("signals.themeSpikes", { "signals.stage": "themeSpikes" }, async (span) => {
+      let themeSpikes = 0;
+      const themeSpikeResult = await db.execute(sql`
+        WITH curr AS (
+          SELECT unnest(themes) AS theme, COUNT(*)::int AS c
+          FROM gdelt_documents
+          WHERE published_at >= now() - interval '60 minutes'
+          GROUP BY 1
+        ),
+        prev AS (
+          SELECT unnest(themes) AS theme, COUNT(*)::int AS p
+          FROM gdelt_documents
+          WHERE published_at >= now() - interval '6 hours'
+            AND published_at < now() - interval '60 minutes'
+          GROUP BY 1
+        )
+        SELECT
+          c.theme,
+          c.c AS last_hour,
+          COALESCE(p.p, 0) AS prev_5h,
+          (c.c::float / NULLIF(p.p::float / 5.0, 0)) AS velocity
+        FROM curr c
+        LEFT JOIN prev p ON p.theme = c.theme
+        WHERE c.c >= 20
+        ORDER BY velocity DESC NULLS LAST, last_hour DESC
+        LIMIT 30;
+      `);
+      span.setAttribute("candidates.count", themeSpikeResult.rows.length);
 
-  const themeSpikeResult = await db.execute(sql`
-    WITH curr AS (
-      SELECT unnest(themes) AS theme, COUNT(*)::int AS c
-      FROM gdelt_documents
-      WHERE published_at >= now() - interval '60 minutes'
-      GROUP BY 1
-    ),
-    prev AS (
-      SELECT unnest(themes) AS theme, COUNT(*)::int AS p
-      FROM gdelt_documents
-      WHERE published_at >= now() - interval '6 hours'
-        AND published_at < now() - interval '60 minutes'
-      GROUP BY 1
-    )
-    SELECT
-      c.theme,
-      c.c AS last_hour,
-      COALESCE(p.p, 0) AS prev_5h,
-      (c.c::float / NULLIF(p.p::float / 5.0, 0)) AS velocity
-    FROM curr c
-    LEFT JOIN prev p ON p.theme = c.theme
-    WHERE c.c >= 20
-    ORDER BY velocity DESC NULLS LAST, last_hour DESC
-    LIMIT 30;
-  `);
+      for (const row of themeSpikeResult.rows as ThemeSpikeRow[]) {
+        const theme = row.theme;
+        const velocity = Number(row.velocity ?? 0);
 
-  for (const row of themeSpikeResult.rows as ThemeSpikeRow[]) {
-    const theme = row.theme;
-    const velocity = Number(row.velocity ?? 0);
+        if (!Number.isFinite(velocity) || velocity < 3) continue;
 
-    if (!Number.isFinite(velocity) || velocity < 3) continue;
+        const evidence = await db.execute(sql`
+          SELECT url, domain, title
+          FROM gdelt_documents
+          WHERE published_at >= now() - interval '60 minutes'
+            AND ${theme} = ANY(themes)
+          ORDER BY published_at DESC
+          LIMIT 1;
+        `);
 
-    const evidence = await db.execute(sql`
-      SELECT url, domain, title
-      FROM gdelt_documents
-      WHERE published_at >= now() - interval '60 minutes'
-        AND ${theme} = ANY(themes)
-      ORDER BY published_at DESC
-      LIMIT 1;
-    `);
+        const ev = evidence.rows[0] as EvidenceRow | undefined;
+        if (!ev?.url) continue;
 
-    const ev = evidence.rows[0] as EvidenceRow | undefined;
-    if (!ev?.url) continue;
+        const dedupeKey = `theme_spike|${theme}|${bucket}`;
+        const indId = mapIndicator(`THEME_SPIKE ${theme}`);
+        const tw = await resolveTimeWeight(indId);
 
-    const dedupeKey = `theme_spike|${theme}|${bucket}`;
-    const indId = mapIndicator(`THEME_SPIKE ${theme}`);
-    const tw = await resolveTimeWeight(indId);
+        await db
+          .insert(signalEvents)
+          .values({
+            indicatorId: indId,
+            sourceUrl: ev.url,
+            sourceHost: ev.domain,
+            title: ev.title ?? `Theme spike: ${theme}`,
+            score: velocity,
+            expiresAt: expiresAtFromTimeWeight(tw),
+            dedupeKey,
+          })
+          .onConflictDoNothing();
 
-    await db
-      .insert(signalEvents)
-      .values({
-        indicatorId: indId,
-        sourceUrl: ev.url,
-        sourceHost: ev.domain,
-        title: ev.title ?? `Theme spike: ${theme}`,
-        score: velocity,
-        expiresAt: expiresAtFromTimeWeight(tw),
-        dedupeKey,
-      })
-      .onConflictDoNothing();
-
-    themeSpikes++;
-  }
-
-  const toneCollapseResult = await db.execute(sql`
-    WITH curr AS (
-      SELECT unnest(themes) AS theme, AVG(tone) AS tone, COUNT(*)::int AS n
-      FROM gdelt_documents
-      WHERE published_at >= now() - interval '60 minutes'
-        AND tone IS NOT NULL
-      GROUP BY 1
-    ),
-    prev AS (
-      SELECT unnest(themes) AS theme, AVG(tone) AS tone
-      FROM gdelt_documents
-      WHERE published_at >= now() - interval '6 hours'
-        AND published_at < now() - interval '60 minutes'
-        AND tone IS NOT NULL
-      GROUP BY 1
-    )
-    SELECT
-      c.theme,
-      c.n,
-      c.tone AS tone_now,
-      p.tone AS tone_prev,
-      (c.tone - p.tone) AS delta
-    FROM curr c
-    JOIN prev p ON p.theme = c.theme
-    WHERE c.n >= 20
-    ORDER BY delta ASC, tone_now ASC
-    LIMIT 30;
-  `);
-
-  for (const row of toneCollapseResult.rows as ToneCollapseRow[]) {
-    const theme = row.theme;
-    const toneNow = Number(row.tone_now ?? 0);
-    const delta = Number(row.delta ?? 0);
-
-    if (!(toneNow <= -2.0 && delta <= -1.0)) continue;
-
-    const evidence = await db.execute(sql`
-      SELECT url, domain, title
-      FROM gdelt_documents
-      WHERE published_at >= now() - interval '60 minutes'
-        AND ${theme} = ANY(themes)
-      ORDER BY tone ASC NULLS LAST, published_at DESC
-      LIMIT 1;
-    `);
-
-    const ev = evidence.rows[0] as EvidenceRow | undefined;
-    if (!ev?.url) continue;
-
-    const dedupeKey = `tone_collapse|${theme}|${bucket}`;
-    const indId = mapIndicator(`TONE_COLLAPSE ${theme}`);
-    const tw = await resolveTimeWeight(indId);
-
-    await db
-      .insert(signalEvents)
-      .values({
-        indicatorId: indId,
-        sourceUrl: ev.url,
-        sourceHost: ev.domain,
-        title: ev.title ?? `Tone collapse: ${theme}`,
-        score: Math.abs(delta),
-        expiresAt: expiresAtFromTimeWeight(tw),
-        dedupeKey,
-      })
-      .onConflictDoNothing();
-
-    toneCollapses++;
-  }
-
-  const amplificationResult = await db.execute(sql`
-    SELECT
-      global_event_id,
-      num_mentions,
-      num_sources,
-      num_articles,
-      (num_mentions::float / NULLIF(num_sources,0)) AS mps,
-      source_url,
-      event_code,
-      goldstein,
-      actor1_name,
-      actor2_name,
-      event_time
-    FROM gdelt_events
-    WHERE event_time >= now() - interval '60 minutes'
-      AND num_mentions IS NOT NULL
-      AND num_sources IS NOT NULL
-      AND num_mentions >= 100
-    ORDER BY mps DESC NULLS LAST
-    LIMIT 25;
-  `);
-
-  // Local map: nearKey → canonical signal event id, to avoid repeated DB lookups within batch
-  const nearDupeCache = new Map<string, string>();
-
-  for (const row of amplificationResult.rows as AmplificationRow[]) {
-    const mps = Number(row.mps ?? 0);
-
-    if (!Number.isFinite(mps) || mps < 20) continue;
-    if (!row.source_url) continue;
-
-    const dedupeKey = `amplification|${row.global_event_id}|${bucket}`;
-    const confidenceScore = computeConfidenceScore(
-      row.event_code,
-      row.goldstein !== null ? Number(row.goldstein) : null,
-      row.num_mentions !== null ? Number(row.num_mentions) : null,
-    );
-
-    const rootCode = row.event_code ? row.event_code.slice(0, 2) : null;
-    const eventDate = toDateString(row.event_time ?? null);
-    const actor1 = row.actor1_name ?? null;
-    const actor2 = row.actor2_name ?? null;
-    const nearKey = rootCode && eventDate
-      ? `${rootCode}|${actor1 ?? ""}|${actor2 ?? ""}|${eventDate}`
-      : null;
-
-    let canonicalId: string | null = null;
-    if (nearKey) {
-      if (nearDupeCache.has(nearKey)) {
-        canonicalId = nearDupeCache.get(nearKey)!;
-      } else {
-        canonicalId = await findCanonicalForAmplification(
-          actor1, actor2, rootCode!, eventDate!, row.global_event_id,
-        );
+        themeSpikes++;
       }
-    }
 
-    const ampIndId = mapIndicator(`AMPLIFICATION ${row.global_event_id}`);
-    const ampTw = await resolveTimeWeight(ampIndId);
-    const ampExpiresAt = expiresAtFromTimeWeight(ampTw);
+      span.setAttribute("signals.created", themeSpikes);
+      logger.info(
+        { module: "generate-signals", stage: "themeSpikes", candidates: themeSpikeResult.rows.length, created: themeSpikes },
+        "Theme spike stage complete",
+      );
+      return themeSpikes;
+    });
 
-    const inserted = await db
-      .insert(signalEvents)
-      .values({
-        indicatorId: ampIndId,
-        sourceUrl: row.source_url,
-        sourceHost: null,
-        title: `Amplification anomaly (MPS=${mps.toFixed(1)})`,
-        score: mps,
-        confidenceScore,
-        canonicalId,
-        expiresAt: ampExpiresAt,
-        dedupeKey,
-      })
-      .returning({ id: signalEvents.id })
-      .onConflictDoNothing();
+    const toneCollapses = await withSpan("signals.toneCollapses", { "signals.stage": "toneCollapses" }, async (span) => {
+      let toneCollapses = 0;
+      const toneCollapseResult = await db.execute(sql`
+        WITH curr AS (
+          SELECT unnest(themes) AS theme, AVG(tone) AS tone, COUNT(*)::int AS n
+          FROM gdelt_documents
+          WHERE published_at >= now() - interval '60 minutes'
+            AND tone IS NOT NULL
+          GROUP BY 1
+        ),
+        prev AS (
+          SELECT unnest(themes) AS theme, AVG(tone) AS tone
+          FROM gdelt_documents
+          WHERE published_at >= now() - interval '6 hours'
+            AND published_at < now() - interval '60 minutes'
+            AND tone IS NOT NULL
+          GROUP BY 1
+        )
+        SELECT
+          c.theme,
+          c.n,
+          c.tone AS tone_now,
+          p.tone AS tone_prev,
+          (c.tone - p.tone) AS delta
+        FROM curr c
+        JOIN prev p ON p.theme = c.theme
+        WHERE c.n >= 20
+        ORDER BY delta ASC, tone_now ASC
+        LIMIT 30;
+      `);
+      span.setAttribute("candidates.count", toneCollapseResult.rows.length);
 
-    // Record first canonical insert so subsequent near-dups in this batch reference it
-    if (inserted.length > 0 && canonicalId === null && nearKey) {
-      nearDupeCache.set(nearKey, inserted[0].id);
-    }
+      for (const row of toneCollapseResult.rows as ToneCollapseRow[]) {
+        const theme = row.theme;
+        const toneNow = Number(row.tone_now ?? 0);
+        const delta = Number(row.delta ?? 0);
 
-    // Re-surface any expired signals for the same indicator if this event has higher confidence
-    await resurfaceExpiredSignals(ampIndId, confidenceScore, ampExpiresAt);
+        if (!(toneNow <= -2.0 && delta <= -1.0)) continue;
 
-    amplifications++;
-  }
+        const evidence = await db.execute(sql`
+          SELECT url, domain, title
+          FROM gdelt_documents
+          WHERE published_at >= now() - interval '60 minutes'
+            AND ${theme} = ANY(themes)
+          ORDER BY tone ASC NULLS LAST, published_at DESC
+          LIMIT 1;
+        `);
 
-  const hotspotResult = await db.execute(sql`
-    WITH curr AS (
-      SELECT
-        action_geo_country_code AS cc,
-        COUNT(*)::int AS events,
-        AVG(avg_tone) AS tone
-      FROM gdelt_events
-      WHERE event_time >= now() - interval '60 minutes'
-        AND action_geo_country_code IS NOT NULL
-      GROUP BY 1
-    ),
-    prev AS (
-      SELECT
-        action_geo_country_code AS cc,
-        COUNT(*)::int AS events,
-        AVG(avg_tone) AS tone
-      FROM gdelt_events
-      WHERE event_time >= now() - interval '6 hours'
-        AND event_time < now() - interval '60 minutes'
-        AND action_geo_country_code IS NOT NULL
-      GROUP BY 1
-    )
-    SELECT
-      c.cc,
-      c.events AS events_last_hour,
-      p.events AS events_prev_5h,
-      (c.events::float / NULLIF(p.events::float / 5.0, 0)) AS velocity,
-      c.tone AS tone_now,
-      (c.tone - p.tone) AS delta
-    FROM curr c
-    LEFT JOIN prev p ON p.cc = c.cc
-    WHERE c.events >= 20
-    ORDER BY velocity DESC NULLS LAST, delta ASC NULLS LAST
-    LIMIT 25;
-  `);
+        const ev = evidence.rows[0] as EvidenceRow | undefined;
+        if (!ev?.url) continue;
 
-  for (const row of hotspotResult.rows as HotspotRow[]) {
-    const cc = row.cc;
-    const velocity = Number(row.velocity ?? 0);
-    const delta = Number(row.delta ?? 0);
+        const dedupeKey = `tone_collapse|${theme}|${bucket}`;
+        const indId = mapIndicator(`TONE_COLLAPSE ${theme}`);
+        const tw = await resolveTimeWeight(indId);
 
-    if (!(velocity >= 3 && delta <= -1)) continue;
+        await db
+          .insert(signalEvents)
+          .values({
+            indicatorId: indId,
+            sourceUrl: ev.url,
+            sourceHost: ev.domain,
+            title: ev.title ?? `Tone collapse: ${theme}`,
+            score: Math.abs(delta),
+            expiresAt: expiresAtFromTimeWeight(tw),
+            dedupeKey,
+          })
+          .onConflictDoNothing();
 
-    const dedupeKey = `hotspot|${cc}|${bucket}`;
-    const indId = mapIndicator(`HOTSPOT ${cc}`);
-    const tw = await resolveTimeWeight(indId);
+        toneCollapses++;
+      }
 
-    await db
-      .insert(signalEvents)
-      .values({
-        indicatorId: indId,
-        sourceUrl: null,
-        sourceHost: null,
-        title: `Hotspot ${cc} (velocity=${velocity.toFixed(1)} toneΔ=${delta.toFixed(2)})`,
-        score: velocity,
-        expiresAt: expiresAtFromTimeWeight(tw),
-        dedupeKey,
-      })
-      .onConflictDoNothing();
+      span.setAttribute("signals.created", toneCollapses);
+      logger.info(
+        { module: "generate-signals", stage: "toneCollapses", candidates: toneCollapseResult.rows.length, created: toneCollapses },
+        "Tone collapse stage complete",
+      );
+      return toneCollapses;
+    });
 
-    hotspots++;
-  }
+    const amplifications = await withSpan("signals.amplifications", { "signals.stage": "amplifications" }, async (span) => {
+      let amplifications = 0;
+      const amplificationResult = await db.execute(sql`
+        SELECT
+          global_event_id,
+          num_mentions,
+          num_sources,
+          num_articles,
+          (num_mentions::float / NULLIF(num_sources,0)) AS mps,
+          source_url,
+          event_code,
+          goldstein,
+          actor1_name,
+          actor2_name,
+          event_time
+        FROM gdelt_events
+        WHERE event_time >= now() - interval '60 minutes'
+          AND num_mentions IS NOT NULL
+          AND num_sources IS NOT NULL
+          AND num_mentions >= 100
+        ORDER BY mps DESC NULLS LAST
+        LIMIT 25;
+      `);
+      span.setAttribute("candidates.count", amplificationResult.rows.length);
 
-  acledConflicts = await generateAcledSignals(bucket);
+      // Local map: nearKey → canonical signal event id, to avoid repeated DB lookups within batch
+      const nearDupeCache = new Map<string, string>();
 
-  console.log("Signal generator complete ✅");
+      for (const row of amplificationResult.rows as AmplificationRow[]) {
+        const mps = Number(row.mps ?? 0);
 
-  return {
-    themeSpikes,
-    toneCollapses,
-    amplifications,
-    hotspots,
-    acledConflicts,
-  };
+        if (!Number.isFinite(mps) || mps < 20) continue;
+        if (!row.source_url) continue;
+
+        const dedupeKey = `amplification|${row.global_event_id}|${bucket}`;
+        const confidenceScore = computeConfidenceScore(
+          row.event_code,
+          row.goldstein !== null ? Number(row.goldstein) : null,
+          row.num_mentions !== null ? Number(row.num_mentions) : null,
+        );
+
+        const rootCode = row.event_code ? row.event_code.slice(0, 2) : null;
+        const eventDate = toDateString(row.event_time ?? null);
+        const actor1 = row.actor1_name ?? null;
+        const actor2 = row.actor2_name ?? null;
+        const nearKey = rootCode && eventDate
+          ? `${rootCode}|${actor1 ?? ""}|${actor2 ?? ""}|${eventDate}`
+          : null;
+
+        let canonicalId: string | null = null;
+        if (nearKey) {
+          if (nearDupeCache.has(nearKey)) {
+            canonicalId = nearDupeCache.get(nearKey)!;
+          } else {
+            canonicalId = await findCanonicalForAmplification(
+              actor1, actor2, rootCode!, eventDate!, row.global_event_id,
+            );
+          }
+        }
+
+        const ampIndId = mapIndicator(`AMPLIFICATION ${row.global_event_id}`);
+        const ampTw = await resolveTimeWeight(ampIndId);
+        const ampExpiresAt = expiresAtFromTimeWeight(ampTw);
+
+        const inserted = await db
+          .insert(signalEvents)
+          .values({
+            indicatorId: ampIndId,
+            sourceUrl: row.source_url,
+            sourceHost: null,
+            title: `Amplification anomaly (MPS=${mps.toFixed(1)})`,
+            score: mps,
+            confidenceScore,
+            canonicalId,
+            expiresAt: ampExpiresAt,
+            dedupeKey,
+          })
+          .returning({ id: signalEvents.id })
+          .onConflictDoNothing();
+
+        // Record first canonical insert so subsequent near-dups in this batch reference it
+        if (inserted.length > 0 && canonicalId === null && nearKey) {
+          nearDupeCache.set(nearKey, inserted[0].id);
+        }
+
+        // Re-surface any expired signals for the same indicator if this event has higher confidence
+        await resurfaceExpiredSignals(ampIndId, confidenceScore, ampExpiresAt);
+
+        amplifications++;
+      }
+
+      span.setAttribute("signals.created", amplifications);
+      logger.info(
+        { module: "generate-signals", stage: "amplifications", candidates: amplificationResult.rows.length, created: amplifications },
+        "Amplification stage complete",
+      );
+      return amplifications;
+    });
+
+    const hotspots = await withSpan("signals.hotspots", { "signals.stage": "hotspots" }, async (span) => {
+      let hotspots = 0;
+      const hotspotResult = await db.execute(sql`
+        WITH curr AS (
+          SELECT
+            action_geo_country_code AS cc,
+            COUNT(*)::int AS events,
+            AVG(avg_tone) AS tone
+          FROM gdelt_events
+          WHERE event_time >= now() - interval '60 minutes'
+            AND action_geo_country_code IS NOT NULL
+          GROUP BY 1
+        ),
+        prev AS (
+          SELECT
+            action_geo_country_code AS cc,
+            COUNT(*)::int AS events,
+            AVG(avg_tone) AS tone
+          FROM gdelt_events
+          WHERE event_time >= now() - interval '6 hours'
+            AND event_time < now() - interval '60 minutes'
+            AND action_geo_country_code IS NOT NULL
+          GROUP BY 1
+        )
+        SELECT
+          c.cc,
+          c.events AS events_last_hour,
+          p.events AS events_prev_5h,
+          (c.events::float / NULLIF(p.events::float / 5.0, 0)) AS velocity,
+          c.tone AS tone_now,
+          (c.tone - p.tone) AS delta
+        FROM curr c
+        LEFT JOIN prev p ON p.cc = c.cc
+        WHERE c.events >= 20
+        ORDER BY velocity DESC NULLS LAST, delta ASC NULLS LAST
+        LIMIT 25;
+      `);
+      span.setAttribute("candidates.count", hotspotResult.rows.length);
+
+      for (const row of hotspotResult.rows as HotspotRow[]) {
+        const cc = row.cc;
+        const velocity = Number(row.velocity ?? 0);
+        const delta = Number(row.delta ?? 0);
+
+        if (!(velocity >= 3 && delta <= -1)) continue;
+
+        const dedupeKey = `hotspot|${cc}|${bucket}`;
+        const indId = mapIndicator(`HOTSPOT ${cc}`);
+        const tw = await resolveTimeWeight(indId);
+
+        await db
+          .insert(signalEvents)
+          .values({
+            indicatorId: indId,
+            sourceUrl: null,
+            sourceHost: null,
+            title: `Hotspot ${cc} (velocity=${velocity.toFixed(1)} toneΔ=${delta.toFixed(2)})`,
+            score: velocity,
+            expiresAt: expiresAtFromTimeWeight(tw),
+            dedupeKey,
+          })
+          .onConflictDoNothing();
+
+        hotspots++;
+      }
+
+      span.setAttribute("signals.created", hotspots);
+      logger.info(
+        { module: "generate-signals", stage: "hotspots", candidates: hotspotResult.rows.length, created: hotspots },
+        "Hotspot stage complete",
+      );
+      return hotspots;
+    });
+
+    const acledConflicts = await withSpan("signals.acled", { "signals.stage": "acled" }, async (span) => {
+      const count = await generateAcledSignals(bucket);
+      span.setAttribute("signals.created", count);
+      logger.info({ module: "generate-signals", stage: "acled", created: count }, "ACLED conflict stage complete");
+      return count;
+    });
+
+    logger.info({ module: "generate-signals" }, "Signal generator complete");
+
+    return {
+      themeSpikes,
+      toneCollapses,
+      amplifications,
+      hotspots,
+      acledConflicts,
+    };
+  });
 }

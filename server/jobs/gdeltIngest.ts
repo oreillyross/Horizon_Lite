@@ -3,6 +3,8 @@ import { createHash } from "node:crypto";
 import { db } from "../db";
 import { gdeltEvents, gdeltEventMentions, gdeltDocuments } from "@shared/db";
 import { sql, inArray } from "drizzle-orm";
+import { withSpan } from "../otel/tracer";
+import { logger } from "../logger";
 
 const LASTUPDATE = "http://data.gdeltproject.org/gdeltv2/lastupdate.txt";
 
@@ -353,198 +355,222 @@ let gkgUpserted = 0;
 let gkgSkipped = 0;
 
 export async function ingestGdelt() {
-  console.log("Running GDELT ingestion...");
+  return withSpan("gdelt.ingest", {}, async () => {
+    logger.info({ module: "gdelt-ingest" }, "Running GDELT ingestion...");
 
-  const lastRes = await fetch(LASTUPDATE);
-  if (!lastRes.ok)
-    throw new Error(`lastupdate fetch failed: ${lastRes.status}`);
-  const lastupdate = await lastRes.text();
+    const lastRes = await fetch(LASTUPDATE);
+    if (!lastRes.ok)
+      throw new Error(`lastupdate fetch failed: ${lastRes.status}`);
+    const lastupdate = await lastRes.text();
 
-  const exportUrl = pickUrl(lastupdate, ".export.CSV.zip");
-  const mentionsUrl = pickUrl(lastupdate, ".mentions.CSV.zip");
-  const gkgUrl = pickUrl(lastupdate, ".gkg.csv.zip");
+    const exportUrl = pickUrl(lastupdate, ".export.CSV.zip");
+    const mentionsUrl = pickUrl(lastupdate, ".mentions.CSV.zip");
+    const gkgUrl = pickUrl(lastupdate, ".gkg.csv.zip");
 
-  console.log("Latest:", { exportUrl, mentionsUrl, gkgUrl });
+    logger.info(
+      { module: "gdelt-ingest", exportUrl, mentionsUrl, gkgUrl },
+      "Resolved latest feed URLs",
+    );
 
-  if (!exportUrl || !mentionsUrl || !gkgUrl) {
-    throw new Error("Missing one or more feed URLs from lastupdate.txt");
-  }
+    if (!exportUrl || !mentionsUrl || !gkgUrl) {
+      throw new Error("Missing one or more feed URLs from lastupdate.txt");
+    }
 
-  // -------- export
-  {
-    console.log("Ingesting EXPORT...");
-    const tsv = await fetchZipText(exportUrl);
-    const rows = tsv.split("\n");
+    // -------- export
+    await withSpan("gdelt.ingest.export", { "gdelt.stage": "export" }, async (span) => {
+      const tsv = await fetchZipText(exportUrl);
+      const rows = tsv.split("\n");
+      span.setAttribute("rows.count", rows.length);
 
-    let upserted = 0;
+      let upserted = 0;
+      const sampleIds: string[] = [];
 
-    for (const row of rows) {
-      if (!row) continue;
-      const cols = row.split("\t");
-      if (cols.length < 61) continue;
+      for (const row of rows) {
+        if (!row) continue;
+        const cols = row.split("\t");
+        if (cols.length < 61) continue;
 
-      const parsed = parseExportRow(cols);
-      if (!parsed) continue;
+        const parsed = parseExportRow(cols);
+        if (!parsed) continue;
 
-      await db
-        .insert(gdeltEvents)
-        .values({
-          ...parsed,
-          status: "new",
-          ingestedAt: new Date(),
-          updatedAt: new Date(),
-        })
-        .onConflictDoUpdate({
-          target: gdeltEvents.globalEventId,
-          set: {
-            // Update factual event data but preserve analyst's triage status
-            eventTime: parsed.eventTime ?? sql`excluded.event_time`,
-            actor1Name: parsed.actor1Name ?? sql`excluded.actor1_name`,
-            actor2Name: parsed.actor2Name ?? sql`excluded.actor2_name`,
-            eventCode: parsed.eventCode ?? sql`excluded.event_code`,
-            quadClass: parsed.quadClass ?? sql`excluded.quad_class`,
-            goldstein: parsed.goldstein ?? sql`excluded.goldstein`,
-            avgTone: parsed.avgTone ?? sql`excluded.avg_tone`,
-            numMentions: parsed.numMentions ?? sql`excluded.num_mentions`,
-            numSources: parsed.numSources ?? sql`excluded.num_sources`,
-            numArticles: parsed.numArticles ?? sql`excluded.num_articles`,
-            actionGeoFullname:
-              parsed.actionGeoFullname ?? sql`excluded.action_geo_fullname`,
-            actionGeoCountryCode:
-              parsed.actionGeoCountryCode ??
-              sql`excluded.action_geo_country_code`,
-            actionGeoLat: parsed.actionGeoLat ?? sql`excluded.action_geo_lat`,
-            actionGeoLon: parsed.actionGeoLon ?? sql`excluded.action_geo_lon`,
-            sourceUrl: parsed.sourceUrl ?? sql`excluded.source_url`,
-            sourceName: parsed.sourceName ?? sql`excluded.source_name`,
+        await db
+          .insert(gdeltEvents)
+          .values({
+            ...parsed,
+            status: "new",
+            ingestedAt: new Date(),
             updatedAt: new Date(),
-            // status intentionally omitted — analyst triage state must not be overwritten
-          },
-        });
+          })
+          .onConflictDoUpdate({
+            target: gdeltEvents.globalEventId,
+            set: {
+              // Update factual event data but preserve analyst's triage status
+              eventTime: parsed.eventTime ?? sql`excluded.event_time`,
+              actor1Name: parsed.actor1Name ?? sql`excluded.actor1_name`,
+              actor2Name: parsed.actor2Name ?? sql`excluded.actor2_name`,
+              eventCode: parsed.eventCode ?? sql`excluded.event_code`,
+              quadClass: parsed.quadClass ?? sql`excluded.quad_class`,
+              goldstein: parsed.goldstein ?? sql`excluded.goldstein`,
+              avgTone: parsed.avgTone ?? sql`excluded.avg_tone`,
+              numMentions: parsed.numMentions ?? sql`excluded.num_mentions`,
+              numSources: parsed.numSources ?? sql`excluded.num_sources`,
+              numArticles: parsed.numArticles ?? sql`excluded.num_articles`,
+              actionGeoFullname:
+                parsed.actionGeoFullname ?? sql`excluded.action_geo_fullname`,
+              actionGeoCountryCode:
+                parsed.actionGeoCountryCode ??
+                sql`excluded.action_geo_country_code`,
+              actionGeoLat: parsed.actionGeoLat ?? sql`excluded.action_geo_lat`,
+              actionGeoLon: parsed.actionGeoLon ?? sql`excluded.action_geo_lon`,
+              sourceUrl: parsed.sourceUrl ?? sql`excluded.source_url`,
+              sourceName: parsed.sourceName ?? sql`excluded.source_name`,
+              updatedAt: new Date(),
+              // status intentionally omitted — analyst triage state must not be overwritten
+            },
+          });
 
-      exportUpserted++;
-      upserted++;
-      if (upserted <= 2)
-        console.log("export sample:", parsed.globalEventId, parsed.eventCode);
-    }
-
-    console.log(`EXPORT done. upserted=${upserted}`);
-  }
-
-  // -------- mentions
-  {
-    console.log("Ingesting MENTIONS...");
-    const tsv = await fetchZipText(mentionsUrl);
-    const rows = tsv.split("\n");
-
-    let inserted = 0;
-
-    for (const row of rows) {
-      if (!row) continue;
-      const cols = row.split("\t");
-      if (cols.length < 14) continue;
-
-      const parsed = parseMentionsRow(cols);
-      if (!parsed) continue;
-
-      await db.insert(gdeltEventMentions).values(parsed).onConflictDoNothing();
-
-      inserted++;
-      mentionsInserted++;
-      if (inserted <= 2)
-        console.log("mentions sample:", parsed.globalEventId, parsed.url);
-    }
-
-    console.log(`MENTIONS done. inserted=${inserted}`);
-  }
-
-  // -------- gkg
-  {
-    console.log("Ingesting GKG...");
-    const tsv = await fetchZipText(gkgUrl);
-    const rows = tsv.split("\n");
-
-    let upserted = 0;
-    let skipped = 0;
-
-    for (const row of rows) {
-      if (!row) continue;
-      const cols = row.split("\t");
-
-      // GKG should be wide; if it's tiny, it's probably a bad split
-      if (cols.length < 10) {
-        skipped++;
-        continue;
+        exportUpserted++;
+        upserted++;
+        if (sampleIds.length < 3) sampleIds.push(parsed.globalEventId);
       }
 
-      const parsed = parseGkgRow(cols);
-      if (!parsed) {
-        skipped++;
-        continue;
+      span.setAttribute("rows.upserted", upserted);
+      logger.info(
+        { module: "gdelt-ingest", stage: "export", rowCount: rows.length, upserted, sampleIds },
+        "EXPORT stage complete",
+      );
+    });
+
+    // -------- mentions
+    await withSpan("gdelt.ingest.mentions", { "gdelt.stage": "mentions" }, async (span) => {
+      const tsv = await fetchZipText(mentionsUrl);
+      const rows = tsv.split("\n");
+      span.setAttribute("rows.count", rows.length);
+
+      let inserted = 0;
+      const sampleIds: string[] = [];
+
+      for (const row of rows) {
+        if (!row) continue;
+        const cols = row.split("\t");
+        if (cols.length < 14) continue;
+
+        const parsed = parseMentionsRow(cols);
+        if (!parsed) continue;
+
+        await db.insert(gdeltEventMentions).values(parsed).onConflictDoNothing();
+
+        inserted++;
+        mentionsInserted++;
+        if (sampleIds.length < 3) sampleIds.push(parsed.globalEventId);
       }
 
-      await db
-        .insert(gdeltDocuments)
-        .values({
-          ...parsed,
-          updatedAt: new Date(),
-        })
-        .onConflictDoUpdate({
-          target: gdeltDocuments.url,
-          set: {
-            domain: parsed.domain ?? sql`excluded.domain`,
-            publishedAt: parsed.publishedAt ?? sql`excluded.published_at`,
-            title: parsed.title ?? sql`excluded.title`,
-            imageUrl: parsed.imageUrl ?? sql`excluded.image_url`,
-            tone: parsed.tone ?? sql`excluded.tone`,
-            themes: parsed.themes.length ? parsed.themes : sql`excluded.themes`,
-            organizations: parsed.organizations.length
-              ? parsed.organizations
-              : sql`excluded.organizations`,
-            rawExtrasXml: parsed.rawExtrasXml ?? sql`excluded.raw_extras_xml`,
+      span.setAttribute("rows.inserted", inserted);
+      logger.info(
+        { module: "gdelt-ingest", stage: "mentions", rowCount: rows.length, inserted, sampleIds },
+        "MENTIONS stage complete",
+      );
+    });
+
+    // -------- gkg
+    await withSpan("gdelt.ingest.gkg", { "gdelt.stage": "gkg" }, async (span) => {
+      const tsv = await fetchZipText(gkgUrl);
+      const rows = tsv.split("\n");
+      span.setAttribute("rows.count", rows.length);
+
+      let upserted = 0;
+      let skipped = 0;
+      const sampleDomains: (string | null)[] = [];
+
+      for (const row of rows) {
+        if (!row) continue;
+        const cols = row.split("\t");
+
+        // GKG should be wide; if it's tiny, it's probably a bad split
+        if (cols.length < 10) {
+          skipped++;
+          continue;
+        }
+
+        const parsed = parseGkgRow(cols);
+        if (!parsed) {
+          skipped++;
+          continue;
+        }
+
+        await db
+          .insert(gdeltDocuments)
+          .values({
+            ...parsed,
             updatedAt: new Date(),
-          },
-        });
+          })
+          .onConflictDoUpdate({
+            target: gdeltDocuments.url,
+            set: {
+              domain: parsed.domain ?? sql`excluded.domain`,
+              publishedAt: parsed.publishedAt ?? sql`excluded.published_at`,
+              title: parsed.title ?? sql`excluded.title`,
+              imageUrl: parsed.imageUrl ?? sql`excluded.image_url`,
+              tone: parsed.tone ?? sql`excluded.tone`,
+              themes: parsed.themes.length ? parsed.themes : sql`excluded.themes`,
+              organizations: parsed.organizations.length
+                ? parsed.organizations
+                : sql`excluded.organizations`,
+              rawExtrasXml: parsed.rawExtrasXml ?? sql`excluded.raw_extras_xml`,
+              updatedAt: new Date(),
+            },
+          });
 
-      gkgUpserted++;
-      upserted++;
-      if (upserted <= 2)
-        console.log("gkg sample:", parsed.domain, parsed.title);
-    }
+        gkgUpserted++;
+        upserted++;
+        if (sampleDomains.length < 3) sampleDomains.push(parsed.domain);
+      }
 
-    console.log(`GKG done. upserted=${upserted} skipped=${skipped}`);
-  }
+      span.setAttribute("rows.upserted", upserted);
+      span.setAttribute("rows.skipped", skipped);
+      gkgSkipped += skipped;
+      logger.info(
+        { module: "gdelt-ingest", stage: "gkg", rowCount: rows.length, upserted, skipped, sampleDomains },
+        "GKG stage complete",
+      );
+    });
 
-  // -------- deduplicate near-identical stories (normalised title + source)
-  const duplicatesMarked = await collapseDuplicateGdeltEvents();
-  console.log(`Duplicate story cleanup: ${duplicatesMarked} events marked duplicate`);
+    // -------- deduplicate near-identical stories (normalised title + source)
+    const duplicatesMarked = await withSpan("gdelt.ingest.dedup", { "gdelt.stage": "dedup" }, async (span) => {
+      const count = await collapseDuplicateGdeltEvents();
+      span.setAttribute("duplicates.marked", count);
+      logger.info({ module: "gdelt-ingest", stage: "dedup", duplicatesMarked: count }, "Duplicate story cleanup complete");
+      return count;
+    });
 
-  // Mark pending signals whose expiresAt has passed as expired
-  const expiredResult = await db.execute(sql`
-    UPDATE signal_events
-    SET status = 'expired'
-    WHERE status = 'pending'
-      AND expires_at IS NOT NULL
-      AND expires_at < NOW()
-  `);
-  console.log(`Signal expiry cleanup: ${(expiredResult as any).rowCount ?? 0} rows expired`);
+    // Mark pending signals whose expiresAt has passed as expired
+    const expiredResult = await db.execute(sql`
+      UPDATE signal_events
+      SET status = 'expired'
+      WHERE status = 'pending'
+        AND expires_at IS NOT NULL
+        AND expires_at < NOW()
+    `);
+    const expiredCount = (expiredResult as any).rowCount ?? 0;
+    logger.info({ module: "gdelt-ingest", stage: "expiry", expiredCount }, "Signal expiry cleanup complete");
 
-  console.log("GDELT ingestion complete ✅");
+    logger.info({ module: "gdelt-ingest" }, "GDELT ingestion complete");
 
-  return {
-    export: {
-      upserted: exportUpserted,
-    },
-    mentions: {
-      inserted: mentionsInserted,
-      skippedMissingEvent: mentionsSkippedMissingEvent,
-    },
-    gkg: {
-      upserted: gkgUpserted,
-      skipped: gkgSkipped,
-    },
-    dedup: {
-      duplicatesMarked,
-    },
-  };
+    return {
+      export: {
+        upserted: exportUpserted,
+      },
+      mentions: {
+        inserted: mentionsInserted,
+        skippedMissingEvent: mentionsSkippedMissingEvent,
+      },
+      gkg: {
+        upserted: gkgUpserted,
+        skipped: gkgSkipped,
+      },
+      dedup: {
+        duplicatesMarked,
+      },
+    };
+  });
 }

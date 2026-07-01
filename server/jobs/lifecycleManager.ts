@@ -1,6 +1,7 @@
 import { db } from "../db";
 import { sql } from "drizzle-orm";
-import { log } from "../index";
+import { withSpan } from "../otel/tracer";
+import { logger } from "../logger";
 
 type LifecycleResult = {
   archiveWarm: { status: string; rowsArchived: number } | null;
@@ -17,84 +18,69 @@ async function getStorageReport(): Promise<{ tier: string; sizeMb: number }[]> {
 }
 
 export async function runLifecycleManager(): Promise<LifecycleResult> {
-  log("Starting data lifecycle maintenance...", "lifecycle");
+  return withSpan("lifecycle.run", {}, async () => {
+    logger.info({ module: "lifecycle" }, "Starting data lifecycle maintenance...");
 
-  const result: LifecycleResult = {
-    archiveWarm: null,
-    archiveCold: null,
-    maintenance: null,
-    storage: [],
-  };
-
-  // HOT → WARM (events older than 30 days)
-  try {
-    const r = await db.execute(
-      sql`SELECT status, rows_archived FROM archive_warm_data()`,
-    );
-    const row = r.rows[0] as
-      | { status: string; rows_archived: number }
-      | undefined;
-    result.archiveWarm = {
-      status: row?.status ?? "ok",
-      rowsArchived: Number(row?.rows_archived ?? 0),
+    const result: LifecycleResult = {
+      archiveWarm: null,
+      archiveCold: null,
+      maintenance: null,
+      storage: [],
     };
-    log(`HOT→WARM: ${result.archiveWarm.status}`, "lifecycle");
-  } catch (err) {
-    log(
-      `HOT→WARM failed: ${err instanceof Error ? err.message : err}`,
-      "lifecycle",
-    );
-  }
 
-  // WARM → COLD (events older than 90 days)
-  try {
-    const r = await db.execute(
-      sql`SELECT status, rows_archived FROM archive_cold_data()`,
-    );
-    const row = r.rows[0] as
-      | { status: string; rows_archived: number }
-      | undefined;
-    result.archiveCold = {
-      status: row?.status ?? "ok",
-      rowsArchived: Number(row?.rows_archived ?? 0),
-    };
-    log(`WARM→COLD: ${result.archiveCold.status}`, "lifecycle");
-  } catch (err) {
-    log(
-      `WARM→COLD failed: ${err instanceof Error ? err.message : err}`,
-      "lifecycle",
-    );
-  }
-
-  // VACUUM ANALYZE
-  try {
-    const r = await db.execute(sql`SELECT maintenance_tables() AS status`);
-    const row = r.rows[0] as { status: string } | undefined;
-    result.maintenance = row?.status ?? "ok";
-    log(`Maintenance: ${result.maintenance}`, "lifecycle");
-  } catch (err) {
-    log(
-      `Maintenance failed: ${err instanceof Error ? err.message : err}`,
-      "lifecycle",
-    );
-  }
-
-  // Storage report
-  try {
-    result.storage = await getStorageReport();
-    for (const tier of result.storage) {
-      log(
-        `${tier.tier.padEnd(4)} tier: ${tier.sizeMb.toFixed(2)} MB`,
-        "lifecycle",
+    // HOT → WARM (events older than 30 days)
+    try {
+      const r = await db.execute(
+        sql`SELECT status, rows_archived FROM archive_warm_data()`,
       );
+      const row = r.rows[0] as
+        | { status: string; rows_archived: number }
+        | undefined;
+      result.archiveWarm = {
+        status: row?.status ?? "ok",
+        rowsArchived: Number(row?.rows_archived ?? 0),
+      };
+      logger.info({ module: "lifecycle", ...result.archiveWarm }, "HOT→WARM archival complete");
+    } catch (err) {
+      logger.error({ module: "lifecycle", err: err instanceof Error ? err.message : err }, "HOT→WARM failed");
     }
-  } catch (err) {
-    log(
-      `Storage report failed: ${err instanceof Error ? err.message : err}`,
-      "lifecycle",
-    );
-  }
 
-  log("Data lifecycle maintenance complete", "lifecycle");
-  return result;
+    // WARM → COLD (events older than 90 days)
+    try {
+      const r = await db.execute(
+        sql`SELECT status, rows_archived FROM archive_cold_data()`,
+      );
+      const row = r.rows[0] as
+        | { status: string; rows_archived: number }
+        | undefined;
+      result.archiveCold = {
+        status: row?.status ?? "ok",
+        rowsArchived: Number(row?.rows_archived ?? 0),
+      };
+      logger.info({ module: "lifecycle", ...result.archiveCold }, "WARM→COLD archival complete");
+    } catch (err) {
+      logger.error({ module: "lifecycle", err: err instanceof Error ? err.message : err }, "WARM→COLD failed");
+    }
+
+    // VACUUM ANALYZE
+    try {
+      const r = await db.execute(sql`SELECT maintenance_tables() AS status`);
+      const row = r.rows[0] as { status: string } | undefined;
+      result.maintenance = row?.status ?? "ok";
+      logger.info({ module: "lifecycle", status: result.maintenance }, "Maintenance complete");
+    } catch (err) {
+      logger.error({ module: "lifecycle", err: err instanceof Error ? err.message : err }, "Maintenance failed");
+    }
+
+    // Storage report
+    try {
+      result.storage = await getStorageReport();
+      logger.info({ module: "lifecycle", storage: result.storage }, "Storage report complete");
+    } catch (err) {
+      logger.error({ module: "lifecycle", err: err instanceof Error ? err.message : err }, "Storage report failed");
+    }
+
+    logger.info({ module: "lifecycle" }, "Data lifecycle maintenance complete");
+    return result;
+  });
 }
